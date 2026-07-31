@@ -1,33 +1,49 @@
 import './App.css';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import GuestRoute from './components/auth/GuestRoute';
+
 import Home from './pages/Home';
 import Library from './pages/Library';
 import Study from './pages/Study';
-import Login_Registertion from "./pages/Login_Registertion";
-import List from "./pages/List";
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ListSection from './pages/ListSection';
+import ListHadith from './pages/ListHadith';
+import Onboarding from './pages/Onboarding';
 
 function App() {
   return (
-    <div>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
+          {/* Guest-only routes: opening / opens Login page first */}
+          <Route element={<GuestRoute fallback="/home" />}>
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Route>
 
-          {/* David */}
-          {/* <Route path="/tips" element={} /> */}
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/library/:bookId/sections" element={<ListSection />} />
+            <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />
+            <Route path="/library/:bookId/:sectionId/:hadithId" element={<Study />} />
+          </Route>
 
-          <Route path="/library" element={<Library />} />
-          <Route path="/library/:bookId/:hadithId" element={<Study />} />
-
-          {/* <Route path="/login" element={<Login_Registertion />} /> */}
-          {/* <Route path="/list" element={<List />} /> */}
+          {/* Onboarding routes */}
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/onboarding/:stepId" element={<Onboarding />} />
 
           {/* 404 */}
           {/* <Route path="*" element={<NotFound />} /> */}
         </Routes>
       </BrowserRouter>
-    </div>
+    </AuthProvider>
   );
 }
 

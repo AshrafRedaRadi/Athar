@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { IoArrowForward, IoArrowBack, IoListOutline, IoLibraryOutline, IoChevronForward, IoChevronBack } from "react-icons/io5";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import Avatar from "./Avatar";
+import { useTheme } from "../hooks/useTheme";
 
 /**
  * StudyHeader — top bar for the study page.
@@ -18,22 +18,10 @@ export default function StudyHeader({
   hasNext = false,
   hadithLabel = "",
   bookId = null,
+  sectionId = "0",
 }) {
-  // ── Theme toggle (synced with Sidebar's theme) ──
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") || "light";
-    setIsDark(currentTheme === "dark");
-  }, []);
-
-  const handleThemeChange = () => {
-    const dark = !isDark;
-    setIsDark(dark);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  };
+  // ── Global theme (from ThemeContext) ──
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <div className="mb-4 space-y-3" dir="rtl">
@@ -73,7 +61,7 @@ export default function StudyHeader({
 
           {/* Theme toggle – mobile/tablet only */}
           <label className="swap swap-rotate btn btn-ghost btn-sm btn-circle text-base-content/70 hover:text-cyan-700 lg:hidden">
-            <input type="checkbox" checked={isDark} onChange={handleThemeChange} />
+            <input type="checkbox" checked={isDark} onChange={toggleTheme} />
             <svg className="swap-off h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
               <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
             </svg>
@@ -97,9 +85,9 @@ export default function StudyHeader({
             <span>المكتبة</span>
           </Link>
 
-          {/* 2. Back to Index button */}
+          {/* 2. Back to Hadith List button */}
           <Link
-            to={bookId ? `/library/${bookId}/index` : "/library"}
+            to={bookId ? `/library/${bookId}/${sectionId}` : "/library"}
             className="btn btn-sm bg-cyan-700/10 hover:bg-cyan-700 text-cyan-800 dark:text-cyan-300 hover:text-white border border-cyan-700/20 hover:border-transparent font-2 text-xs sm:text-sm rounded-xl shadow-xs transition-all duration-200 gap-1.5 px-3.5"
           >
             <IoListOutline className="text-base" />

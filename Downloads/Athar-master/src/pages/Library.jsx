@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
-import { IoIosNotificationsOutline } from "react-icons/io";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import Sidebar from "../components/Sidebar";
 import Dock from "../components/Dock";
-import Avatar from "../components/Avatar";
+import PageHeader from "../components/PageHeader";
 import Card from "../components/Card";
 import { booksService } from "../services/booksService";
+import { useTheme } from "../hooks/useTheme";
 import logo from "../assets/logo.png"; // TODO: come from backend / context
 import user from "../assets/user.png"; // TODO: come from backend / context
 
@@ -63,20 +63,28 @@ export default function Library() {
     loadBooks();
   }, []);
 
-  // ── Theme toggle (synced with Sidebar's theme) ──
-  const [isDark, setIsDark] = useState(false);
+  // ── Global theme (shared across all pages via ThemeContext) ──
+  const { isDark, toggleTheme } = useTheme();
 
-  useEffect(() => {
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") || "light";
-    setIsDark(currentTheme === "dark");
-  }, []);
+  const navigate = useNavigate();
 
-  const handleThemeChange = () => {
-    const dark = !isDark;
-    setIsDark(dark);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    localStorage.setItem("theme", dark ? "dark" : "light");
+  // ── Smart navigation: check sections before deciding which page to go to ──
+  const handleBookClick = async (book) => {
+    try {
+      const sections = await booksService.getBookSections(book.id);
+      if (Array.isArray(sections) && sections.length > 1) {
+        // Multiple sections → show section chooser
+        navigate(`/library/${book.id}/sections`);
+      } else if (Array.isArray(sections) && sections.length === 1) {
+        // Exactly one section → go directly to hadith list for that section
+        navigate(`/library/${book.id}/${sections[0].id}`);
+      } else {
+        // No sections → sectionId=0 means "fetch all hadiths for this book"
+        navigate(`/library/${book.id}/0`);
+      }
+    } catch {
+      navigate(`/library/${book.id}/0`);
+    }
   };
 
   // Client-side filter on books list
@@ -103,68 +111,28 @@ export default function Library() {
       <main className="px-3 sm:px-8 py-8 pt-3 pb-20 lg:pb-8" dir="rtl">
 
         {/* ── Search bar row with profile avatar ── */}
-        <div className="flex items-center gap-3 mb-8">
-          {/* Profile avatar – visible on mobile/tablet only */}
-          <a
-            href="#"
-            className="shrink-0 lg:hidden"
-            aria-label="إعدادات البروفايل"
-          >
-            <Avatar src={user} size="w-10" />
-          </a>
-
-          {/* Spacer for desktop (lg+) – reserves space for Sidebar's fixed avatar */}
-          <div className="hidden lg:block w-10 shrink-0" />
-
-          {/* Search bar – always centered */}
-          <label className="input input-bordered flex items-center gap-2 w-full max-w-xl mx-auto font-2 bg-base-100 shadow-sm text-sm">
-            <FiSearch className="text-base-content/40 text-lg shrink-0" />
-            <input
-              id="library-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث في المتون والأحاديث..."
-              className="grow"
-              aria-label="بحث في المتون"
-            />
-          </label>
-
-          {/* Notifications + Dark mode – visible on mobile/tablet only */}
-          <div className="flex items-center gap-2 shrink-0 lg:hidden">
-            <button
-              aria-label="الإشعارات"
-              className="btn btn-ghost btn-sm btn-circle text-base-content/70 hover:text-cyan-700"
-            >
-              <IoIosNotificationsOutline className="text-xl" />
-            </button>
-
-            <label className="swap swap-rotate btn btn-ghost btn-sm btn-circle text-base-content/70 hover:text-cyan-700">
+        <PageHeader
+          searchSlot={
+            <label className="input input-bordered flex items-center gap-2 w-full max-w-xl mx-auto font-2 bg-base-100 shadow-sm text-sm">
+              <FiSearch className="text-base-content/40 text-lg shrink-0" />
               <input
-                type="checkbox"
-                checked={isDark}
-                onChange={handleThemeChange}
+                id="library-search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث في المتون والأحاديث..."
+                className="grow"
+                aria-label="بحث في المتون"
               />
-              {/* Sun */}
-              <svg className="swap-off h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
-              </svg>
-              {/* Moon */}
-              <svg className="swap-on h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73A8.15 8.15 0 0 1 9.08 5.49a8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36 10.14 10.14 0 1 0 22 14.05a1 1 0 0 0-.36-1.05z" />
-              </svg>
             </label>
-          </div>
-
-          {/* Spacer for desktop (lg+) – balances the notification/theme icons width */}
-          <div className="hidden lg:flex w-20 shrink-0" />
-        </div>
+          }
+        />
 
         {/* ── Page title ── */}
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <IoBookOutline className="text-3xl text-cyan-600" />
-            <h1 className="font-3 font-bold text-3xl text-base-content">
+            <h1 className="font-1 font-bold text-3xl text-base-content">
               مكتبة المتون
             </h1>
           </div>
@@ -229,7 +197,12 @@ export default function Library() {
         ) : filteredBooks.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {filteredBooks.map((book) => (
-              <Link key={book.id} to={`/library/${book.id}/1`} className="block no-underline">
+              <button
+                key={book.id}
+                onClick={() => handleBookClick(book)}
+                className="block text-start w-full"
+                aria-label={book.title}
+              >
                 <Card
                   title={book.title}
                   author={book.author}
@@ -237,12 +210,11 @@ export default function Library() {
                   category={book.category}
                   coverImage={book.coverImage}
                   onAdd={(e) => {
-                    e.preventDefault();
                     e.stopPropagation();
                     console.log("Adding book:", book.title);
                   }}
                 />
-              </Link>
+              </button>
             ))}
           </div>
         ) : (

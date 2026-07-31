@@ -116,7 +116,7 @@ export default function HadithCard({
 
         {/* ── Hadith title ── */}
         {title && (
-          <h2 className="font-3 font-bold text-xl sm:text-2xl text-center mb-4">
+          <h2 className="font-1 font-bold text-xl sm:text-2xl text-center mb-4">
             "{title}"
           </h2>
         )}

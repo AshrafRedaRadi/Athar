@@ -2,32 +2,14 @@ import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
-import { useEffect, useState } from "react";
 import User from "./User";
+import { useTheme } from "../hooks/useTheme";
 
 /**
  * Sidebar component with pure Tailwind CSS 500ms slide transition from the right.
  */
 function Sidebar(props) {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") || "light";
-    setIsDark(currentTheme === "dark");
-  }, []);
-
-  const handleThemeChange = (e) => {
-    const dark = e.target.checked;
-    setIsDark(dark);
-
-    document.documentElement.setAttribute(
-      "data-theme",
-      dark ? "dark" : "light"
-    );
-
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  };
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <div>
@@ -63,7 +45,7 @@ function Sidebar(props) {
                   <input
                     type="checkbox"
                     checked={isDark}
-                    onChange={handleThemeChange}
+                    onChange={toggleTheme}
                   />
 
                   {/* Sun Icon */}
@@ -103,7 +85,7 @@ function Sidebar(props) {
               className="w-20"
             />
           </div>
-          <h1 className="font-2 font-bold text-cyan-600 text-2xl text-center">منصة أثر</h1>
+          <h1 className="font-1 font-bold text-cyan-600 text-2xl text-center">منصة أثر</h1>
           {/* Menu Items */}
           <div className="mt-6 space-y-3">
             {[

@@ -208,8 +208,11 @@ function useSpeechRecognition(hadithText) {
 //  Study Page
 // ─────────────────────────────────────────────
 export default function Study() {
-  const { bookId, hadithId } = useParams();
+  const { bookId, sectionId, hadithId } = useParams();
   const navigate = useNavigate();
+
+  // sectionId "0" means the book has no sections → omit &sectionId from API call
+  const effectiveSectionId = sectionId === "0" ? null : sectionId;
 
   const [hadithsList, setHadithsList] = useState([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
@@ -229,7 +232,7 @@ export default function Study() {
       try {
         setIsLoading(true);
         const [hadithsData, booksData] = await Promise.all([
-          hadithsService.getHadithsByBook(bookId),
+          hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
         ]);
 
@@ -329,6 +332,7 @@ export default function Study() {
                 <StudyHeader 
                   userAvatar={user} 
                   bookId={bookId}
+                  sectionId={sectionId}
                   onExplanationToggle={() => setIsExplanationOpen(!isExplanationOpen)} 
                   isExplanationOpen={isExplanationOpen}
                   onPrevHadith={goToPrev}

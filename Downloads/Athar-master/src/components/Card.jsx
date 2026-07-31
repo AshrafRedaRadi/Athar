@@ -54,7 +54,7 @@ export default function Card({ title, author, level, category, coverImage, isAdd
       <div className="card-body p-3 sm:p-5 gap-2 sm:gap-3 flex-1 flex flex-col justify-between">
         <div>
           {/* Title */}
-          <h2 className="card-title font-3 font-bold text-sm sm:text-xl text-base-content leading-snug mb-1">
+          <h2 className="card-title font-1 font-bold text-sm sm:text-xl text-base-content leading-snug mb-1">
             {title}
           </h2>
 
