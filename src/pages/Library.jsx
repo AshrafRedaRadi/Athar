@@ -3,14 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import Sidebar from "../components/Sidebar";
-import Dock from "../components/Dock";
-import PageHeader from "../components/PageHeader";
+import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import { booksService } from "../services/booksService";
 import { useTheme } from "../hooks/useTheme";
-import logo from "../assets/logo.png"; // TODO: come from backend / context
-import user from "../assets/user.png"; // TODO: come from backend / context
 
 // ─────────────────────────────────────────────
 //  Static mock fallback data (in case API is offline)
@@ -96,22 +92,12 @@ export default function Library() {
 
   return (
     <div className="min-h-screen bg-base-200">
-
-      {/* Sidebar – desktop only (lg+) */}
-      <div className="hidden lg:block">
-        <Sidebar logo={logo} user={user} activePage="library" />
-      </div>
-
-      {/* Dock – mobile & tablet (below lg) */}
-      <div className="block lg:hidden">
-        <Dock activePage="library" />
-      </div>
-
       {/* ── Page content ── */}
-      <main className="px-3 sm:px-8 py-8 pt-3 pb-20 lg:pb-8" dir="rtl">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
 
-        {/* ── Search bar row with profile avatar ── */}
-        <PageHeader
+        {/* ── Unified Navbar with Search Slot ── */}
+        <Navbar
+          activePage="library"
           searchSlot={
             <label className="input input-bordered flex items-center gap-2 w-full max-w-xl mx-auto font-2 bg-base-100 shadow-sm text-sm">
               <FiSearch className="text-base-content/40 text-lg shrink-0" />
@@ -195,29 +181,23 @@ export default function Library() {
             ))}
           </div>
         ) : filteredBooks.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {filteredBooks.map((book) => (
-              <div
+              <Card
                 key={book.id}
-                role="button"
-                tabIndex={0}
+                id={book.id}
+                title={book.title}
+                author={book.author}
+                level={book.level}
+                category={book.category}
+                coverImage={book.coverImage}
+                description={book.description}
                 onClick={() => handleBookClick(book)}
-                onKeyDown={(e) => e.key === "Enter" && handleBookClick(book)}
-                className="block text-start w-full cursor-pointer"
-                aria-label={book.title}
-              >
-                <Card
-                  title={book.title}
-                  author={book.author}
-                  level={book.level}
-                  category={book.category}
-                  coverImage={book.coverImage}
-                  onAdd={(e) => {
-                    e.stopPropagation();
-                    console.log("Adding book:", book.title);
-                  }}
-                />
-              </div>
+                onAdd={(e) => {
+                  e.stopPropagation();
+                  console.log("Adding book:", book.title);
+                }}
+              />
             ))}
           </div>
         ) : (

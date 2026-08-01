@@ -18,7 +18,7 @@ const NAV_ITEMS = [
  */
 export default function Dock({ activePage = "home" }) {
   return (
-    <div className="dock font-2" dir="rtl">
+    <div className="dock font-2 z-50" dir="rtl">
       {NAV_ITEMS.map((item) => (
         <a
           key={item.id}

@@ -16,12 +16,10 @@ const MoonIcon = () => (
 );
 
 /**
- * HeaderActions — reusable top-bar action icons:
+ * HeaderActions — top-bar action icons rendered in PageHeader across all screen sizes:
  *  - Theme toggle (Sun/Moon)
  *  - Notifications icon
  *  - Settings icon
- *
- * Ensures consistent rendering, order, and styling across PageHeader, Sidebar, and Study pages.
  */
 export default function HeaderActions({ className = "", buttonClassName = "" }) {
   const { isDark, toggleTheme } = useTheme();

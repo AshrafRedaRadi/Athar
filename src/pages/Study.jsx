@@ -3,9 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import Sidebar from "../components/Sidebar";
-import Dock from "../components/Dock";
-import PageHeader from "../components/PageHeader";
+import Navbar from "../components/Navbar";
 import StudyToolbar from "../components/StudyToolbar";
 import HadithCard from "../components/HadithCard";
 import RecordButton from "../components/RecordButton";
@@ -311,18 +309,11 @@ export default function Study() {
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col h-full relative">
         
-        {/* Navigation - Sidebar (Desktop) / Dock (Mobile) */}
-        <div className="hidden lg:block z-50">
-          <Sidebar logo={logo} user={user} activePage="library" />
-        </div>
-        <div className="block lg:hidden z-50">
-          <Dock activePage="library" />
-        </div>
-
         {/* Scrollable Page Content */}
         <div className="flex-1 overflow-y-auto pb-20 lg:pb-12 px-4 sm:px-8 py-6" dir="rtl">
+          <Navbar activePage="library" />
+
           <div className="max-w-4xl mx-auto min-h-full flex flex-col">
-            
             {isLoading ? (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
                 <span className="loading loading-spinner loading-lg text-cyan-600 mb-4"></span>
@@ -330,9 +321,6 @@ export default function Study() {
               </div>
             ) : currentHadith ? (
               <>
-                {/* Top header navigation */}
-                <PageHeader />
-
                 {/* Hadith navigation and index toolbar */}
                 <StudyToolbar 
                   bookId={bookId}

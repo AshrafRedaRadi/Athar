@@ -1,8 +1,7 @@
 import { IoMdMic } from "react-icons/io";
-import User from "../components/User";
-import Sidebar from "../components/Sidebar";
-import logo from '../assets/logo.png' //! Should come from backend!!!
-import user from '../assets/user.png'   //! Should come from backend!!!
+import Navbar from "../components/Navbar";
+import logo from '../assets/logo.png'; //! Should come from backend!!!
+import user from '../assets/user.png';   //! Should come from backend!!!
 import Button from "../components/Button";
 import Gender from "../components/Gender";
 import Age from "../components/Age";
@@ -11,25 +10,25 @@ import Password from "../components/Password";
 import Stat from "../components/Stat";
 import Progress from "../components/Progress";
 import Tasks from "../components/Tasks";
-import Dock from "../components/Dock";
-let userName = "مصطفى صلاح" //! Should come from backend!!!
+
+let userName = "مصطفى صلاح"; //! Should come from backend!!!
+
 function Home() {
-    return (
-        <div>
-            <div className="hidden md:block">
-                <Sidebar logo={logo} user={user} userName={userName} />
-            </div>
+  return (
+    <div className="min-h-screen bg-base-200">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
+        {/* Unified Navbar */}
+        <Navbar activePage="home" />
 
-            <div className="block md:hidden">
-                <Dock />
-            </div>
-            <Stat days={12} hadith={145} accuracy={92} />
-            <Progress title="الأربعين النووية" progress={100} />
-            <Tasks />
-            <br className="block md:hidden" />
-            <br className="block md:hidden" />
-
-        </div>
-    )
+        {/* Main Home Content */}
+        <Stat days={12} hadith={145} accuracy={92} />
+        <Progress title="الأربعين النووية" progress={100} />
+        <Tasks />
+        <br className="block md:hidden" />
+        <br className="block md:hidden" />
+      </main>
+    </div>
+  );
 }
+
 export default Home;

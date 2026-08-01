@@ -1,13 +1,17 @@
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
-import User from "./User";
-import HeaderActions from "./HeaderActions";
+import { CURRENT_USER } from "../constants/currentUser";
 
 /**
- * Sidebar component with pure Tailwind CSS 500ms slide transition from the right.
+ * Sidebar component with pure Tailwind CSS slide transition from the right.
+ * Uses centralized CURRENT_USER data for consistent user identity across pages.
  */
 function Sidebar(props) {
+  const userAvatar = props.user || CURRENT_USER.avatar;
+  const userName = props.userName || CURRENT_USER.name;
+  const logoImg = props.logo || CURRENT_USER.logo;
+
   return (
     <div>
       {/* Hidden checkbox toggle for sidebar */}
@@ -16,8 +20,6 @@ function Sidebar(props) {
         type="checkbox"
         className="peer hidden"
       />
-
-      <User user={props.user} />
 
       {/* Overlay — pure Tailwind fade transition */}
       <label
@@ -36,25 +38,33 @@ function Sidebar(props) {
                    translate-x-full peer-checked:translate-x-0"
       >
         <div>
-          <div className="flex items-center justify-between border-b border-base-300 pb-4">
-            {/* User Avatar (on the RIGHT in RTL) */}
-            <div className="avatar">
-              <div className="w-14 rounded-full ring-offset-2">
-                <img src={props.user} alt="User" />
+          {/* User Avatar + Welcome Header */}
+          <div className="flex items-center justify-start gap-3 border-b border-base-300 pb-4">
+            {/* User Avatar (Right in RTL) */}
+            <div className="avatar shrink-0">
+              <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 ring-offset-2 overflow-hidden">
+                <img src={userAvatar} alt={userName} />
               </div>
             </div>
-            {/* HeaderActions (on the LEFT in RTL) */}
-            <HeaderActions />
+            {/* Welcome Text + Username */}
+            <div className="flex flex-col text-start">
+              <span className="text-xs text-base-content/60 font-2">أهلاً بك،</span>
+              <span className="font-1 font-bold text-base text-base-content">
+                {userName}
+              </span>
+            </div>
           </div>
+
           {/* Athar Logo */}
           <div className="flex justify-center mt-4">
             <img
-              src={props.logo}
+              src={logoImg}
               alt="Athar Logo"
               className="w-20"
             />
           </div>
           <h1 className="font-1 font-bold text-cyan-600 text-2xl text-center">منصة أثر</h1>
+
           {/* Menu Items */}
           <div className="mt-6 space-y-3">
             {[
