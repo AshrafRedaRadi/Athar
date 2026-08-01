@@ -1,12 +1,10 @@
 /**
  * AuthCard — inner form container used inside AuthLayout's right panel.
- *
- * Provides consistent width, full height, flex-column layout,
- * and a scrollable content area for the form body.
+ * Fits height smoothly with zero scrollbars.
  */
 export default function AuthCard({ children }) {
   return (
-    <div className="w-full max-w-[360px] h-full flex flex-col justify-start overflow-hidden">
+    <div className="w-full max-w-[360px] h-full flex flex-col justify-between overflow-hidden py-1">
       {children}
     </div>
   );

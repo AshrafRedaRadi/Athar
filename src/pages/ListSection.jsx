@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { IoLayersOutline, IoLibraryOutline } from "react-icons/io5";
 import { IoChevronBack } from "react-icons/io5";
-import Sidebar from "../components/Sidebar";
-import Dock from "../components/Dock";
-import PageHeader from "../components/PageHeader";
+import Navbar from "../components/Navbar";
+import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
-import logo from "../assets/logo.png";
-import user from "../assets/user.png";
+import { useAuth } from "../context/AuthContext";
 
 // ─────────────────────────────────────────────
 //  ListSection Page
@@ -16,11 +14,13 @@ import user from "../assets/user.png";
 export default function ListSection() {
   const { bookId } = useParams();
   const navigate = useNavigate();
+  const { isGuest } = useAuth();
 
   const [sections, setSections] = useState([]);
   const [bookTitle, setBookTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -47,6 +47,10 @@ export default function ListSection() {
   }, [bookId]);
 
   const handleSectionClick = (section) => {
+    if (isGuest) {
+      setIsGuestModalOpen(true);
+      return;
+    }
     navigate(`/library/${bookId}/${section.id}`);
   };
 
@@ -61,20 +65,10 @@ export default function ListSection() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      {/* Sidebar – desktop only (lg+) */}
-      <div className="hidden lg:block">
-        <Sidebar logo={logo} user={user} activePage="library" />
-      </div>
-
-      {/* Dock – mobile & tablet (below lg) */}
-      <div className="block lg:hidden">
-        <Dock activePage="library" />
-      </div>
-
       {/* ── Page content ── */}
-      <main className="px-3 sm:px-8 py-8 pt-3 pb-20 lg:pb-8" dir="rtl">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
         {/* ── Top bar ── */}
-        <PageHeader />
+        <Navbar activePage="library" />
 
         {/* ── Breadcrumb / back link ── */}
         <div className="flex items-center gap-2 mb-6 text-sm font-2 text-base-content/60">
@@ -161,6 +155,15 @@ export default function ListSection() {
             ))}
           </div>
         )}
+
+        {/* ── Guest Login Modal ── */}
+        <GuestLoginModal
+          isOpen={isGuestModalOpen}
+          onClose={() => setIsGuestModalOpen(false)}
+          title="تسجيل الدخول لتصفح الأقسام"
+          message="تصفح وحفظ أحاديث هذا القسم يتطلب تسجيل الدخول إلى حسابك."
+        />
+
       </main>
     </div>
   );

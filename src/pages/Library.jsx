@@ -3,14 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import Sidebar from "../components/Sidebar";
-import Dock from "../components/Dock";
-import PageHeader from "../components/PageHeader";
+import Navbar from "../components/Navbar";
 import Card from "../components/Card";
+import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
 import { useTheme } from "../hooks/useTheme";
-import logo from "../assets/logo.png"; // TODO: come from backend / context
-import user from "../assets/user.png"; // TODO: come from backend / context
+import { useAuth } from "../context/AuthContext";
 
 // ─────────────────────────────────────────────
 //  Static mock fallback data (in case API is offline)
@@ -24,27 +22,16 @@ const MOCK_CATEGORIES = [
   { id: 6, label: "التفسير" },
 ];
 
-/*
-const MOCK_BOOKS = [
-  { id: 1, title: "متن الآجرومية",         author: "ابن آجروم",             level: "مبتدئ",  category: "اللغة العربية" },
-  { id: 2, title: "صحيح البخاري",           author: "الإمام البخاري",        level: "متقدم",  category: "الحديث" },
-  { id: 3, title: "عمدة الأحكام",           author: "عبد الغني المقدسي",    level: "متوسط",  category: "الحديث" },
-  { id: 4, title: "الأربعون النووية",       author: "الإمام النووي",         level: "مبتدئ",  category: "الحديث" },
-  { id: 5, title: "رياض الصالحين",          author: "الإمام النووي",         level: "متوسط",  category: "الحديث" },
-  { id: 6, title: "متن العقيدة الطحاوية",  author: "الإمام الطحاوي",        level: "متوسط",  category: "العقيدة" },
-  { id: 7, title: "الورقات",                author: "إمام الحرمين الجويني", level: "مبتدئ",  category: "الفقه" },
-  { id: 8, title: "متن أبي شجاع",           author: "أبو شجاع الأصفهاني",   level: "مبتدئ",  category: "الفقه" },
-];
-*/
-
 // ─────────────────────────────────────────────
 //  Library Page
 // ─────────────────────────────────────────────
 export default function Library() {
-  const [searchQuery,     setSearchQuery]    = useState("");
-  const [activeCategory,  setActiveCategory] = useState("الكل");
-  const [books,           setBooks]          = useState([]);
-  const [isLoading,       setIsLoading]      = useState(true);
+  const { isGuest } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("الكل");
+  const [books, setBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
   // ── Fetch books from real Backend API ──
   useEffect(() => {
@@ -70,6 +57,10 @@ export default function Library() {
 
   // ── Smart navigation: check sections before deciding which page to go to ──
   const handleBookClick = async (book) => {
+    if (isGuest) {
+      setIsGuestModalOpen(true);
+      return;
+    }
     try {
       const sections = await booksService.getBookSections(book.id);
       if (Array.isArray(sections) && sections.length > 1) {
@@ -96,22 +87,12 @@ export default function Library() {
 
   return (
     <div className="min-h-screen bg-base-200">
-
-      {/* Sidebar – desktop only (lg+) */}
-      <div className="hidden lg:block">
-        <Sidebar logo={logo} user={user} activePage="library" />
-      </div>
-
-      {/* Dock – mobile & tablet (below lg) */}
-      <div className="block lg:hidden">
-        <Dock activePage="library" />
-      </div>
-
       {/* ── Page content ── */}
-      <main className="px-3 sm:px-8 py-8 pt-3 pb-20 lg:pb-8" dir="rtl">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
 
-        {/* ── Search bar row with profile avatar ── */}
-        <PageHeader
+        {/* ── Unified Navbar with Search Slot ── */}
+        <Navbar
+          activePage="library"
           searchSlot={
             <label className="input input-bordered flex items-center gap-2 w-full max-w-xl mx-auto font-2 bg-base-100 shadow-sm text-sm">
               <FiSearch className="text-base-content/40 text-lg shrink-0" />
@@ -195,26 +176,27 @@ export default function Library() {
             ))}
           </div>
         ) : filteredBooks.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
             {filteredBooks.map((book) => (
-              <button
+              <Card
                 key={book.id}
+                id={book.id}
+                title={book.title}
+                author={book.author}
+                level={book.level}
+                category={book.category}
+                coverImage={book.coverImage}
+                description={book.description}
                 onClick={() => handleBookClick(book)}
-                className="block text-start w-full"
-                aria-label={book.title}
-              >
-                <Card
-                  title={book.title}
-                  author={book.author}
-                  level={book.level}
-                  category={book.category}
-                  coverImage={book.coverImage}
-                  onAdd={(e) => {
-                    e.stopPropagation();
+                onAdd={(e) => {
+                  e.stopPropagation();
+                  if (isGuest) {
+                    setIsGuestModalOpen(true);
+                  } else {
                     console.log("Adding book:", book.title);
-                  }}
-                />
-              </button>
+                  }
+                }}
+              />
             ))}
           </div>
         ) : (
@@ -233,6 +215,14 @@ export default function Library() {
             </button>
           </div>
         )}
+
+        {/* ── Guest Login Modal ── */}
+        <GuestLoginModal
+          isOpen={isGuestModalOpen}
+          onClose={() => setIsGuestModalOpen(false)}
+          title="تسجيل الدخول فتح الكتب"
+          message="تصفح وحفظ هذا المتن يتطلب تسجيل الدخول إلى حسابك."
+        />
 
       </main>
     </div>
