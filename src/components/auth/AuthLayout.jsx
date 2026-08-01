@@ -2,14 +2,12 @@ import alAqsaImg from '../../assets/al-aqsa.jpg';
 
 /**
  * AuthLayout — shared two-panel wrapper for Login and Signup pages.
- *
- * Left panel : Al-Aqsa illustration + decorative wave SVG
- * Right panel: children (the form area)
+ * Fully fits screen height without scrollbars and adds a neat small margin.
  */
 export default function AuthLayout({ children }) {
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-5"
+      className="h-screen w-screen overflow-hidden flex items-center justify-center p-3 sm:p-4 md:p-5"
       style={{
         backgroundColor: '#23566e',
         backgroundImage:
@@ -18,11 +16,12 @@ export default function AuthLayout({ children }) {
     >
       {/* Card container */}
       <div
-        className="relative w-full max-w-[1100px] h-[600px] rounded-[40px] overflow-hidden shadow-2xl"
+        className="relative w-full max-w-[1050px] h-full max-h-[94vh] rounded-[28px] sm:rounded-[36px] overflow-hidden shadow-2xl flex"
         style={{ backgroundColor: '#337FA1' }}
       >
         {/* ── Left panel: illustration (hidden on mobile) ── */}
-        <div className="absolute left-0 top-0 w-[62%] h-full overflow-hidden hidden md:block z-[1]"
+        <div
+          className="relative w-[58%] h-full overflow-hidden hidden md:block shrink-0 z-[1]"
           style={{ backgroundColor: '#e8f1f3' }}
         >
           {/* Al-Aqsa background image */}
@@ -46,7 +45,7 @@ export default function AuthLayout({ children }) {
 
         {/* ── Right panel: form slot ── */}
         <div
-          className="absolute right-0 top-0 w-full md:w-[45%] h-full flex justify-center items-start pt-[15px] px-[30px] py-[15px] text-white z-[2]"
+          className="w-full md:w-[42%] h-full flex justify-center items-center p-3.5 sm:p-5 text-white z-[2] overflow-hidden"
           dir="rtl"
         >
           {children}

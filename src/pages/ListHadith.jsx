@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   IoListOutline,
+  IoGridOutline,
   IoLibraryOutline,
   IoLayersOutline,
   IoChevronBack,
@@ -10,8 +11,10 @@ import {
   IoBookmarkOutline,
 } from "react-icons/io5";
 import Navbar from "../components/Navbar";
+import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
 import user from "../assets/user.png";
 
@@ -85,30 +88,34 @@ function SkeletonRow() {
 }
 
 // ─────────────────────────────────────────────
-//  Mobile Hadith Card (shown below sm breakpoint)
+//  Mobile Hadith Card (supports 1 or 2 columns layout)
 // ─────────────────────────────────────────────
-function HadithMobileCard({ hadith, status, onAction }) {
+function HadithMobileCard({ hadith, status, isSingleColumn = false, onAction }) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <div className="card bg-base-100 border border-base-200 shadow-sm p-4 flex flex-col gap-2" dir="rtl">
+    <div
+      className={`card bg-base-100 border border-base-200 shadow-sm flex flex-col justify-between h-full rounded-2xl transition-all duration-300 ${isSingleColumn ? "p-4 gap-2.5" : "p-3.5 gap-2"
+        }`}
+      dir="rtl"
+    >
       {/* Header: number + badge */}
-      <div className="flex items-center justify-between">
-        <span className="font-2 text-xs text-base-content/50">
+      <div className="flex items-center justify-between gap-1 flex-wrap">
+        <span className={`font-2 text-base-content/60 font-semibold truncate ${isSingleColumn ? "text-xs" : "text-[11px]"}`}>
           {hadith.hadithNumber}
         </span>
-        <span className={`badge badge-sm font-2 ${cfg.badgeClass}`}>
+        <span className={`badge font-2 ${cfg.badgeClass} ${isSingleColumn ? "badge-sm" : "badge-xs"}`}>
           {cfg.icon} {cfg.label}
         </span>
       </div>
 
       {/* Title */}
-      <p className="font-1 text-sm font-bold text-base-content leading-snug">
+      <p className={`font-1 font-bold text-base-content leading-snug my-auto ${isSingleColumn ? "text-sm" : "text-xs line-clamp-2"}`}>
         {hadith.title || hadith.hadithNumber}
       </p>
 
       {/* Narrator */}
       {hadith.narrator && (
-        <p className="font-2 text-xs text-base-content/50">
+        <p className={`font-2 text-base-content/50 ${isSingleColumn ? "text-xs" : "text-[10px] line-clamp-1"}`}>
           عن: {hadith.narrator}
         </p>
       )}
@@ -116,7 +123,8 @@ function HadithMobileCard({ hadith, status, onAction }) {
       {/* Action button */}
       <button
         onClick={() => onAction(hadith)}
-        className={`btn btn-sm rounded-full font-2 mt-1 ${ACTION_CLASS[status]}`}
+        className={`btn rounded-full font-2 mt-1 w-full ${isSingleColumn ? "btn-sm text-xs" : "btn-xs text-[11px]"
+          } ${ACTION_CLASS[status]}`}
       >
         {ACTION_LABEL[status]}
       </button>
@@ -131,6 +139,7 @@ function HadithMobileCard({ hadith, status, onAction }) {
 export default function ListHadith() {
   const { bookId, sectionId } = useParams();
   const navigate = useNavigate();
+  const { isGuest } = useAuth();
 
   // sectionId "0" means the book has no sections → fetch all hadiths without sectionId filter
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
@@ -139,6 +148,17 @@ export default function ListHadith() {
   const [bookTitle, setBookTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+
+  // Mobile layout switcher state ("1" card or "2" cards per row, persisted in localStorage)
+  const [mobileColumns, setMobileColumns] = useState(() => {
+    return localStorage.getItem("athar_mobile_hadith_cols") || "2";
+  });
+
+  const handleMobileColumnsChange = (cols) => {
+    setMobileColumns(cols);
+    localStorage.setItem("athar_mobile_hadith_cols", cols);
+  };
 
   useEffect(() => {
     async function load() {
@@ -166,6 +186,10 @@ export default function ListHadith() {
 
   /** Navigate to the Study page for a specific hadith */
   const handleAction = (hadith) => {
+    if (isGuest) {
+      setIsGuestModalOpen(true);
+      return;
+    }
     navigate(`/library/${bookId}/${sectionId}/${hadith.id}`);
   };
 
@@ -204,12 +228,9 @@ export default function ListHadith() {
           <div className="flex items-center justify-center gap-3 mb-2">
             <IoListOutline className="text-3xl text-cyan-600" />
             <h1 className="font-1 font-bold text-3xl text-base-content">
-              فهرس الأحاديث
+              فهرس {bookTitle}
             </h1>
           </div>
-          {bookTitle && (
-            <p className="font-2 text-base-content/60 text-sm">{bookTitle}</p>
-          )}
         </header>
 
         {/* ── Content ── */}
@@ -219,14 +240,54 @@ export default function ListHadith() {
           </div>
         ) : (
           <>
-            {/* Results count */}
-            <p className="font-2 text-sm text-base-content/50 mb-4">
-              {isLoading
-                ? "جاري استحضار الأحاديث الشريفة ..."
-                : hadiths.length > 0
-                ? `يتوفر ${hadiths.length} حديثاً`
-                : "لم نجد أحاديث مطابقة"}
-            </p>
+            {/* Results count & Mobile View Mode Toggle Radio Buttons */}
+            <div className="flex items-center justify-between mb-4 gap-2 font-2 text-sm text-base-content/50">
+              <p>
+                {isLoading
+                  ? "جاري استحضار الأحاديث الشريفة ..."
+                  : hadiths.length > 0
+                    ? `يتوفر ${hadiths.length} حديثاً`
+                    : "لم نجد أحاديث مطابقة"}
+              </p>
+
+              {/* Mobile Columns Radio Toggle (1 card vs 2 cards per row) */}
+              <div
+                className="flex items-center gap-1 sm:hidden bg-base-100 p-1 rounded-xl border border-base-200 shadow-xs"
+                role="radiogroup"
+                aria-label="عرض الكروت في الموبايل"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mobileColumns === "1"}
+                  onClick={() => handleMobileColumnsChange("1")}
+                  className={`btn btn-xs rounded-lg gap-1 transition-all ${mobileColumns === "1"
+                    ? "bg-cyan-700 text-white border-none shadow-xs"
+                    : "btn-ghost text-base-content/60 hover:text-base-content"
+                    }`}
+                  title="عرض كرت واحد في الصف"
+                  aria-label="عرض كرت واحد في الصف"
+                >
+                  <IoListOutline className="text-sm" />
+                  <span className="text-[10px]">1</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mobileColumns === "2"}
+                  onClick={() => handleMobileColumnsChange("2")}
+                  className={`btn btn-xs rounded-lg gap-1 transition-all ${mobileColumns === "2"
+                    ? "bg-cyan-700 text-white border-none shadow-xs"
+                    : "btn-ghost text-base-content/60 hover:text-base-content"
+                    }`}
+                  title="عرض كرتين في الصف"
+                  aria-label="عرض كرتين في الصف"
+                >
+                  <IoGridOutline className="text-sm" />
+                  <span className="text-[10px]">2</span>
+                </button>
+              </div>
+            </div>
 
             {/* ── Desktop table (sm and above) ── */}
             <div className="hidden sm:block overflow-x-auto rounded-2xl border border-base-200 bg-base-100 shadow-sm">
@@ -291,7 +352,7 @@ export default function ListHadith() {
                           <td className="text-center">
                             <button
                               onClick={() => handleAction(hadith)}
-                              className={`btn btn-xs sm:btn-sm rounded-full font-2 ${ACTION_CLASS[status]}`}
+                              className={`btn btn-xs sm:btn-sm rounded-full font-2 px-10 ${ACTION_CLASS[status]}`}
                             >
                               {ACTION_LABEL[status]}
                             </button>
@@ -304,21 +365,31 @@ export default function ListHadith() {
               </table>
             </div>
 
-            {/* ── Mobile card list (below sm) ── */}
-            <div className="flex flex-col gap-3 sm:hidden">
+            {/* ── Mobile card list (below sm) — Dynamic 1 or 2 cards per row ── */}
+            <div
+              className={`grid ${mobileColumns === "1" ? "grid-cols-1 gap-3" : "grid-cols-2 gap-2.5"
+                } sm:hidden transition-all duration-300`}
+            >
               {isLoading ? (
-                [1, 2, 3].map((n) => (
+                [1, 2, 3, 4].map((n) => (
                   <div
                     key={n}
-                    className="card bg-base-100 border border-base-200 shadow-sm p-4 flex flex-col gap-3 animate-pulse"
+                    className="card bg-base-100 border border-base-200 shadow-sm p-3 flex flex-col gap-2 animate-pulse rounded-2xl"
                   >
-                    <div className="h-3 w-1/3 bg-base-300 rounded" />
-                    <div className="h-5 w-2/3 bg-base-300 rounded" />
-                    <div className="h-8 w-24 bg-base-300 rounded-full" />
+                    <div className="flex justify-between items-center">
+                      <div className="h-3 w-1/3 bg-base-300 rounded" />
+                      <div className="h-3 w-1/3 bg-base-300 rounded" />
+                    </div>
+                    <div className="h-4 w-full bg-base-300 rounded mt-1" />
+                    <div className="h-3 w-2/3 bg-base-300 rounded" />
+                    <div className="h-6 w-full bg-base-300 rounded-full mt-2" />
                   </div>
                 ))
               ) : hadiths.length === 0 ? (
-                <div className="flex flex-col items-center py-16 gap-4 text-center">
+                <div
+                  className={`${mobileColumns === "1" ? "" : "col-span-2"
+                    } flex flex-col items-center py-16 gap-4 text-center`}
+                >
                   <IoListOutline className="text-5xl text-base-content/20" />
                   <p className="font-2 text-base-content/50">لا توجد أحاديث في هذا القسم</p>
                 </div>
@@ -330,6 +401,7 @@ export default function ListHadith() {
                       key={hadith.id ?? idx}
                       hadith={hadith}
                       status={status}
+                      isSingleColumn={mobileColumns === "1"}
                       onAction={handleAction}
                     />
                   );
@@ -338,6 +410,15 @@ export default function ListHadith() {
             </div>
           </>
         )}
+
+        {/* ── Guest Login Modal ── */}
+        <GuestLoginModal
+          isOpen={isGuestModalOpen}
+          onClose={() => setIsGuestModalOpen(false)}
+          title="تسجيل الدخول لبدء الحفظ"
+          message="بدء حفظ أو مراجعة هذا الحديث والتسميع بالصوت يتطلب تسجيل الدخول إلى حسابك."
+        />
+
       </main>
     </div>
   );

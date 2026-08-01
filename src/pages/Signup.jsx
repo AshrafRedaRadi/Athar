@@ -17,9 +17,9 @@ function GoogleIcon() {
 
 /* ── Shared styling helpers ── */
 const inputClass =
-  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
+  'w-full bg-black/15 border border-white/10 text-white rounded-full h-8 min-h-8 px-3.5 text-[0.78rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
 
-const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
+const labelClass = 'block text-[0.72rem] mb-0.5 text-white/90 font-2';
 
 /* ── Password strength helpers ── */
 function checkReqs(pass) {
@@ -88,7 +88,6 @@ export default function Signup() {
   /* ── Step 2 submit ── */
   const handleStep2Submit = (e) => {
     e.preventDefault();
-    // Navigate to Onboarding flow passing 'signup' entry source
     navigate('/onboarding/1', { state: { from: 'signup' } });
   };
 
@@ -96,11 +95,11 @@ export default function Signup() {
     <AuthLayout>
       <AuthCard>
         {/* ── Tab bar ── */}
-        <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
+        <div className="flex bg-white/15 p-1 rounded-xl mb-2 gap-1 shrink-0">
           {/* Login tab — inactive → navigate to /login */}
           <Link
             to="/login"
-            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
+            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
           >
             تسجيل الدخول
           </Link>
@@ -108,290 +107,303 @@ export default function Signup() {
           {/* Signup tab — active */}
           <button
             type="button"
-            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
+            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
           >
             إنشاء حساب
           </button>
         </div>
 
-        {/* ── Scrollable form area ── */}
-        <div
-          className="overflow-y-auto pr-[3px] [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
-          style={{ maxHeight: 'calc(100% - 80px)' }}
-        >
+        {/* ── Form content container (No scrollbar, scaled to fit) ── */}
+        <div className="flex-1 flex flex-col justify-between overflow-hidden py-1">
           {/* ═══════════════════════════════════════ STEP 1 ═══════════════════════════════════════ */}
           {step === 1 && (
-            <form onSubmit={handleStep1Submit} className="flex flex-col gap-1.5 animate-[fadeIn_0.4s_ease]">
-
-              {/* Full Name */}
-              <div className="flex flex-col gap-0.5">
-                <label className={labelClass}>الاسم الكامل</label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  placeholder="ادخل اسمك الكامل"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Email */}
-              <div className="flex flex-col gap-0.5">
-                <label className={labelClass}>البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  className={inputClass}
-                  placeholder="mail@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Password */}
-              <div className="flex flex-col gap-0.5">
-                <label className={labelClass}>كلمة المرور</label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  placeholder="كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => setIsPasswordTouched(true)}
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              {/* Confirm Password */}
-              <div className="flex flex-col gap-0.5">
-                <label className={labelClass}>تأكيد كلمة المرور</label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  placeholder="أعد إدخال كلمة المرور"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Match message + Strength bar */}
-              <div className="mt-1.5 mb-1.5 w-full">
-                {confirmPassword.length > 0 && (
-                  <small
-                    className={`block text-[0.7rem] font-[Cairo,sans-serif] mb-1 font-semibold ${
-                      isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                    }`}
-                  >
-                    {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
-                  </small>
-                )}
-
-                {/* Strength track */}
-                <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
-                  <div
-                    className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
-                    style={{
-                      width: `${strengthPercentage}%`,
-                      backgroundColor: getStrengthColor(passedCount),
-                    }}
+            <form onSubmit={handleStep1Submit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
+              <div className="space-y-1">
+                {/* Full Name */}
+                <div className="flex flex-col gap-0.5">
+                  <label className={labelClass}>الاسم الكامل</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    placeholder="ادخل اسمك الكامل"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
                   />
                 </div>
-              </div>
 
-              {/* Password requirements checklist */}
-              {showPasswordRequirements && (
-                <ul className="list-none p-0 mt-1 text-[0.65rem] font-[Cairo,sans-serif] flex flex-col gap-0.5">
-                  {[
-                    { key: 'length', label: '8 أحرف على الأقل' },
-                    { key: 'uppercase', label: 'حرف كبير (A-Z)' },
-                    { key: 'lowercase', label: 'حرف صغير (a-z)' },
-                    { key: 'number', label: 'رقم (0-9)' },
-                    { key: 'special', label: 'رمز خاص (@$!%*?&)' },
-                  ].map(({ key, label }) => (
-                    <li
-                      key={key}
-                      className={`relative pr-3.5 transition-colors duration-300 ${
-                        reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                {/* Email */}
+                <div className="flex flex-col gap-0.5">
+                  <label className={labelClass}>البريد الإلكتروني</label>
+                  <input
+                    type="email"
+                    className={inputClass}
+                    placeholder="mail@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="flex flex-col gap-0.5">
+                  <label className={labelClass}>كلمة المرور</label>
+                  <input
+                    type="password"
+                    className={inputClass}
+                    placeholder="كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setIsPasswordTouched(true)}
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                {/* Confirm Password */}
+                <div className="flex flex-col gap-0.5">
+                  <label className={labelClass}>تأكيد كلمة المرور</label>
+                  <input
+                    type="password"
+                    className={inputClass}
+                    placeholder="أعد إدخال كلمة المرور"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Match message + Strength track */}
+                <div className="mt-1 mb-1 w-full">
+                  {confirmPassword.length > 0 && (
+                    <small
+                      className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
+                        isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
                       }`}
                     >
-                      <span className="absolute right-0 text-[0.6rem]">
-                        {reqs[key] ? '✔' : '✖'}
-                      </span>
-                      {label}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
+                    </small>
+                  )}
 
-              {/* Next button */}
-              <button
-                type="submit"
-                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-9 min-h-9 font-semibold text-[0.85rem] font-[Cairo,sans-serif] flex items-center justify-center my-2 transition-colors cursor-pointer"
-              >
-                التالي
-              </button>
+                  {/* Strength track */}
+                  <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
+                    <div
+                      className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
+                      style={{
+                        width: `${strengthPercentage}%`,
+                        backgroundColor: getStrengthColor(passedCount),
+                      }}
+                    />
+                  </div>
+                </div>
 
-              {/* Divider */}
-              <div className="flex items-center gap-2.5 mb-1">
-                <hr className="flex-1 border-white/20" />
-                <span className="text-white/60 text-[0.7rem] font-[Cairo,sans-serif]">أو</span>
-                <hr className="flex-1 border-white/20" />
+                {/* Password requirements checklist (Compact 2-column Grid) */}
+                {showPasswordRequirements && (
+                  <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
+                    {[
+                      { key: 'length', label: '8 أحرف على الأقل' },
+                      { key: 'uppercase', label: 'حرف كبير (A-Z)' },
+                      { key: 'lowercase', label: 'حرف صغير (a-z)' },
+                      { key: 'number', label: 'رقم (0-9)' },
+                      { key: 'special', label: 'رمز خاص (@$!%*?&)' },
+                    ].map(({ key, label }) => (
+                      <li
+                        key={key}
+                        className={`relative pr-3 transition-colors duration-300 ${
+                          reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                        }`}
+                      >
+                        <span className="absolute right-0 text-[0.55rem]">
+                          {reqs[key] ? '✔' : '✖'}
+                        </span>
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
-              {/* Google register */}
-              <button
-                type="button"
-                onClick={handleGoogleAuth}
-                className="w-full py-1.5 px-3.5 bg-white text-[#333] border-0 rounded-full font-[Cairo,sans-serif] text-[0.8rem] font-semibold cursor-pointer flex items-center justify-center gap-2 mb-1 hover:bg-gray-100 shadow-sm transition-colors"
-              >
-                <GoogleIcon />
-                <span>التسجيل بواسطة Google</span>
-              </button>
-
-              {/* Switch to login */}
-              <div className="text-center mt-1 text-[0.75rem] text-white/80 font-[Tajawal,sans-serif]">
-                لديك حساب بالفعل؟{' '}
-                <Link
-                  to="/login"
-                  className="text-white font-bold no-underline hover:underline font-[Cairo,sans-serif]"
+              {/* Step 1 Actions & Footer */}
+              <div className="space-y-1 pt-1">
+                {/* Next button */}
+                <button
+                  type="submit"
+                  className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  سجل الدخول
-                </Link>
+                  التالي
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-2">
+                  <hr className="flex-1 border-white/20" />
+                  <span className="text-white/60 text-[0.68rem] font-2">أو</span>
+                  <hr className="flex-1 border-white/20" />
+                </div>
+
+                {/* Google register */}
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  className="w-full py-1.5 px-3 bg-white text-[#333] border-0 rounded-full font-2 text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:bg-gray-100 shadow-sm transition-colors"
+                >
+                  <GoogleIcon />
+                  <span>التسجيل بواسطة Google</span>
+                </button>
+
+                {/* Switch to login */}
+                <div className="text-center text-[0.72rem] text-white/80 font-2">
+                  لديك حساب بالفعل؟{' '}
+                  <Link
+                    to="/login"
+                    className="text-white font-bold no-underline hover:underline font-2"
+                  >
+                    سجل الدخول
+                  </Link>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-[0.62rem] font-2">
+                  <p className="text-white/50 leading-tight">
+                    هل تواجه مشكلة؟ تواصل معنا عبر{' '}
+                    <span className="text-white/70">Athar@gmail.com</span>
+                  </p>
+                </div>
               </div>
             </form>
           )}
 
           {/* ═══════════════════════════════════════ STEP 2 ═══════════════════════════════════════ */}
           {step === 2 && (
-            <form onSubmit={handleStep2Submit} className="flex flex-col gap-1.5 animate-[fadeIn_0.4s_ease]">
+            <form onSubmit={handleStep2Submit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
+              <div className="space-y-1.5">
+                {/* Age + Gender row */}
+                <div className="flex gap-2 w-full items-end">
+                  {/* Age */}
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <label className={labelClass}>السن</label>
+                    <input
+                      type="number"
+                      className={inputClass}
+                      placeholder="السن"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      min={5}
+                      max={100}
+                      required
+                    />
+                  </div>
 
-              {/* Age + Gender row */}
-              <div className="flex gap-2 w-full items-end">
-                {/* Age */}
-                <div className="flex-1 flex flex-col gap-0.5">
-                  <label className={labelClass}>السن</label>
+                  {/* Gender */}
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <label className={labelClass}>الجنس</label>
+                    <div className="flex gap-2 bg-black/15 border border-white/10 rounded-full h-8 items-center px-3">
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="male"
+                          checked={gender === 'male'}
+                          onChange={(e) => setGender(e.target.value)}
+                          className="radio radio-xs radio-info"
+                          required
+                        />
+                        <span className="text-white text-[0.75rem] font-2">ذكر</span>
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="female"
+                          checked={gender === 'female'}
+                          onChange={(e) => setGender(e.target.value)}
+                          className="radio radio-xs radio-info"
+                        />
+                        <span className="text-white text-[0.75rem] font-2">أنثى</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="flex flex-col gap-0.5">
+                  <label className={labelClass}>رقم الهاتف</label>
                   <input
-                    type="number"
+                    type="tel"
                     className={inputClass}
-                    placeholder="السن"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    min={5}
-                    max={100}
+                    placeholder="010********"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     required
                   />
                 </div>
 
-                {/* Gender */}
-                <div className="flex-1 flex flex-col gap-0.5">
-                  <label className={labelClass}>الجنس</label>
-                  <div className="flex gap-2 bg-black/15 border border-white/10 rounded-full h-9 items-center px-4">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="male"
-                        checked={gender === 'male'}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="radio radio-xs radio-info"
-                        required
-                      />
-                      <span className="text-white text-[0.78rem] font-[Cairo,sans-serif]">ذكر</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="female"
-                        checked={gender === 'female'}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="radio radio-xs radio-info"
-                      />
-                      <span className="text-white text-[0.78rem] font-[Cairo,sans-serif]">أنثى</span>
-                    </label>
+                {/* Country + City row */}
+                <div className="flex gap-2 w-full items-end">
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <label className={labelClass}>الدولة</label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="فلسطين"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <label className={labelClass}>المدينة</label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="القدس"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Phone */}
-              <div className="flex flex-col gap-0.5">
-                <label className={labelClass}>رقم الهاتف</label>
-                <input
-                  type="tel"
-                  className={inputClass}
-                  placeholder="010********"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Country + City row */}
-              <div className="flex gap-2 w-full items-end">
-                <div className="flex-1 flex flex-col gap-0.5">
-                  <label className={labelClass}>الدولة</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="فلسطين"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex-1 flex flex-col gap-0.5">
-                  <label className={labelClass}>المدينة</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="القدس"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Complete registration button */}
-              <button
-                type="submit"
-                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-9 min-h-9 font-semibold text-[0.85rem] font-[Cairo,sans-serif] flex items-center justify-center mt-4 mb-3 transition-colors cursor-pointer"
-              >
-                إتمام التسجيل
-              </button>
-
-              {/* Back button */}
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-[Cairo,sans-serif] text-[0.85rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors mt-2"
-              >
-                رجوع للخطوة السابقة
-              </button>
-
-              {/* Switch to login */}
-              <div className="text-center mt-3 text-[0.75rem] text-white/80 font-[Tajawal,sans-serif]">
-                لديك حساب بالفعل؟{' '}
-                <Link
-                  to="/login"
-                  className="text-white font-bold no-underline hover:underline font-[Cairo,sans-serif]"
+              {/* Step 2 Actions & Footer */}
+              <div className="space-y-1.5 pt-2">
+                {/* Complete registration button */}
+                <button
+                  type="submit"
+                  className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  سجل الدخول
-                </Link>
+                  إتمام التسجيل
+                </button>
+
+                {/* Back button */}
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.8rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors"
+                >
+                  رجوع للخطوة السابقة
+                </button>
+
+                {/* Switch to login */}
+                <div className="text-center text-[0.72rem] text-white/80 font-2">
+                  لديك حساب بالفعل؟{' '}
+                  <Link
+                    to="/login"
+                    className="text-white font-bold no-underline hover:underline font-2"
+                  >
+                    سجل الدخول
+                  </Link>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-[0.62rem] font-2">
+                  <p className="text-white/50 leading-tight">
+                    هل تواجه مشكلة؟ تواصل معنا عبر{' '}
+                    <span className="text-white/70">Athar@gmail.com</span>
+                  </p>
+                </div>
               </div>
             </form>
           )}
-
-          {/* Footer */}
-          <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] pt-2 pb-1">
-            <p className="text-white/50 leading-tight">
-              هل تواجه مشكلة؟ تواصل معنا عبر{' '}
-              <span className="text-white/70">Athar@gmail.com</span>
-            </p>
-          </div>
         </div>
       </AuthCard>
     </AuthLayout>

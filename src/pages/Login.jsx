@@ -17,15 +17,15 @@ function GoogleIcon() {
 
 /* ── Shared auth input styling ── */
 const inputClass =
-  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
+  'w-full bg-black/15 border border-white/10 text-white rounded-full h-8 min-h-8 px-3.5 text-[0.78rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
 
 /* ── Shared label styling ── */
-const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
+const labelClass = 'block text-[0.75rem] mb-0.5 text-white/90 font-2';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginGuest } = useAuth();
+  const { login } = useAuth();
 
   const handleGoogleAuth = () => {
     alert('سيتم التوجيه لتسجيل الدخول عبر Google...');
@@ -37,7 +37,6 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Save token and navigate to intended destination or library
     login('sample-auth-token', { name: 'User' });
     const from = location.state?.from?.pathname || '/home';
     navigate(from, { replace: true });
@@ -47,11 +46,11 @@ export default function Login() {
     <AuthLayout>
       <AuthCard>
         {/* ── Tab bar ── */}
-        <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
+        <div className="flex bg-white/15 p-1 rounded-xl mb-2 gap-1 shrink-0">
           {/* Login tab — active */}
           <button
             type="button"
-            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
+            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
           >
             تسجيل الدخول
           </button>
@@ -59,109 +58,109 @@ export default function Login() {
           {/* Signup tab — inactive → navigate to /signup */}
           <Link
             to="/signup"
-            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
+            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
           >
             إنشاء حساب
           </Link>
         </div>
 
-        {/* ── Scrollable form area ── */}
-        <div
-          className="overflow-y-auto pr-[3px]"
-          style={{ maxHeight: 'calc(100% - 80px)' }}
-        >
-          <h2 className="font-1 text-[1.3rem] font-bold mb-2">
-            تسجيل الدخول
-          </h2>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-1.5">
-            {/* Email / Username */}
-            <div className="flex flex-col gap-0.5">
-              <label className={labelClass}>البريد الإلكتروني أو اسم المستخدم</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="ادخل البريد الإلكتروني أو اسم المستخدم"
-                required
-                minLength={3}
-                maxLength={30}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-0.5">
-              <label className={labelClass}>كلمة المرور</label>
-              <input
-                type="password"
-                className={inputClass}
-                placeholder="كلمة المرور"
-                required
-                minLength={8}
-              />
-            </div>
-
-            {/* Forgot password */}
-            <div className="text-left mb-1">
-              <a
-                href="#"
-                className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif]"
-              >
-                هل نسيت كلمة المرور؟
-              </a>
-            </div>
-
-            {/* Login button */}
-            <button
-              type="submit"
-              className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-2 transition-colors cursor-pointer"
-            >
+        {/* ── Form content container (No scrollbar, scaled to fit) ── */}
+        <div className="flex-1 flex flex-col justify-between overflow-hidden py-1">
+          <div>
+            <h2 className="font-1 text-[1.15rem] font-bold mb-2">
               تسجيل الدخول
-            </button>
+            </h2>
 
-            {/* Divider */}
-            <div className="flex items-center my-1.5 gap-2.5">
-              <hr className="flex-1 border-white/20" />
-              <span className="text-white/60 text-[0.7rem] font-2">أو</span>
-              <hr className="flex-1 border-white/20" />
-            </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-1.5">
+              {/* Email / Username */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>البريد الإلكتروني أو اسم المستخدم</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="ادخل البريد الإلكتروني أو اسم المستخدم"
+                  required
+                  minLength={3}
+                  maxLength={30}
+                />
+              </div>
 
-            {/* Google login */}
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              className="w-full py-1.5 px-3.5 bg-white text-[#333] border-0 rounded-full font-2 text-[0.8rem] font-semibold cursor-pointer flex items-center justify-center gap-2 mb-1.5 hover:bg-gray-100 shadow-sm transition-colors"
-            >
-              <GoogleIcon />
-              <span>المتابعة باستخدام Google</span>
-            </button>
+              {/* Password */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>كلمة المرور</label>
+                <input
+                  type="password"
+                  className={inputClass}
+                  placeholder="كلمة المرور"
+                  required
+                  minLength={8}
+                />
+              </div>
 
-            {/* Guest login */}
-            <button
-              type="button"
-              onClick={handleGuestAuth}
-              className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.85rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors"
-            >
-              دخول كضيف
-            </button>
-          </form>
+              {/* Forgot password */}
+              <div className="text-left mb-0.5">
+                <a
+                  href="#"
+                  className="text-white/80 text-[0.72rem] no-underline hover:underline font-2"
+                >
+                  هل نسيت كلمة المرور؟
+                </a>
+              </div>
 
-          {/* Switch to signup */}
-          <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2">
-            ليس لديك حساب؟{' '}
-            <Link
-              to="/signup"
-              className="text-white font-bold no-underline hover:underline font-2"
-            >
-              سجل الآن
-            </Link>
+              {/* Login button */}
+              <button
+                type="submit"
+                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center my-1 transition-colors cursor-pointer"
+              >
+                تسجيل الدخول
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center my-1 gap-2">
+                <hr className="flex-1 border-white/20" />
+                <span className="text-white/60 text-[0.68rem] font-2">أو</span>
+                <hr className="flex-1 border-white/20" />
+              </div>
+
+              {/* Google login */}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                className="w-full py-1.5 px-3 bg-white text-[#333] border-0 rounded-full font-2 text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-2 mb-1 hover:bg-gray-100 shadow-sm transition-colors"
+              >
+                <GoogleIcon />
+                <span>المتابعة باستخدام Google</span>
+              </button>
+
+              {/* Guest login */}
+              <button
+                type="button"
+                onClick={handleGuestAuth}
+                className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.8rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors"
+              >
+                دخول كضيف
+              </button>
+            </form>
           </div>
 
-          {/* Footer */}
-          <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-2 pb-1">
-            <p className="text-white/50 leading-tight">
-              هل تواجه مشكلة؟ تواصل معنا عبر{' '}
-              <span className="text-white/70">Athar@gmail.com</span>
-            </p>
+          {/* Bottom info & Switch to signup */}
+          <div className="space-y-1 pt-1">
+            <div className="text-center text-[0.72rem] text-white/80 font-2">
+              ليس لديك حساب؟{' '}
+              <Link
+                to="/signup"
+                className="text-white font-bold no-underline hover:underline font-2"
+              >
+                سجل الآن
+              </Link>
+            </div>
+
+            <div className="text-center text-[0.62rem] font-2">
+              <p className="text-white/50 leading-tight">
+                هل تواجه مشكلة؟ تواصل معنا عبر{' '}
+                <span className="text-white/70">Athar@gmail.com</span>
+              </p>
+            </div>
           </div>
         </div>
       </AuthCard>

@@ -5,8 +5,10 @@ import { IoBookOutline } from "react-icons/io5";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
+import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
 import { useTheme } from "../hooks/useTheme";
+import { useAuth } from "../context/AuthContext";
 
 // ─────────────────────────────────────────────
 //  Static mock fallback data (in case API is offline)
@@ -20,27 +22,16 @@ const MOCK_CATEGORIES = [
   { id: 6, label: "التفسير" },
 ];
 
-/*
-const MOCK_BOOKS = [
-  { id: 1, title: "متن الآجرومية",         author: "ابن آجروم",             level: "مبتدئ",  category: "اللغة العربية" },
-  { id: 2, title: "صحيح البخاري",           author: "الإمام البخاري",        level: "متقدم",  category: "الحديث" },
-  { id: 3, title: "عمدة الأحكام",           author: "عبد الغني المقدسي",    level: "متوسط",  category: "الحديث" },
-  { id: 4, title: "الأربعون النووية",       author: "الإمام النووي",         level: "مبتدئ",  category: "الحديث" },
-  { id: 5, title: "رياض الصالحين",          author: "الإمام النووي",         level: "متوسط",  category: "الحديث" },
-  { id: 6, title: "متن العقيدة الطحاوية",  author: "الإمام الطحاوي",        level: "متوسط",  category: "العقيدة" },
-  { id: 7, title: "الورقات",                author: "إمام الحرمين الجويني", level: "مبتدئ",  category: "الفقه" },
-  { id: 8, title: "متن أبي شجاع",           author: "أبو شجاع الأصفهاني",   level: "مبتدئ",  category: "الفقه" },
-];
-*/
-
 // ─────────────────────────────────────────────
 //  Library Page
 // ─────────────────────────────────────────────
 export default function Library() {
-  const [searchQuery,     setSearchQuery]    = useState("");
-  const [activeCategory,  setActiveCategory] = useState("الكل");
-  const [books,           setBooks]          = useState([]);
-  const [isLoading,       setIsLoading]      = useState(true);
+  const { isGuest } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("الكل");
+  const [books, setBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
   // ── Fetch books from real Backend API ──
   useEffect(() => {
@@ -66,6 +57,10 @@ export default function Library() {
 
   // ── Smart navigation: check sections before deciding which page to go to ──
   const handleBookClick = async (book) => {
+    if (isGuest) {
+      setIsGuestModalOpen(true);
+      return;
+    }
     try {
       const sections = await booksService.getBookSections(book.id);
       if (Array.isArray(sections) && sections.length > 1) {
@@ -195,7 +190,11 @@ export default function Library() {
                 onClick={() => handleBookClick(book)}
                 onAdd={(e) => {
                   e.stopPropagation();
-                  console.log("Adding book:", book.title);
+                  if (isGuest) {
+                    setIsGuestModalOpen(true);
+                  } else {
+                    console.log("Adding book:", book.title);
+                  }
                 }}
               />
             ))}
@@ -216,6 +215,14 @@ export default function Library() {
             </button>
           </div>
         )}
+
+        {/* ── Guest Login Modal ── */}
+        <GuestLoginModal
+          isOpen={isGuestModalOpen}
+          onClose={() => setIsGuestModalOpen(false)}
+          title="تسجيل الدخول فتح الكتب"
+          message="تصفح وحفظ هذا المتن يتطلب تسجيل الدخول إلى حسابك."
+        />
 
       </main>
     </div>
