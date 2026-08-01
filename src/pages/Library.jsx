@@ -197,10 +197,13 @@ export default function Library() {
         ) : filteredBooks.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {filteredBooks.map((book) => (
-              <button
+              <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleBookClick(book)}
-                className="block text-start w-full"
+                onKeyDown={(e) => e.key === "Enter" && handleBookClick(book)}
+                className="block text-start w-full cursor-pointer"
                 aria-label={book.title}
               >
                 <Card
@@ -214,7 +217,7 @@ export default function Library() {
                     console.log("Adding book:", book.title);
                   }}
                 />
-              </button>
+              </div>
             ))}
           </div>
         ) : (

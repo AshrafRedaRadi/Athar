@@ -5,7 +5,8 @@ import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import Sidebar from "../components/Sidebar";
 import Dock from "../components/Dock";
-import StudyHeader from "../components/StudyHeader";
+import PageHeader from "../components/PageHeader";
+import StudyToolbar from "../components/StudyToolbar";
 import HadithCard from "../components/HadithCard";
 import RecordButton from "../components/RecordButton";
 import AudioPlayer from "../components/AudioPlayer";
@@ -329,18 +330,18 @@ export default function Study() {
               </div>
             ) : currentHadith ? (
               <>
-                <StudyHeader 
-                  userAvatar={user} 
+                {/* Top header navigation */}
+                <PageHeader />
+
+                {/* Hadith navigation and index toolbar */}
+                <StudyToolbar 
                   bookId={bookId}
                   sectionId={sectionId}
-                  onExplanationToggle={() => setIsExplanationOpen(!isExplanationOpen)} 
-                  isExplanationOpen={isExplanationOpen}
                   onPrevHadith={goToPrev}
                   onNextHadith={goToNext}
                   hasPrev={currentHadithIndex > 0}
                   hasNext={currentHadithIndex < hadithsList.length - 1}
                   hadithLabel={currentHadith.hadithNumber}
-                  onToggleHide={() => setIsHidden(!isHidden)}
                 />
                
                 {/* Hadith Card Area */}
