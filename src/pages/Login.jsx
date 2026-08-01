@@ -1,25 +1,23 @@
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
 import AuthCard from '../components/auth/AuthCard';
 import { useAuth } from '../context/AuthContext';
 
-/* ── Google SVG icon ── */
 function GoogleIcon() {
   return (
     <svg className="w-[14px] h-[14px]" viewBox="0 0 48 48">
       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
       <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
     </svg>
   );
 }
 
-/* ── Shared auth input styling ── */
 const inputClass =
   'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
 
-/* ── Shared label styling ── */
 const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
 
 export default function Login() {
@@ -27,28 +25,40 @@ export default function Login() {
   const location = useLocation();
   const { login, loginGuest } = useAuth();
 
+  const [emailOrUsername, setEmailOrUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleGoogleAuth = () => {
     alert('سيتم التوجيه لتسجيل الدخول عبر Google...');
   };
 
   const handleGuestAuth = () => {
+    loginGuest();
     navigate('/onboarding/1', { state: { from: 'guest' } });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Save token and navigate to intended destination or library
-    login('sample-auth-token', { name: 'User' });
-    const from = location.state?.from?.pathname || '/home';
-    navigate(from, { replace: true });
+    setErrorMsg('');
+    setIsSubmitting(true);
+
+    try {
+      await login(emailOrUsername, password);
+      const from = location.state?.from?.pathname || '/home';
+      navigate(from, { replace: true });
+    } catch (err) {
+      setErrorMsg(err.message || 'فشل تسجيل الدخول، يُرجى التحقق من البيانات.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <AuthLayout>
       <AuthCard>
-        {/* ── Tab bar ── */}
         <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
-          {/* Login tab — active */}
           <button
             type="button"
             className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
@@ -56,7 +66,6 @@ export default function Login() {
             تسجيل الدخول
           </button>
 
-          {/* Signup tab — inactive → navigate to /signup */}
           <Link
             to="/signup"
             className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
@@ -65,7 +74,6 @@ export default function Login() {
           </Link>
         </div>
 
-        {/* ── Scrollable form area ── */}
         <div
           className="overflow-y-auto pr-[3px]"
           style={{ maxHeight: 'calc(100% - 80px)' }}
@@ -74,33 +82,38 @@ export default function Login() {
             تسجيل الدخول
           </h2>
 
+          {errorMsg && (
+            <div className="bg-red-500/20 border border-red-500/50 text-red-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-1.5">
-            {/* Email / Username */}
+
             <div className="flex flex-col gap-0.5">
               <label className={labelClass}>البريد الإلكتروني أو اسم المستخدم</label>
               <input
                 type="text"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
                 className={inputClass}
                 placeholder="ادخل البريد الإلكتروني أو اسم المستخدم"
                 required
-                minLength={3}
-                maxLength={30}
               />
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-0.5">
               <label className={labelClass}>كلمة المرور</label>
               <input
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className={inputClass}
                 placeholder="كلمة المرور"
                 required
-                minLength={8}
               />
             </div>
 
-            {/* Forgot password */}
             <div className="text-left mb-1">
               <a
                 href="#"
@@ -110,22 +123,20 @@ export default function Login() {
               </a>
             </div>
 
-            {/* Login button */}
             <button
               type="submit"
-              className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-2 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-2 transition-colors cursor-pointer"
             >
-              تسجيل الدخول
+              {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
 
-            {/* Divider */}
             <div className="flex items-center my-1.5 gap-2.5">
               <hr className="flex-1 border-white/20" />
               <span className="text-white/60 text-[0.7rem] font-2">أو</span>
               <hr className="flex-1 border-white/20" />
             </div>
 
-            {/* Google login */}
             <button
               type="button"
               onClick={handleGoogleAuth}
@@ -135,7 +146,6 @@ export default function Login() {
               <span>المتابعة باستخدام Google</span>
             </button>
 
-            {/* Guest login */}
             <button
               type="button"
               onClick={handleGuestAuth}
@@ -145,7 +155,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Switch to signup */}
           <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2">
             ليس لديك حساب؟{' '}
             <Link
@@ -156,7 +165,6 @@ export default function Login() {
             </Link>
           </div>
 
-          {/* Footer */}
           <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-2 pb-1">
             <p className="text-white/50 leading-tight">
               هل تواجه مشكلة؟ تواصل معنا عبر{' '}

@@ -13,6 +13,7 @@ import Signup from './pages/Signup';
 import ListSection from './pages/ListSection';
 import ListHadith from './pages/ListHadith';
 import Onboarding from './pages/Onboarding';
+import Error_page from './pages/Error_page';
 
 function App() {
   return (
@@ -40,7 +41,7 @@ function App() {
           <Route path="/onboarding/:stepId" element={<Onboarding />} />
 
           {/* 404 */}
-          {/* <Route path="*" element={<NotFound />} /> */}
+          { <Route path="*" element={<Error_page />} /> }
         </Routes>
       </BrowserRouter>
     </AuthProvider>
