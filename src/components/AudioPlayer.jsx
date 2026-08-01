@@ -62,7 +62,7 @@ export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" })
               {isPlaying ? (
                 <IoPauseSharp className="text-sm" />
               ) : (
-                <IoPlaySharp className="text-sm" />
+                <IoPlaySharp className="text-sm translate-x-[1px]" />
               )}
             </button>
 
