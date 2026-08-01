@@ -13,17 +13,22 @@ const LEVEL_STYLES = {
 };
 
 // ─────────────────────────────────────────────
-//  Ultra-fluid Apple-like Spring Physics
+//  Ultra-smooth Spring Physics & Bezier Easing
 // ─────────────────────────────────────────────
-const SPRING_TRANSITION = {
+const SMOOTH_SPRING = {
   type: "spring",
-  stiffness: 220,
-  damping: 25,
-  mass: 0.8,
+  stiffness: 240,
+  damping: 26,
+  mass: 0.7,
+};
+
+const OVERLAY_TRANSITION = {
+  duration: 0.3,
+  ease: [0.16, 1, 0.3, 1],
 };
 
 /**
- * Card component with Ultra-Fluid Shared Element Transition (Layout Animation).
+ * Card component with Buttery-Smooth Shared Element Transition (Layout Animation).
  */
 export default function Card({
   id,
@@ -51,7 +56,9 @@ export default function Card({
       <motion.div
         layoutId={`card-container-${layoutKey}`}
         onClick={() => setIsExpanded(true)}
-        transition={SPRING_TRANSITION}
+        whileHover={{ scale: 1.02, y: -3 }}
+        whileTap={{ scale: 0.98 }}
+        transition={SMOOTH_SPRING}
         className="
           card bg-base-100 border border-base-200
           shadow-sm hover:shadow-xl
@@ -64,13 +71,13 @@ export default function Card({
         {/* Top: Cover Image */}
         <motion.div
           layoutId={`card-image-container-${layoutKey}`}
-          transition={SPRING_TRANSITION}
+          transition={SMOOTH_SPRING}
           className="relative w-full h-32 sm:h-38 lg:h-44 bg-base-200/80 dark:bg-base-300/50 p-2 flex items-center justify-center overflow-hidden shrink-0"
         >
           {coverImage ? (
             <motion.img
               layoutId={`card-image-${layoutKey}`}
-              transition={SPRING_TRANSITION}
+              transition={SMOOTH_SPRING}
               src={coverImage}
               alt={title}
               className="max-h-full max-w-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
@@ -98,13 +105,13 @@ export default function Card({
         {/* Bottom: Title & Author */}
         <motion.div
           layoutId={`card-body-${layoutKey}`}
-          transition={SPRING_TRANSITION}
+          transition={SMOOTH_SPRING}
           className="card-body p-3.5 sm:p-4 gap-1.5 flex-1 flex flex-col justify-between bg-base-100"
         >
           <div>
             <motion.h2
               layoutId={`card-title-${layoutKey}`}
-              transition={SPRING_TRANSITION}
+              transition={SMOOTH_SPRING}
               className="card-title font-1 font-bold text-sm sm:text-base lg:text-lg text-base-content leading-snug mb-0.5 group-hover:text-cyan-700 transition-colors duration-300 line-clamp-1"
             >
               {title}
@@ -112,7 +119,7 @@ export default function Card({
 
             <motion.div
               layoutId={`card-author-${layoutKey}`}
-              transition={SPRING_TRANSITION}
+              transition={SMOOTH_SPRING}
               className="flex flex-col gap-0.5"
             >
               <span className="text-[9px] sm:text-[10px] text-base-content/50 font-2">المؤلف</span>
@@ -136,7 +143,7 @@ export default function Card({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+              transition={OVERLAY_TRANSITION}
               onClick={() => setIsExpanded(false)}
               className="fixed inset-0 bg-black/65 backdrop-blur-md z-40 cursor-pointer"
             />
@@ -144,7 +151,7 @@ export default function Card({
             {/* Expanded Center Modal Dialog */}
             <motion.div
               layoutId={`card-container-${layoutKey}`}
-              transition={SPRING_TRANSITION}
+              transition={SMOOTH_SPRING}
               className="
                 relative card bg-base-100 border border-base-200/80
                 shadow-2xl w-full max-w-sm sm:max-w-md lg:max-w-lg max-h-[85vh] overflow-hidden
@@ -163,13 +170,13 @@ export default function Card({
               {/* Top Half: Scaled Cover Image */}
               <motion.div
                 layoutId={`card-image-container-${layoutKey}`}
-                transition={SPRING_TRANSITION}
+                transition={SMOOTH_SPRING}
                 className="relative w-full h-36 sm:h-44 lg:h-52 bg-base-200/90 dark:bg-base-300/60 p-3 flex items-center justify-center overflow-hidden shrink-0"
               >
                 {coverImage ? (
                   <motion.img
                     layoutId={`card-image-${layoutKey}`}
-                    transition={SPRING_TRANSITION}
+                    transition={SMOOTH_SPRING}
                     src={coverImage}
                     alt={title}
                     className="max-h-full max-w-full object-contain rounded-xl drop-shadow-md"
@@ -191,13 +198,13 @@ export default function Card({
               {/* Bottom Half: Detailed Text & Controls */}
               <motion.div
                 layoutId={`card-body-${layoutKey}`}
-                transition={SPRING_TRANSITION}
+                transition={SMOOTH_SPRING}
                 className="card-body p-5 gap-3.5 overflow-y-auto flex-1 bg-base-100"
               >
                 <div>
                   <motion.h2
                     layoutId={`card-title-${layoutKey}`}
-                    transition={SPRING_TRANSITION}
+                    transition={SMOOTH_SPRING}
                     className="font-1 font-bold text-lg sm:text-xl text-base-content leading-snug mb-0.5"
                   >
                     {title}
@@ -205,7 +212,7 @@ export default function Card({
 
                   <motion.div
                     layoutId={`card-author-${layoutKey}`}
-                    transition={SPRING_TRANSITION}
+                    transition={SMOOTH_SPRING}
                     className="text-xs sm:text-sm font-2 text-cyan-700 dark:text-cyan-400 font-semibold"
                   >
                     المؤلف: {author}
@@ -214,10 +221,10 @@ export default function Card({
 
                 {/* Additional Detailed Content Fades & Slides Up */}
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                  exit={{ opacity: 0, y: 6, transition: { duration: 0.12 } }}
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                   className="space-y-3.5 border-t border-base-200/80 pt-3.5"
                 >
                   <div className="flex items-center gap-2">
