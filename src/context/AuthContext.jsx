@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -16,44 +17,68 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initial verification or sync check from localStorage
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken) {
-      setToken(storedToken);
-      if (storedUser) {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
         try {
-          setUser(JSON.parse(storedUser));
-        } catch {
-          setUser(null);
-        }
-      }
-    } else {
-      setToken(null);
-      setUser(null);
-    }
+          const profileData = await apiFetch('/api/Account/profile');
+          setUser(profileData);
+          localStorage.setItem('user', JSON.stringify(profileData));
+        } catch (error) {
 
-    setIsLoading(false);
+          logout();
+        }
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  const login = (newToken, userData = null) => {
+  const login = async (emailOrUsername, password) => {
+    const responseData = await apiFetch('/api/Auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        emailOrUsername, 
+        password,
+      }),
+    });
+
+    const newToken = responseData.token;
+
     if (newToken) {
       localStorage.setItem('token', newToken);
       setToken(newToken);
+
+      try {
+        const userData = await apiFetch('/api/Account/profile');
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+      } catch {
+        setUser({ isGuest: false });
+      }
     }
-    if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    }
+    return responseData;
+  };
+
+  const register = async (registerData) => {
+    return await apiFetch('/api/Auth/register', {
+      method: 'POST',
+      body: JSON.stringify(registerData),
+    });
   };
 
   const loginGuest = () => {
     const guestUser = { name: 'ضيف أثر', isGuest: true };
-    login('guest-session-token', guestUser);
+    localStorage.setItem('user', JSON.stringify(guestUser));
+    setToken('guest-session-token');
+    setUser(guestUser);
   };
 
-  const logout = () => {
+
+    const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiration');
     localStorage.removeItem('user');
@@ -64,17 +89,18 @@ export function AuthProvider({ children }) {
   const value = {
     token,
     user,
-    isAuthenticated: Boolean(token),
+    isAuthenticated: Boolean(token) && !user?.isGuest,
     isGuest: Boolean(user?.isGuest),
     isLoading,
     login,
+    register,
     loginGuest,
     logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 }
