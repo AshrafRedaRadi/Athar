@@ -108,4 +108,37 @@ export const hadithsService = {
       }
     }
   },
+
+  /**
+   * Fetch explanations for a given hadith ID
+   * @param {number|string} hadithId
+   * @returns {Promise<object|Array>}
+   */
+  async getHadithExplanations(hadithId) {
+    if (!hadithId) return null;
+    try {
+      return await apiFetch(`/api/Hadiths/${hadithId}/explanations`);
+    } catch (err) {
+      console.warn("Error fetching hadith explanations:", err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Update last opened hadith on account for dashboard stats update
+   * Endpoint: PUT /api/Account/last-opened-hadith/{hadithId}
+   * @param {number|string} hadithId
+   * @returns {Promise<object>}
+   */
+  async updateLastOpenedHadith(hadithId) {
+    if (!hadithId) return null;
+    try {
+      return await apiFetch(`/api/Account/last-opened-hadith/${hadithId}`, {
+        method: "PUT",
+      });
+    } catch (err) {
+      console.warn("Could not update last opened hadith:", err.message);
+      return null;
+    }
+  },
 };

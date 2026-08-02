@@ -2,16 +2,19 @@ import React from "react";
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
-import { CURRENT_USER } from "../../constants/currentUser";
+import { useAuth } from "../../context/AuthContext";
+import defaultAvatar from "../../assets/user.png";
+import logoImg from "../../assets/logo.png";
 
 /**
  * Sidebar component with pure Tailwind CSS slide transition from the right.
- * Uses centralized CURRENT_USER data for consistent user identity across pages.
+ * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
 function Sidebar(props) {
-  const userAvatar = props.user || CURRENT_USER.avatar;
-  const userName = props.userName || CURRENT_USER.name;
-  const logoImg = props.logo || CURRENT_USER.logo;
+  const { user, isGuest } = useAuth();
+
+  const userName = props.userName || user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
+  const userAvatar = props.user || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
 
   return (
     <div>

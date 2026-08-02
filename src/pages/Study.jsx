@@ -274,13 +274,27 @@ export default function Study() {
 
   const { isGuest } = useAuth();
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [backendExplanations, setBackendExplanations] = useState(null);
 
-  // Automatically update progress to 1 (InProgress) when viewing a Hadith on Study page
+  // Automatically update progress & last opened hadith when viewing a Hadith on Study page
   useEffect(() => {
     if (!isGuest && currentHadith?.id) {
+      hadithsService.updateLastOpenedHadith(currentHadith.id).catch((err) => {
+        console.warn("Auto update last opened hadith error:", err.message);
+      });
       hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
         console.warn("Auto update hadith progress error:", err.message);
       });
+    }
+
+    if (currentHadith?.id) {
+      hadithsService.getHadithExplanations(currentHadith.id)
+        .then((data) => {
+          if (data) setBackendExplanations(data);
+        })
+        .catch((err) => {
+          console.warn("Fetch explanations error:", err.message);
+        });
     }
   }, [currentHadith?.id, isGuest]);
 
@@ -431,7 +445,7 @@ export default function Study() {
         onClose={() => setIsExplanationOpen(false)}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        explanation={currentHadith?.explanation}
+        explanation={backendExplanations || currentHadith?.explanation}
       />
 
       {/* ── Guest Login Modal ── */}

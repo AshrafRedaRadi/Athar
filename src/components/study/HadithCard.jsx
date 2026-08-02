@@ -10,13 +10,11 @@ export default function HadithCard({
   title,
   text = "",
   source,
-  mode = "reading",
   spokenWords = [],
   recitationStopped = false,
   isHidden: externalIsHidden,
-  onToggleHide: externalOnToggleHide
 }) {
-  const [internalIsHidden, setInternalIsHidden] = useState(true);
+  const [internalIsHidden] = useState(true);
 
   const isHidden = externalIsHidden !== undefined ? externalIsHidden : internalIsHidden;
 
@@ -95,7 +93,7 @@ export default function HadithCard({
 
         {/* ── Hadith text ── */}
         <div className="min-h-[200px] flex items-center justify-center">
-          <p className="font-4 text-2xl sm:text-3xl leading-[2.5] text-center text-base-content whitespace-pre-wrap">
+          <p className="font-4 font-normal text-xl sm:text-3xl leading-[2.5] text-center text-base-content whitespace-pre-wrap">
             {renderText()}
           </p>
         </div>

@@ -2,11 +2,11 @@ import userAvatar from "../assets/user.png";
 import logoImg from "../assets/logo.png";
 
 /**
- * Centralized mock user state for Athar platform.
- * (Will be connected to backend / auth context in future phase)
+ * Fallback user defaults for Athar platform.
+ * Dynamic user data is now fetched from Backend API (`/api/Account/profile`) via `AuthContext`.
  */
 export const CURRENT_USER = {
-  name: "أشرف رضا",
+  name: "ضيف أثر",
   avatar: userAvatar,
   logo: logoImg,
 };

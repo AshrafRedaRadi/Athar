@@ -3,12 +3,19 @@ import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
 import Dock from "./Dock";
-import { CURRENT_USER } from "../../constants/currentUser";
+import { useAuth } from "../../context/AuthContext";
+import defaultAvatar from "../../assets/user.png";
 
 /**
  * Unified Navbar component for Athar platform.
+ * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
 export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
+  const { user, isGuest } = useAuth();
+
+  const userName = user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
+  const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
   return (
     <>
       {/* Sidebar drawer component */}
@@ -26,17 +33,17 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
           htmlFor="sidebar-drawer"
           className="shrink-0 cursor-pointer hidden lg:block transition-transform hover:scale-105"
           aria-label="فتح القائمة والبروفايل"
-          title={`أهلاً بك، ${CURRENT_USER.name}`}
+          title={`أهلاً بك، ${userName}`}
         >
-          <Avatar src={CURRENT_USER.avatar} size="w-10" />
+          <Avatar src={userAvatar} size="w-10" />
         </label>
 
         {/* Mobile / Tablet Profile avatar (<lg) – static, does not open sidebar drawer */}
         <div
           className="shrink-0 block lg:hidden"
-          title={`أهلاً بك، ${CURRENT_USER.name}`}
+          title={`أهلاً بك، ${userName}`}
         >
-          <Avatar src={CURRENT_USER.avatar} size="w-10" />
+          <Avatar src={userAvatar} size="w-10" />
         </div>
 
         {/* Center slot (optional search bar or breadcrumbs) */}
