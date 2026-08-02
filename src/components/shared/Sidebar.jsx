@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
@@ -74,20 +75,38 @@ function Sidebar(props) {
               { id: "review",       label: "المراجعة",   icon: <BsClipboard2Check />,  href: "#" },
               { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "#" },
               { id: "settings",     label: "الإعدادت",   icon: <IoSettingsOutline />,   href: "#" },
-            ].map((item) => (
-              <a
-                key={item.id}
-                href={item.href}
-                dir="rtl"
-                className={`btn font-2 rounded-xl justify-start w-full ${
-                  props.activePage === item.id
-                    ? "bg-cyan-700 text-white border-transparent"
-                    : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
-                }`}
-              >
-                {item.icon}  {item.label}
-              </a>
-            ))}
+            ].map((item) => {
+              const isActive = props.activePage === item.id;
+              const classes = `btn font-2 rounded-xl justify-start w-full ${
+                isActive
+                  ? "bg-cyan-700 text-white border-transparent"
+                  : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
+              }`;
+
+              if (item.href.startsWith("/")) {
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.href}
+                    dir="rtl"
+                    className={classes}
+                  >
+                    {item.icon}  {item.label}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  dir="rtl"
+                  className={classes}
+                >
+                  {item.icon}  {item.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

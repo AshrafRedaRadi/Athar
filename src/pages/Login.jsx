@@ -119,12 +119,12 @@ export default function Login() {
             </div>
 
             <div className="text-left mb-1">
-              <a
-                href="#"
-                className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif]"
+              <button
+                type="button"
+                className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif] bg-transparent border-0 p-0 cursor-pointer"
               >
                 هل نسيت كلمة المرور؟
-              </a>
+              </button>
             </div>
 
             <button
