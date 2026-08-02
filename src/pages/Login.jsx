@@ -79,10 +79,10 @@ export default function Login() {
         </div>
 
         <div
-          className="overflow-y-auto pr-[3px]"
+          className="overflow-y-auto pr-[3px] h-full flex-1 flex flex-col justify-start"
           style={{ maxHeight: 'calc(100% - 80px)' }}
         >
-          <h2 className="font-1 text-[1.3rem] font-bold mb-2">
+          <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0">
             تسجيل الدخول
           </h2>
 
