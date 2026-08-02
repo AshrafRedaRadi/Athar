@@ -39,17 +39,17 @@ export default function Card({
     description ||
     "متن شريف يتضمن أصول العبادات والأحكام والأخلاق الإيمانية، حظي باهتمام واسع ودراسة مستفيضة من كبار العلماء، ويعتبر من أمهات الكتب المقررة لطلاب العلم.";
 
-  const renderCover = (heightClass, showLevelBadge = true, categoryPosClass = "top-2.5 right-2.5") => (
+  const renderCover = (heightClass = "h-32 sm:h-38 lg:h-44", showLevelBadge = true, categoryPosClass = "top-2.5 right-2.5") => (
     <motion.div
       layoutId={`card-image-container-${layoutKey}`}
-      className={`relative w-full ${heightClass} bg-base-200/80 dark:bg-base-300/50 p-2 flex items-center justify-center overflow-hidden shrink-0`}
+      className={`relative w-full ${heightClass} p-0 flex items-center justify-center overflow-hidden shrink-0 rounded-t-2xl`}
     >
       {coverImage ? (
         <motion.img
           layoutId={`card-image-${layoutKey}`}
           src={coverImage}
           alt={title}
-          className="max-h-full max-w-full object-contain rounded-lg drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-cyan-900/15 via-cyan-800/25 to-base-300 flex flex-col items-center justify-center gap-1 text-cyan-700 dark:text-cyan-400">

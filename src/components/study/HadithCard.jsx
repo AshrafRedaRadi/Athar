@@ -4,12 +4,12 @@ import React, { useState } from "react";
  * HadithCard — displays the hadith text with hide/reveal toggle
  * and speech recognition recitation coloring support.
  */
-export default function HadithCard({ 
+export default function HadithCard({
   bookTitle,
-  hadithLabel, 
-  title, 
-  text = "", 
-  source, 
+  hadithLabel,
+  title,
+  text = "",
+  source,
   mode = "reading",
   spokenWords = [],
   recitationStopped = false,
