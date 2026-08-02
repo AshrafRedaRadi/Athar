@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { IoPlaySharp, IoPauseSharp } from "react-icons/io5";
 import { RiForward10Line, RiReplay10Line } from "react-icons/ri";
 import { HiOutlineSpeakerWave } from "react-icons/hi2";
@@ -6,19 +6,12 @@ import { TbRepeat } from "react-icons/tb";
 import { MdSpeed } from "react-icons/md";
 
 /**
- * AudioPlayer — compact centered audio bar.
- * Shown ONLY on desktop screens (lg+). On mobile/tablet (<lg), it is hidden
- * and playback is triggered via the RecordButton long-press options ("استمع").
- *
- * Props:
- *  - hadithLabel  {string}  e.g. "الحديث الأول"
- *  - reader       {string}  e.g. "القارئ: أحمد النفيس"
- *  - duration     {string}  e.g. "01:42"
+ * AudioPlayer — compact centered audio bar for Study page.
  */
 export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState("00:15");
-  const [progress, setProgress] = useState(15); // percentage
+  const [progress, setProgress] = useState(15);
 
   return (
     <div
@@ -29,7 +22,6 @@ export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" })
     >
       <div className="flex items-center gap-2 px-3 py-1.5">
 
-        {/* ── Right: Hadith info ── */}
         <div className="flex items-center gap-2 min-w-0 shrink-0">
           <HiOutlineSpeakerWave className="text-lg text-cyan-700 shrink-0" />
           <div className="min-w-0">
@@ -42,10 +34,7 @@ export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" })
           </div>
         </div>
 
-        {/* ── Center: Controls + progress ── */}
         <div className="flex-1 flex flex-col items-center gap-0.5">
-
-          {/* Playback controls */}
           <div className="flex items-center gap-1">
             <button
               className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-cyan-700"
@@ -74,7 +63,6 @@ export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" })
             </button>
           </div>
 
-          {/* Progress bar */}
           <div className="flex items-center gap-1.5 w-full">
             <span className="font-2 text-[9px] text-base-content/40 min-w-[28px] text-center">
               {duration}
@@ -94,7 +82,6 @@ export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" })
           </div>
         </div>
 
-        {/* ── Left: Extra controls (no share icon) ── */}
         <div className="hidden sm:flex items-center gap-0.5 shrink-0">
           <button
             className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-cyan-700"

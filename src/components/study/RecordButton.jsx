@@ -1,16 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { BsMicFill, BsStopFill } from "react-icons/bs";
 import { IoPlaySharp, IoPauseSharp } from "react-icons/io5";
 import { HiOutlineSpeakerWave } from "react-icons/hi2";
 
 /**
- * RecordButton — glowing gradient action button.
- * - On Mobile (< lg): Long-press menu provides "استمع" (Listen) and "تلاوة" (Recite).
- *   - Selecting "استمع" turns button icon to Play (IoPlaySharp ▶).
- *   - Playing audio turns button icon to Pause (IoPauseSharp ||).
- *   - Reciting turns button icon to Stop square (BsStopFill ⏹).
- *   - Stopping resets button icon back to Mic (BsMicFill 🎙️).
- * - On Desktop (lg+): Direct toggle for recitation.
+ * RecordButton — glowing gradient action button for Study mode.
  */
 export default function RecordButton({ 
   isRecording = false, 
@@ -24,7 +18,6 @@ export default function RecordButton({
   const timerRef = useRef(null);
   const isLongPress = useRef(false);
 
-  // Clear timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -32,14 +25,13 @@ export default function RecordButton({
   }, []);
 
   const startPressTimer = () => {
-    // Enable long press menu ONLY on mobile/small screens (< 1024px)
     if (window.innerWidth >= 1024) return;
 
     isLongPress.current = false;
     timerRef.current = setTimeout(() => {
       isLongPress.current = true;
       setShowOptions(true);
-    }, 500); // 500ms long press threshold
+    }, 500);
   };
 
   const cancelPressTimer = () => {
@@ -57,27 +49,23 @@ export default function RecordButton({
       return;
     }
 
-    // If currently reciting -> stop recitation and reset to mic
     if (isRecording) {
       if (onToggle) onToggle();
       return;
     }
 
-    // If currently playing audio -> pause audio playback (turn into Play ready ▶)
     if (isPlayingAudio) {
       setIsPlayingAudio(false);
       setIsListenReady(true);
       return;
     }
 
-    // Listening mode ready (Play ▶) -> user clicks Play to start playback (turns into Pause ||)
     if (isListenReady) {
       setIsPlayingAudio(true);
       if (onListen) onListen();
       return;
     }
 
-    // Default mode -> toggle recitation
     if (onToggle) onToggle();
   };
 
@@ -96,7 +84,6 @@ export default function RecordButton({
 
   return (
     <>
-      {/* Overlay to dismiss options menu when clicking outside */}
       {showOptions && (
         <div 
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
@@ -104,17 +91,12 @@ export default function RecordButton({
         />
       )}
 
-      {/* Position container:
-          - Mobile (< lg): bottom-20 right-6 (just above mobile Dock)
-          - Desktop (lg+): next to AudioPlayer (bottom-1.5, offset from center)
-      */}
       <div 
         className="fixed z-45 transition-all duration-300
                    bottom-20 right-6
                    lg:bottom-1.5 lg:left-[calc(50%+265px)] lg:right-auto lg:translate-x-0"
         dir="rtl"
       >
-        {/* Options Popup Menu (on long press — Mobile ONLY) */}
         {showOptions && (
           <div 
             className="lg:hidden absolute bottom-20 right-0 z-50
@@ -145,7 +127,6 @@ export default function RecordButton({
           </div>
         )}
 
-        {/* Glowing Gradient Action Button */}
         <button
           onClick={handleClick}
           onMouseDown={startPressTimer}

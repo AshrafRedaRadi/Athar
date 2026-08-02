@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { IoLayersOutline, IoLibraryOutline } from "react-icons/io5";
 import { IoChevronBack } from "react-icons/io5";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/shared/Navbar";
 import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";

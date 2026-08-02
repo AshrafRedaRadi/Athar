@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { FaMicrophone } from 'react-icons/fa';
 import { AiFillSetting } from 'react-icons/ai';
 import { MdMenuBook } from 'react-icons/md';
 
 import ProgressHeader from '../components/onboarding/ProgressHeader';
 import OnboardingCard from '../components/onboarding/OnboardingCard';
+import OnboardingDots from '../components/onboarding/OnboardingDots';
 import NavigationButtons from '../components/onboarding/NavigationButtons';
 import { useAuth } from '../context/AuthContext';
 
@@ -92,20 +94,23 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 text-base-content flex flex-col justify-between selection:bg-cyan-700 selection:text-white transition-colors duration-200">
+    <div className="h-screen h-dvh max-h-screen w-full bg-base-200 text-base-content flex flex-col justify-between selection:bg-cyan-700 selection:text-white transition-colors duration-200 overflow-hidden select-none">
       {/* Top Bar: Skip button */}
       <ProgressHeader onSkip={handleSkip} />
 
-      {/* Main Content Area: Step Card (Icon + Title + Description + Progress Dots) */}
-      <main className="flex-1 flex items-center justify-center py-6 px-4">
-        <OnboardingCard
-          key={currentStepData.id}
-          icon={currentStepData.icon}
-          title={currentStepData.title}
-          description={currentStepData.description}
-          currentStep={currentStepNum}
-          totalSteps={totalSteps}
-        />
+      {/* Main Content Area: Step Card + Permanent Progress Dots */}
+      <main className="flex-1 flex flex-col items-center justify-center py-2 sm:py-4 px-4 relative overflow-hidden">
+        <AnimatePresence mode="wait">
+          <OnboardingCard
+            key={currentStepData.id}
+            icon={currentStepData.icon}
+            title={currentStepData.title}
+            description={currentStepData.description}
+          />
+        </AnimatePresence>
+
+        {/* Permanent Progress Dots (Stays mounted so pill slides smoothly without fading) */}
+        <OnboardingDots currentStep={currentStepNum} totalSteps={totalSteps} />
       </main>
 
       {/* Bottom Bar: Previous & Next Buttons */}

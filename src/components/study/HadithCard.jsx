@@ -1,20 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 /**
  * HadithCard — displays the hadith text with hide/reveal toggle
  * and speech recognition recitation coloring support.
- *
- * Props:
- *  - bookTitle    {string}  e.g. "الأربعون النووية"
- *  - hadithLabel  {string}  e.g. "الحديث الأول"
- *  - title        {string}  e.g. "إنما الأعمال بالنيات"
- *  - text         {string}  Full hadith text with tashkeel
- *  - source       {string}  e.g. "رواه البخاري ومسلم"
- *  - mode         {string}  "reading" | "reciting" — controls text coloring behavior
- *  - spokenWords  {Array}   Array of { word: string, correct: boolean } for recitation feedback
- *  - recitationStopped {boolean} Whether recitation stopped due to full-sentence error
- *  - isHidden     {boolean} Optional controlled hide state
- *  - onToggleHide {function} Optional controlled hide toggle callback
  */
 export default function HadithCard({ 
   bookTitle,
@@ -32,11 +20,6 @@ export default function HadithCard({
 
   const isHidden = externalIsHidden !== undefined ? externalIsHidden : internalIsHidden;
 
-  /**
-   * Helper to render a pixel-perfect blank underline.
-   * Renders the actual word in text-transparent with border-b-2, guaranteeing that
-   * the underline width is 100% identical to the revealed word width.
-   */
   const renderBlank = (word, key, extraClass = "") => {
     if (word === "ﷺ") {
       return <span key={key} className="text-base-content font-4 mx-0.5">{word} </span>;
@@ -51,12 +34,6 @@ export default function HadithCard({
     );
   };
 
-  /**
-   * Renders hadith text.
-   * Supports:
-   * 1. 100% pixel-perfect word-width matching for hidden blanks.
-   * 2. Recitation feedback: as words are spoken, blanks dynamically reveal as green (correct) or red (incorrect).
-   */
   const renderText = () => {
     const words = text.trim().split(/\s+/);
     const totalSpoken = spokenWords.length;
@@ -65,7 +42,6 @@ export default function HadithCard({
       const isSpoken = i < totalSpoken;
 
       if (isSpoken) {
-        // Word has been spoken during recitation — reveal in Green (correct) or Red (incorrect)
         const spoken = spokenWords[i];
         const isCorrect = spoken?.correct;
         const colorClass = isCorrect ? "text-hadith font-semibold" : "text-hadith-error font-semibold";
@@ -77,7 +53,6 @@ export default function HadithCard({
       }
 
       if (recitationStopped) {
-        // Recitation stopped on error — show remaining words/blanks dimmed
         return isHidden ? (
           renderBlank(word, i, "opacity-40")
         ) : (
@@ -87,13 +62,10 @@ export default function HadithCard({
         );
       }
 
-      // Word has NOT been spoken yet
       if (isHidden) {
-        // Hidden mode: show pixel-perfect underline matching exact word width
         return renderBlank(word, i);
       }
 
-      // Normal visible reading mode
       return (
         <span key={i} className="inline-block mx-0.5">
           {word}{" "}

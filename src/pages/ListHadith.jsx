@@ -9,8 +9,11 @@ import {
   IoPlayOutline,
   IoRefreshOutline,
   IoBookmarkOutline,
+  IoCheckmarkCircle,
+  IoTimeOutline,
+  IoEllipseOutline,
 } from "react-icons/io5";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/shared/Navbar";
 import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
@@ -23,35 +26,35 @@ import user from "../assets/user.png";
 //  (UI-only mock — replace with real user data)
 // ─────────────────────────────────────────────
 
-/** Possible memorization statuses */
+/** Possible memorization statuses from API */
 const STATUS = {
-  MEMORIZED: "memorized",       // محفوظ
-  IN_PROGRESS: "in_progress",   // قيد الحفظ
-  NOT_STARTED: "not_started",   // لم يبدأ الحفظ
+  NOT_STARTED: 0, // لم يبدأ الحفظ
+  IN_PROGRESS: 1, // قيد الحفظ
+  MEMORIZED: 2,   // محفوظ
 };
 
-/** Random mock status for demo (replace with real user data API) */
-function getMockStatus(hadithId) {
-  const statuses = [STATUS.NOT_STARTED, STATUS.IN_PROGRESS, STATUS.MEMORIZED];
-  return statuses[hadithId % 3];
+function parseStatus(val) {
+  if (val === 2 || val === "Memorized") return STATUS.MEMORIZED;
+  if (val === 1 || val === "InProgress") return STATUS.IN_PROGRESS;
+  return STATUS.NOT_STARTED;
 }
 
 /** DaisyUI badge config per status */
 const STATUS_CONFIG = {
   [STATUS.MEMORIZED]: {
     label: "محفوظ",
-    badgeClass: "badge-success",
-    icon: "✅",
+    badgeClass: "badge-success gap-1",
+    icon: <IoCheckmarkCircle className="text-sm shrink-0" />,
   },
   [STATUS.IN_PROGRESS]: {
     label: "قيد الحفظ",
-    badgeClass: "badge-warning",
-    icon: "🟡",
+    badgeClass: "badge-warning gap-1",
+    icon: <IoTimeOutline className="text-sm shrink-0" />,
   },
   [STATUS.NOT_STARTED]: {
     label: "لم يبدأ الحفظ",
-    badgeClass: "badge-ghost border-base-300",
-    icon: "⚪",
+    badgeClass: "badge-ghost border-base-300 gap-1",
+    icon: <IoEllipseOutline className="text-sm shrink-0" />,
   },
 };
 
@@ -141,23 +144,41 @@ export default function ListHadith() {
   const navigate = useNavigate();
   const { isGuest } = useAuth();
 
-  // sectionId "0" means the book has no sections → fetch all hadiths without sectionId filter
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
 
   const [hadiths, setHadiths] = useState([]);
   const [bookTitle, setBookTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
-  // Mobile layout switcher state ("1" card or "2" cards per row, persisted in localStorage)
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [progressMap, setProgressMap] = useState({});
+
+  // View Mode state: 'table' (default) or 'cards', persisted in localStorage
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("athar_hadith_view_mode") || "table";
+  });
+
+  // Mobile cards column layout switcher: "1" or "2" cards per row on mobile
   const [mobileColumns, setMobileColumns] = useState(() => {
     return localStorage.getItem("athar_mobile_hadith_cols") || "2";
   });
 
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem("athar_hadith_view_mode", mode);
+  };
+
   const handleMobileColumnsChange = (cols) => {
     setMobileColumns(cols);
     localStorage.setItem("athar_mobile_hadith_cols", cols);
+  };
+
+  const getHadithStatus = (hadithId) => {
+    if (hadithId != null && progressMap[hadithId] !== undefined) {
+      return progressMap[hadithId];
+    }
+    return STATUS.NOT_STARTED;
   };
 
   useEffect(() => {
@@ -166,14 +187,27 @@ export default function ListHadith() {
       try {
         setIsLoading(true);
         setError(null);
-        const [hadithsData, booksData] = await Promise.all([
+        const [hadithsData, booksData, progressData] = await Promise.all([
           hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
+          isGuest ? Promise.resolve([]) : hadithsService.getHadithsProgress(bookId).catch(() => []),
         ]);
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
         setBookTitle(book?.title || "");
         setHadiths(Array.isArray(hadithsData) ? hadithsData : []);
+
+        const pMap = {};
+        if (Array.isArray(progressData)) {
+          progressData.forEach((item) => {
+            const hId = item.hadithId ?? item.id;
+            const st = item.status ?? item.progressStatus ?? 0;
+            if (hId != null) {
+              pMap[hId] = parseStatus(st);
+            }
+          });
+        }
+        setProgressMap(pMap);
       } catch (err) {
         console.error("Error loading hadiths:", err.message);
         setError("تعذَّر تحميل الأحاديث، يرجى المحاولة لاحقاً.");
@@ -184,13 +218,25 @@ export default function ListHadith() {
     load();
   }, [bookId, sectionId]);
 
-  /** Navigate to the Study page for a specific hadith */
-  const handleAction = (hadith) => {
+  /** Navigate to the Study page for a specific hadith and update status to 1 (InProgress) if 0 (NotStarted) */
+  const handleAction = async (hadith) => {
     if (isGuest) {
       setIsGuestModalOpen(true);
       return;
     }
-    navigate(`/library/${bookId}/${sectionId}/${hadith.id}`);
+
+    const currentStatus = getHadithStatus(hadith.id);
+    const targetSection = sectionId || hadith.hadithSectionId || 0;
+
+    // If status is NotStarted (0), update to InProgress (1)
+    if (currentStatus === STATUS.NOT_STARTED) {
+      setProgressMap((prev) => ({ ...prev, [hadith.id]: STATUS.IN_PROGRESS }));
+      hadithsService.updateHadithProgress(hadith.id, STATUS.IN_PROGRESS).catch((err) => {
+        console.warn("Could not update hadith progress on server:", err.message);
+      });
+    }
+
+    navigate(`/library/${bookId}/${targetSection}/${hadith.id}`);
   };
 
   return (
@@ -240,8 +286,8 @@ export default function ListHadith() {
           </div>
         ) : (
           <>
-            {/* Results count & Mobile View Mode Toggle Radio Buttons */}
-            <div className="flex items-center justify-between mb-4 gap-2 font-2 text-sm text-base-content/50">
+            {/* Results count & View Mode Toggle Toolbar */}
+            <div className="flex items-center justify-between mb-4 gap-2 font-2 text-sm text-base-content/50 flex-wrap">
               <p>
                 {isLoading
                   ? "جاري استحضار الأحاديث الشريفة ..."
@@ -250,164 +296,211 @@ export default function ListHadith() {
                     : "لم نجد أحاديث مطابقة"}
               </p>
 
-              {/* Mobile Columns Radio Toggle (1 card vs 2 cards per row) */}
-              <div
-                className="flex items-center gap-1 sm:hidden bg-base-100 p-1 rounded-xl border border-base-200 shadow-xs"
-                role="radiogroup"
-                aria-label="عرض الكروت في الموبايل"
-              >
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mobileColumns === "1"}
-                  onClick={() => handleMobileColumnsChange("1")}
-                  className={`btn btn-xs rounded-lg gap-1 transition-all ${mobileColumns === "1"
-                    ? "bg-cyan-700 text-white border-none shadow-xs"
-                    : "btn-ghost text-base-content/60 hover:text-base-content"
-                    }`}
-                  title="عرض كرت واحد في الصف"
-                  aria-label="عرض كرت واحد في الصف"
+              <div className="flex items-center gap-2">
+                {/* Mobile Column Sub-Toggle (visible on mobile screens when in Cards mode) */}
+                {viewMode === "cards" && (
+                  <div
+                    className="flex items-center gap-0.5 sm:hidden bg-base-100 p-1 rounded-xl border border-base-200 shadow-xs"
+                    role="radiogroup"
+                    aria-label="عدد الكروت في الصف للموبايل"
+                  >
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={mobileColumns === "1"}
+                      onClick={() => handleMobileColumnsChange("1")}
+                      className={`btn btn-xs rounded-lg gap-1 transition-all ${
+                        mobileColumns === "1"
+                          ? "bg-cyan-700 text-white border-none shadow-xs"
+                          : "btn-ghost text-base-content/60 hover:text-base-content"
+                      }`}
+                      title="عرض كرت واحد في الصف"
+                    >
+                      <IoListOutline className="text-xs" />
+                      <span className="text-[10px]">1</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={mobileColumns === "2"}
+                      onClick={() => handleMobileColumnsChange("2")}
+                      className={`btn btn-xs rounded-lg gap-1 transition-all ${
+                        mobileColumns === "2"
+                          ? "bg-cyan-700 text-white border-none shadow-xs"
+                          : "btn-ghost text-base-content/60 hover:text-base-content"
+                      }`}
+                      title="عرض كرتين في الصف"
+                    >
+                      <IoGridOutline className="text-xs" />
+                      <span className="text-[10px]">2</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* View Mode Switcher (Table vs Cards) */}
+                <div
+                  className="flex items-center gap-1 bg-base-100 p-1 rounded-xl border border-base-200 shadow-xs"
+                  role="radiogroup"
+                  aria-label="طريقة العرض"
                 >
-                  <IoListOutline className="text-sm" />
-                  <span className="text-[10px]">1</span>
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={mobileColumns === "2"}
-                  onClick={() => handleMobileColumnsChange("2")}
-                  className={`btn btn-xs rounded-lg gap-1 transition-all ${mobileColumns === "2"
-                    ? "bg-cyan-700 text-white border-none shadow-xs"
-                    : "btn-ghost text-base-content/60 hover:text-base-content"
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={viewMode === "table"}
+                    onClick={() => handleViewModeChange("table")}
+                    className={`btn btn-xs rounded-lg gap-1.5 transition-all ${
+                      viewMode === "table"
+                        ? "bg-cyan-700 text-white border-none shadow-xs"
+                        : "btn-ghost text-base-content/60 hover:text-base-content"
                     }`}
-                  title="عرض كرتين في الصف"
-                  aria-label="عرض كرتين في الصف"
-                >
-                  <IoGridOutline className="text-sm" />
-                  <span className="text-[10px]">2</span>
-                </button>
+                    title="عرض جدول"
+                    aria-label="عرض جدول"
+                  >
+                    <IoListOutline className="text-sm" />
+                    <span className="font-2 text-[11px]">جدول</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={viewMode === "cards"}
+                    onClick={() => handleViewModeChange("cards")}
+                    className={`btn btn-xs rounded-lg gap-1.5 transition-all ${
+                      viewMode === "cards"
+                        ? "bg-cyan-700 text-white border-none shadow-xs"
+                        : "btn-ghost text-base-content/60 hover:text-base-content"
+                    }`}
+                    title="عرض كروت"
+                    aria-label="عرض كروت"
+                  >
+                    <IoGridOutline className="text-sm" />
+                    <span className="font-2 text-[11px]">كروت</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* ── Desktop table (sm and above) ── */}
-            <div className="hidden sm:block overflow-x-auto rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-              <table className="table table-zebra font-2 w-full">
-                {/* Head */}
-                <thead>
-                  <tr className="bg-base-200 text-base-content/70 text-xs">
-                    <th className="text-center w-10">#</th>
-                    <th>رقم الحديث</th>
-                    <th className="hidden md:table-cell">العنوان</th>
-                    <th>حالة الحفظ</th>
-                    <th className="text-center">الإجراء</th>
-                  </tr>
-                </thead>
-
-                {/* Body */}
-                <tbody>
-                  {isLoading ? (
-                    [1, 2, 3, 4, 5].map((n) => <SkeletonRow key={n} />)
-                  ) : hadiths.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-16 text-base-content/50 font-2">
-                        لا توجد أحاديث في هذا القسم
-                      </td>
+            {/* ── 1. Table View ── */}
+            {viewMode === "table" && (
+              <div className="overflow-x-auto rounded-2xl border border-base-200 bg-base-100 shadow-sm">
+                <table className="table table-zebra font-2 w-full">
+                  {/* Head */}
+                  <thead>
+                    <tr className="bg-base-200 text-base-content/70 text-xs">
+                      <th className="text-center w-10">#</th>
+                      <th>رقم الحديث</th>
+                      <th className="hidden md:table-cell">العنوان</th>
+                      <th>حالة الحفظ</th>
+                      <th className="text-center">الإجراء</th>
                     </tr>
-                  ) : (
-                    hadiths.map((hadith, idx) => {
-                      const status = getMockStatus(hadith.id ?? idx);
-                      const cfg = STATUS_CONFIG[status];
-                      return (
-                        <tr
-                          key={hadith.id ?? idx}
-                          className="hover:bg-base-200/60 transition-colors"
-                        >
-                          {/* Row number */}
-                          <td className="text-center font-2 text-xs text-base-content/50">
-                            {idx + 1}
-                          </td>
+                  </thead>
 
-                          {/* Hadith number */}
-                          <td>
-                            <span className="font-2 font-semibold text-sm text-cyan-700">
-                              {hadith.hadithNumber}
-                            </span>
-                          </td>
+                  {/* Body */}
+                  <tbody>
+                    {isLoading ? (
+                      [1, 2, 3, 4, 5].map((n) => <SkeletonRow key={n} />)
+                    ) : hadiths.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16 text-base-content/50 font-2">
+                          لا توجد أحاديث في هذا القسم
+                        </td>
+                      </tr>
+                    ) : (
+                      hadiths.map((hadith, idx) => {
+                        const status = getHadithStatus(hadith.id);
+                        const cfg = STATUS_CONFIG[status];
+                        return (
+                          <tr
+                            key={hadith.id ?? idx}
+                            className="hover:bg-base-200/60 transition-colors"
+                          >
+                            {/* Row number */}
+                            <td className="text-center font-2 text-xs text-base-content/50">
+                              {idx + 1}
+                            </td>
 
-                          {/* Title (md+) */}
-                          <td className="hidden md:table-cell">
-                            <span className="font-2 text-sm text-base-content/80 line-clamp-1">
-                              {hadith.title || "—"}
-                            </span>
-                          </td>
+                            {/* Hadith number */}
+                            <td>
+                              <span className="font-2 font-semibold text-sm text-cyan-700">
+                                {hadith.hadithNumber}
+                              </span>
+                            </td>
 
-                          {/* Status badge */}
-                          <td>
-                            <span className={`badge badge-sm font-2 ${cfg.badgeClass}`}>
-                              {cfg.icon} {cfg.label}
-                            </span>
-                          </td>
+                            {/* Title (md+) */}
+                            <td className="hidden md:table-cell">
+                              <span className="font-2 text-sm text-base-content/80 line-clamp-1">
+                                {hadith.title || "—"}
+                              </span>
+                            </td>
 
-                          {/* Action button */}
-                          <td className="text-center">
-                            <button
-                              onClick={() => handleAction(hadith)}
-                              className={`btn btn-xs sm:btn-sm rounded-full font-2 px-10 ${ACTION_CLASS[status]}`}
-                            >
-                              {ACTION_LABEL[status]}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                            {/* Status badge */}
+                            <td>
+                              <span className={`badge badge-sm font-2 inline-flex items-center gap-1.5 ${cfg.badgeClass}`}>
+                                {cfg.icon}
+                                <span>{cfg.label}</span>
+                              </span>
+                            </td>
 
-            {/* ── Mobile card list (below sm) — Dynamic 1 or 2 cards per row ── */}
-            <div
-              className={`grid ${mobileColumns === "1" ? "grid-cols-1 gap-3" : "grid-cols-2 gap-2.5"
-                } sm:hidden transition-all duration-300`}
-            >
-              {isLoading ? (
-                [1, 2, 3, 4].map((n) => (
-                  <div
-                    key={n}
-                    className="card bg-base-100 border border-base-200 shadow-sm p-3 flex flex-col gap-2 animate-pulse rounded-2xl"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="h-3 w-1/3 bg-base-300 rounded" />
-                      <div className="h-3 w-1/3 bg-base-300 rounded" />
+                            {/* Action button */}
+                            <td className="text-center">
+                              <button
+                                onClick={() => handleAction(hadith)}
+                                className={`btn btn-xs sm:btn-sm rounded-full font-2 w-32 justify-center shrink-0 ${ACTION_CLASS[status]}`}
+                              >
+                                {ACTION_LABEL[status]}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── 2. Responsive Cards View (Supports 1 or 2 columns on mobile, up to 4 columns on desktop) ── */}
+            {viewMode === "cards" && (
+              <div
+                className={`grid ${
+                  mobileColumns === "1" ? "grid-cols-1 gap-3" : "grid-cols-2 gap-2.5"
+                } sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-4 transition-all duration-300`}
+              >
+                {isLoading ? (
+                  [1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                    <div
+                      key={n}
+                      className="card bg-base-100 border border-base-200 shadow-sm p-4 flex flex-col gap-2.5 animate-pulse rounded-2xl"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="h-3 w-1/3 bg-base-300 rounded" />
+                        <div className="h-3 w-1/3 bg-base-300 rounded" />
+                      </div>
+                      <div className="h-4 w-full bg-base-300 rounded mt-1" />
+                      <div className="h-3 w-2/3 bg-base-300 rounded" />
+                      <div className="h-8 w-full bg-base-300 rounded-full mt-2" />
                     </div>
-                    <div className="h-4 w-full bg-base-300 rounded mt-1" />
-                    <div className="h-3 w-2/3 bg-base-300 rounded" />
-                    <div className="h-6 w-full bg-base-300 rounded-full mt-2" />
+                  ))
+                ) : hadiths.length === 0 ? (
+                  <div className="col-span-full flex flex-col items-center py-16 gap-4 text-center">
+                    <IoListOutline className="text-5xl text-base-content/20" />
+                    <p className="font-2 text-base-content/50">لا توجد أحاديث في هذا القسم</p>
                   </div>
-                ))
-              ) : hadiths.length === 0 ? (
-                <div
-                  className={`${mobileColumns === "1" ? "" : "col-span-2"
-                    } flex flex-col items-center py-16 gap-4 text-center`}
-                >
-                  <IoListOutline className="text-5xl text-base-content/20" />
-                  <p className="font-2 text-base-content/50">لا توجد أحاديث في هذا القسم</p>
-                </div>
-              ) : (
-                hadiths.map((hadith, idx) => {
-                  const status = getMockStatus(hadith.id ?? idx);
-                  return (
-                    <HadithMobileCard
-                      key={hadith.id ?? idx}
-                      hadith={hadith}
-                      status={status}
-                      isSingleColumn={mobileColumns === "1"}
-                      onAction={handleAction}
-                    />
-                  );
-                })
-              )}
-            </div>
+                ) : (
+                  hadiths.map((hadith, idx) => {
+                    const status = getHadithStatus(hadith.id);
+                    return (
+                      <HadithMobileCard
+                        key={hadith.id ?? idx}
+                        hadith={hadith}
+                        status={status}
+                        isSingleColumn={mobileColumns === "1"}
+                        onAction={handleAction}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            )}
           </>
         )}
 

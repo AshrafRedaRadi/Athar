@@ -1,7 +1,8 @@
+import React from "react";
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
-import { CURRENT_USER } from "../constants/currentUser";
+import { CURRENT_USER } from "../../constants/currentUser";
 
 /**
  * Sidebar component with pure Tailwind CSS slide transition from the right.

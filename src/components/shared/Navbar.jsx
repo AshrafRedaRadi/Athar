@@ -3,15 +3,10 @@ import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
 import Dock from "./Dock";
-import { CURRENT_USER } from "../constants/currentUser";
+import { CURRENT_USER } from "../../constants/currentUser";
 
 /**
  * Unified Navbar component for Athar platform.
- *
- * Behavior:
- *  - On Desktop (lg+): Avatar toggles Sidebar drawer on click.
- *  - On Mobile & Tablet (<lg): Avatar is static (does not toggle sidebar drawer) and Dock is displayed.
- *  - Renders top bar with Avatar, optional searchSlot, and HeaderActions (Theme toggle, Notifications, Settings).
  */
 export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
   return (

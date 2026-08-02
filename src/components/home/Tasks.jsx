@@ -1,3 +1,4 @@
+import React from "react";
 import { BiNotepad } from "react-icons/bi";
 import { IoMdTime } from "react-icons/io";
 import { FaPlay } from "react-icons/fa";
@@ -61,36 +62,32 @@ export default function DashboardTasks() {
           </h2>
         </div>
 
-
         <div className="border-b border-base-200 my-5"></div>
 
+        {/* Tasks list */}
+        <div className="space-y-[14px]">
 
-        {/* Task */}
-        <div className="bg-base-200 rounded-xl p-5 border-r-4 border-cyan-600">
+          <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input type="checkbox" className="checkbox rounded-md" />
+              <span>حفظ حديث جديد</span>
+            </div>
 
-          <div className="flex justify-between items-center">
-
-            <h3 className="font-medium">
-              تسميع الحديث السابع
-            </h3>
-
-
-            <span className="text-xs text-red-500 bg-red-100 px-3 py-1 rounded-full">
-              ينتهي اليوم
-            </span>
-
+            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs">
+              <FaPlay />
+            </button>
           </div>
 
+          <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input type="checkbox" className="checkbox rounded-md" />
+              <span>مراجعة 5 أحاديث</span>
+            </div>
 
-          <p className="text-sm text-gray-500 mt-4">
-            الأربعون النووية
-          </p>
-
-
-          <button className="mt-4 btn btn-soft w-full border border-base-300 rounded-lg py-2 flex items-center justify-center gap-2 hover:bg-base-100 transition">
-            ابدأ التسميع
-            <FaPlay className="text-sm" />
-          </button>
+            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs">
+              <FaPlay />
+            </button>
+          </div>
 
         </div>
 

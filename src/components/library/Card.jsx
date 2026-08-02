@@ -3,18 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiX } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
 
-// ─────────────────────────────────────────────
-//  Difficulty badge colour map
-// ─────────────────────────────────────────────
+// Difficulty badge colour map
 const LEVEL_STYLES = {
   مبتدئ: "badge-warning text-warning-content",
   متوسط: "badge-success text-success-content",
   متقدم: "badge-error text-error-content",
 };
 
-// ─────────────────────────────────────────────
-//  Ultra-smooth Spring Physics & Bezier Easing
-// ─────────────────────────────────────────────
+// Ultra-smooth Spring Physics
 const SMOOTH_SPRING = {
   type: "spring",
   stiffness: 210,
@@ -23,7 +19,7 @@ const SMOOTH_SPRING = {
 };
 
 /**
- * Clean & Refactored Card component with Shared Element Transition (Layout Animation).
+ * Clean & Refactored Card component for Library with Shared Element Transition.
  */
 export default function Card({
   id,
@@ -43,7 +39,6 @@ export default function Card({
     description ||
     "متن شريف يتضمن أصول العبادات والأحكام والأخلاق الإيمانية، حظي باهتمام واسع ودراسة مستفيضة من كبار العلماء، ويعتبر من أمهات الكتب المقررة لطلاب العلم.";
 
-  // ── Sub-render: Reusable Cover Image Container ──────────────────────────
   const renderCover = (heightClass, showLevelBadge = true, categoryPosClass = "top-2.5 right-2.5") => (
     <motion.div
       layoutId={`card-image-container-${layoutKey}`}
@@ -63,14 +58,12 @@ export default function Card({
         </div>
       )}
 
-      {/* Category badge with generous margin */}
       {category && (
         <span className={`absolute ${categoryPosClass} badge bg-black/65 backdrop-blur-md text-white border-none font-2 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-lg shadow-sm z-10`}>
           {category}
         </span>
       )}
 
-      {/* Difficulty level badge (Hidden in modal cover to avoid overlapping close button) */}
       {level && showLevelBadge && (
         <span className={`absolute top-2.5 left-2.5 badge border-none font-2 text-[10px] sm:text-xs px-2 py-0.5 rounded-lg shadow-sm z-10 ${levelStyle}`}>
           {level}
@@ -79,7 +72,6 @@ export default function Card({
     </motion.div>
   );
 
-  // ── Sub-render: Reusable Title & Author ────────────────────────────────
   const renderTitleAuthor = (titleSizeClass) => (
     <motion.div layoutId={`card-body-${layoutKey}`}>
       <motion.h2
@@ -99,7 +91,6 @@ export default function Card({
 
   return (
     <>
-      {/* ── 1. Base Grid Card ── */}
       <motion.div
         layoutId={`card-container-${layoutKey}`}
         onClick={() => setIsExpanded(true)}
@@ -115,11 +106,9 @@ export default function Card({
         </div>
       </motion.div>
 
-      {/* ── 2. Click-Triggered Expanded Center Modal ── */}
       <AnimatePresence>
         {isExpanded && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" dir="rtl">
-            {/* Dark Dimmed Background Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -129,13 +118,11 @@ export default function Card({
               className="fixed inset-0 bg-black/65 backdrop-blur-md z-40 cursor-pointer"
             />
 
-            {/* Expanded Center Modal Dialog */}
             <motion.div
               layoutId={`card-container-${layoutKey}`}
               transition={SMOOTH_SPRING}
               className="relative card bg-base-100 border border-base-200/80 shadow-2xl w-full max-w-sm sm:max-w-md lg:max-w-lg max-h-[85vh] overflow-hidden rounded-3xl z-50 flex flex-col origin-center"
             >
-              {/* Close Button */}
               <button
                 onClick={() => setIsExpanded(false)}
                 className="absolute top-3.5 left-3.5 btn btn-circle btn-sm bg-black/40 hover:bg-black/70 text-white border-none z-20 transition-colors shadow-md"
@@ -144,14 +131,11 @@ export default function Card({
                 <FiX className="text-lg" />
               </button>
 
-              {/* Cover Image in Modal (Level badge hidden to avoid overlapping close button, category badge padded) */}
               {renderCover("h-36 sm:h-44 lg:h-52", false, "top-3.5 right-3.5 sm:top-4 sm:right-4")}
 
-              {/* Body Details in Modal */}
               <div className="card-body p-5 gap-3.5 overflow-y-auto flex-1 bg-base-100">
                 {renderTitleAuthor("text-lg sm:text-xl")}
 
-                {/* Additional Detailed Content Fades & Slides Up */}
                 <motion.div
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -173,7 +157,6 @@ export default function Card({
                     </p>
                   </div>
 
-                  {/* Action Buttons: Add + Navigate to Index */}
                   <div className="pt-2 flex items-center gap-2.5">
                     <button
                       onClick={(e) => {

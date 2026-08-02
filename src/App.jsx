@@ -10,6 +10,7 @@ import Library from './pages/Library';
 import Study from './pages/Study';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ConfirmEmail from './pages/ConfirmEmail';
 import ListSection from './pages/ListSection';
 import ListHadith from './pages/ListHadith';
 import Onboarding from './pages/Onboarding';
@@ -25,6 +26,7 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/confirm-email" element={<ConfirmEmail />} />
           </Route>
 
           {/* Protected routes */}

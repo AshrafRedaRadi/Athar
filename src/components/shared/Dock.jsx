@@ -1,3 +1,4 @@
+import React from "react";
 import { IoHomeOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";

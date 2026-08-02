@@ -1,3 +1,4 @@
+import React from "react";
 import { GiProgression, GiOpenBook } from "react-icons/gi";
 import { FaFire } from "react-icons/fa";
 

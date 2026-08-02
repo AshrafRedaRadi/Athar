@@ -1,3 +1,5 @@
+import React from "react";
+
 /**
  * Avatar – reusable profile picture component.
  *

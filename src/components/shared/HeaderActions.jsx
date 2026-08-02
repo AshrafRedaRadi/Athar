@@ -1,6 +1,7 @@
+import React from "react";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoSettingsOutline } from "react-icons/io5";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../../hooks/useTheme";
 
 /* ── Sun / Moon SVGs (DaisyUI swap-rotate pattern) ──────────────── */
 const SunIcon = () => (

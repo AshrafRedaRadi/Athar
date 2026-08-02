@@ -67,4 +67,45 @@ export const hadithsService = {
     const item = await apiFetch(`/api/Hadiths/${id}`);
     return formatHadith(item);
   },
+
+  /**
+   * Fetch user progress list for hadiths in a book
+   * @param {number|string} bookId
+   * @returns {Promise<Array>}
+   */
+  async getHadithsProgress(bookId) {
+    if (!bookId) return [];
+    try {
+      return await apiFetch(`/api/hadiths/progress?bookId=${bookId}`);
+    } catch (err) {
+      console.warn("Error fetching hadiths progress:", err.message);
+      return [];
+    }
+  },
+
+  /**
+   * Update progress status for a specific hadith (e.g. to InProgress = 1)
+   * @param {number|string} hadithId
+   * @param {number} [status=1]
+   * @returns {Promise<object>}
+   */
+  async updateHadithProgress(hadithId, status = 1) {
+    if (!hadithId) return null;
+    try {
+      return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+    } catch (err) {
+      try {
+        return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
+          method: "POST",
+          body: JSON.stringify({ status }),
+        });
+      } catch (err2) {
+        console.warn("Could not update hadith progress:", err2.message);
+        throw err;
+      }
+    }
+  },
 };

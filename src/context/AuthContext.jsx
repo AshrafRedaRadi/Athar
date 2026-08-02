@@ -19,14 +19,24 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
-      if (storedToken) {
+      if (storedToken && storedToken !== 'guest-session-token') {
         try {
           const profileData = await apiFetch('/api/Account/profile');
           setUser(profileData);
           localStorage.setItem('user', JSON.stringify(profileData));
-        } catch (error) {
-
+        } catch {
           logout();
+        }
+      } else if (storedToken === 'guest-session-token') {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch {
+            setUser({ name: 'ضيف أثر', isGuest: true });
+          }
+        } else {
+          setUser({ name: 'ضيف أثر', isGuest: true });
         }
       } else {
         setUser(null);
@@ -37,16 +47,16 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
-  const login = async (emailOrUsername, password) => {
+  const login = async (email, password) => {
     const responseData = await apiFetch('/api/Auth/login', {
       method: 'POST',
       body: JSON.stringify({
-        emailOrUsername, 
+        email, 
         password,
       }),
     });
 
-    const newToken = responseData.token;
+    const newToken = responseData?.token || (typeof responseData === 'string' ? responseData : null);
 
     if (newToken) {
       localStorage.setItem('token', newToken);
@@ -68,6 +78,34 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify(registerData),
     });
+  };
+
+  const confirmEmail = async (userId, token) => {
+    const query = `userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`;
+    return await apiFetch(`/api/Auth/confirm-email?${query}`, {
+      method: 'GET',
+    });
+  };
+
+  const loginGoogle = async (idToken) => {
+    const responseData = await apiFetch('/api/Auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+
+    const newToken = responseData?.token;
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      try {
+        const userData = await apiFetch('/api/Account/profile');
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+      } catch {
+        setUser({ isGuest: false });
+      }
+    }
+    return responseData;
   };
 
   const loginGuest = () => {
@@ -94,6 +132,8 @@ export function AuthProvider({ children }) {
     isLoading,
     login,
     register,
+    confirmEmail,
+    loginGoogle,
     loginGuest,
     logout,
   };

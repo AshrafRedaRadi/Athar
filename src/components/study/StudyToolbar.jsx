@@ -1,9 +1,9 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import { IoListOutline, IoLibraryOutline, IoChevronForward, IoChevronBack } from "react-icons/io5";
 
 /**
  * StudyToolbar — dedicated control bar for Hadith navigation & index links during study mode.
- * Separated from top header for cleaner modular architecture and full component reusability.
  */
 export default function StudyToolbar({
   bookId = null,
@@ -22,7 +22,6 @@ export default function StudyToolbar({
     >
       {/* Right: Back to library & Back to Index buttons */}
       <div className="flex items-center gap-2.5">
-        {/* 1. Back to Library button */}
         <Link
           to="/library"
           className="group btn btn-sm border border-base-300 bg-base-100 hover:bg-cyan-700 hover:text-white hover:border-transparent text-base-content/80 font-2 text-xs sm:text-sm rounded-xl shadow-xs transition-all duration-200 gap-1.5 px-3.5"
@@ -31,7 +30,6 @@ export default function StudyToolbar({
           <span>المكتبة</span>
         </Link>
 
-        {/* 2. Back to Hadith List button */}
         <Link
           to={bookId ? `/library/${bookId}/${sectionId}` : "/library"}
           className="btn btn-sm bg-cyan-700/10 hover:bg-cyan-700 text-cyan-800 dark:text-cyan-300 hover:text-white border border-cyan-700/20 hover:border-transparent font-2 text-xs sm:text-sm rounded-xl shadow-xs transition-all duration-200 gap-1.5 px-3.5"

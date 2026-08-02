@@ -1,25 +1,14 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { IoCloseOutline, IoBookOutline } from "react-icons/io5";
 import { IoPlayCircleOutline } from "react-icons/io5";
 import { HiOutlineLocationMarker } from "react-icons/hi";
 
 /**
- * ExplanationPanel — sliding drawer from the LEFT on desktop,
- * bottom-sheet on mobile/tablet.
- *
- * Always rendered in the DOM so CSS transitions work for both open and close.
- *
- * Props:
- *  - isOpen     {boolean}   Whether the panel is visible
- *  - onClose    {function}  Callback to close the panel
- *  - activeTab  {string}    "text" | "video"
- *  - onTabChange {function} Callback when tab changes
- *  - explanation {object}   { summary, sections[], videoTitle, videoDuration, videoSpeaker, keyPoints[] }
+ * ExplanationPanel — sliding drawer for Study mode.
  */
 export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChange, explanation }) {
   const panelRef = useRef(null);
 
-  // Close on Escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -30,11 +19,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
 
   return (
     <>
-      {/* ═══════════════════════════════════════════
-          ── Desktop (lg+): Slide-in drawer from LEFT ──
-          ═══════════════════════════════════════════ */}
-
-      {/* Overlay */}
       <div
         className={`hidden lg:block fixed inset-0 bg-black/30 z-40
                     transition-opacity duration-500 ease-in-out
@@ -44,7 +28,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
         onClick={onClose}
       />
 
-      {/* Drawer panel */}
       <div
         ref={panelRef}
         className={`hidden lg:flex flex-col fixed top-0 left-0 h-full w-[340px] z-50
@@ -53,7 +36,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
                     ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         dir="rtl"
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-base-300">
           <div className="flex items-center gap-2">
             <IoBookOutline className="text-lg text-cyan-700" />
@@ -68,7 +50,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           <PanelContent
             activeTab={activeTab}
@@ -78,12 +59,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════
-          ── Mobile/Tablet (<lg): Bottom-sheet ──
-          Always in DOM for smooth open/close transitions
-          ═══════════════════════════════════════════ */}
-
-      {/* Overlay */}
       <div
         className={`lg:hidden fixed inset-0 bg-black/40 z-50
                     transition-opacity duration-500 ease-in-out
@@ -93,7 +68,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
         onClick={onClose}
       />
 
-      {/* Bottom sheet */}
       <div
         className={`lg:hidden fixed inset-x-0 bottom-0 z-50
                     bg-base-100 rounded-t-2xl max-h-[80vh] overflow-y-auto shadow-2xl
@@ -101,7 +75,6 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
                     ${isOpen ? "translate-y-0" : "translate-y-full"}`}
         dir="rtl"
       >
-        {/* Header */}
         <div className="sticky top-0 bg-base-100 flex items-center justify-between p-4 border-b border-base-300 z-10 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <IoBookOutline className="text-lg text-cyan-700" />
@@ -128,11 +101,9 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
   );
 }
 
-/* ── Shared content for both desktop & mobile ── */
 function PanelContent({ activeTab, onTabChange, explanation }) {
   return (
     <div className="p-4">
-      {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-base-300" role="tablist">
         <button
           role="tab"
@@ -160,7 +131,6 @@ function PanelContent({ activeTab, onTabChange, explanation }) {
         </button>
       </div>
 
-      {/* Tab content */}
       {activeTab === "text" ? (
         <TextExplanation explanation={explanation} />
       ) : (
@@ -170,11 +140,9 @@ function PanelContent({ activeTab, onTabChange, explanation }) {
   );
 }
 
-/* ── Text Explanation Tab ── */
 function TextExplanation({ explanation }) {
   return (
     <div className="space-y-5">
-      {/* Summary */}
       {explanation?.summary && (
         <div>
           <h3 className="font-3 font-bold text-base mb-2 text-cyan-800">المعنى الإجمالي:</h3>
@@ -184,7 +152,6 @@ function TextExplanation({ explanation }) {
         </div>
       )}
 
-      {/* Sections */}
       {explanation?.sections?.map((section, i) => (
         <div key={i}>
           <h3 className="font-3 font-bold text-base mb-2 text-cyan-800">{section.title}:</h3>
@@ -205,11 +172,9 @@ function TextExplanation({ explanation }) {
   );
 }
 
-/* ── Video Explanation Tab ── */
 function VideoExplanation({ explanation }) {
   return (
     <div className="space-y-5">
-      {/* Video thumbnail placeholder */}
       <div className="relative rounded-xl overflow-hidden bg-base-300 aspect-video flex items-center justify-center cursor-pointer group">
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <IoPlayCircleOutline className="text-5xl text-white drop-shadow-lg z-10 group-hover:scale-110 transition-transform" />
@@ -220,7 +185,6 @@ function VideoExplanation({ explanation }) {
         </div>
       </div>
 
-      {/* Video title */}
       <div>
         <h3 className="font-3 font-bold text-sm text-base-content">
           {explanation?.videoTitle}
@@ -230,7 +194,6 @@ function VideoExplanation({ explanation }) {
         </p>
       </div>
 
-      {/* Key points */}
       {explanation?.keyPoints && (
         <div className="bg-base-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
 import AuthCard from '../components/auth/AuthCard';
 import { useAuth } from '../context/AuthContext';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 function GoogleIcon() {
   return (
@@ -24,14 +25,15 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loginGuest } = useAuth();
+  const { triggerGoogleAuth, googleLoading, googleError } = useGoogleAuth();
 
-  const [emailOrUsername, setEmailOrUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleGoogleAuth = () => {
-    alert('سيتم التوجيه لتسجيل الدخول عبر Google...');
+    triggerGoogleAuth();
   };
 
   const handleGuestAuth = () => {
@@ -45,7 +47,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(emailOrUsername, password);
+      await login(email, password);
       const from = location.state?.from?.pathname || '/home';
       navigate(from, { replace: true });
     } catch (err) {
@@ -54,6 +56,8 @@ export default function Login() {
       setIsSubmitting(false);
     }
   };
+
+  const displayedError = googleError || errorMsg;
 
   return (
     <AuthLayout>
@@ -82,22 +86,22 @@ export default function Login() {
             تسجيل الدخول
           </h2>
 
-          {errorMsg && (
+          {displayedError && (
             <div className="bg-red-500/20 border border-red-500/50 text-red-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
-              {errorMsg}
+              {displayedError}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-1.5">
 
             <div className="flex flex-col gap-0.5">
-              <label className={labelClass}>البريد الإلكتروني أو اسم المستخدم</label>
+              <label className={labelClass}>البريد الإلكتروني</label>
               <input
-                type="text"
-                value={emailOrUsername}
-                onChange={(e) => setEmailOrUsername(e.target.value)}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className={inputClass}
-                placeholder="ادخل البريد الإلكتروني أو اسم المستخدم"
+                placeholder="ادخل البريد الإلكتروني"
                 required
               />
             </div>
@@ -140,10 +144,11 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGoogleAuth}
-              className="w-full py-1.5 px-3.5 bg-white text-[#333] border-0 rounded-full font-2 text-[0.8rem] font-semibold cursor-pointer flex items-center justify-center gap-2 mb-1.5 hover:bg-gray-100 shadow-sm transition-colors"
+              disabled={googleLoading}
+              className="w-full py-1.5 px-3.5 bg-white text-[#333] border-0 rounded-full font-2 text-[0.8rem] font-semibold cursor-pointer flex items-center justify-center gap-2 mb-1.5 hover:bg-gray-100 shadow-sm transition-colors disabled:opacity-50"
             >
               <GoogleIcon />
-              <span>المتابعة باستخدام Google</span>
+              <span>{googleLoading ? 'جاري الاتصال بـ Google...' : 'المتابعة باستخدام Google'}</span>
             </button>
 
             <button

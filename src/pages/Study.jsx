@@ -3,14 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import Navbar from "../components/Navbar";
-import StudyToolbar from "../components/StudyToolbar";
-import HadithCard from "../components/HadithCard";
-import RecordButton from "../components/RecordButton";
-import AudioPlayer from "../components/AudioPlayer";
-import ExplanationPanel from "../components/ExplanationPanel";
+import Navbar from "../components/shared/Navbar";
+import StudyToolbar from "../components/study/StudyToolbar";
+import HadithCard from "../components/study/HadithCard";
+import RecordButton from "../components/study/RecordButton";
+import AudioPlayer from "../components/study/AudioPlayer";
+import ExplanationPanel from "../components/study/ExplanationPanel";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
+import { useAuth } from "../context/AuthContext";
+import GuestLoginModal from "../components/auth/GuestLoginModal";
 import logo from "../assets/logo.png";
 import user from "../assets/user.png";
 
@@ -270,6 +272,18 @@ export default function Study() {
 
   const currentHadith = hadithsList[currentHadithIndex] || null;
 
+  const { isGuest } = useAuth();
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+
+  // Automatically update progress to 1 (InProgress) when viewing a Hadith on Study page
+  useEffect(() => {
+    if (!isGuest && currentHadith?.id) {
+      hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
+        console.warn("Auto update hadith progress error:", err.message);
+      });
+    }
+  }, [currentHadith?.id, isGuest]);
+
   // Speech recognition
   const {
     spokenWords,
@@ -282,6 +296,10 @@ export default function Study() {
 
   // Toggle recording
   const handleRecordToggle = () => {
+    if (isGuest) {
+      setIsGuestModalOpen(true);
+      return;
+    }
     if (isListening) {
       stopListening();
     } else {
@@ -414,6 +432,14 @@ export default function Study() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         explanation={currentHadith?.explanation}
+      />
+
+      {/* ── Guest Login Modal ── */}
+      <GuestLoginModal
+        isOpen={isGuestModalOpen}
+        onClose={() => setIsGuestModalOpen(false)}
+        title="تسجيل الدخول لبدء التسميع"
+        message="التسميع الصوتي واكتشاف أخطاء الحفظ بالذكاء الاصطناعي يتطلب تسجيل الدخول إلى حسابك."
       />
     </div>
   );

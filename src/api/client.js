@@ -42,24 +42,41 @@ export async function apiFetch(endpoint, options = {}) {
       headers,
     });
 
-    // Handle 401 Unauthorized
-    if (response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("tokenExpiration");
-      throw new Error("انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم");
-    }
-
     const contentType = response.headers.get("content-type");
     let resData = null;
     if (contentType && contentType.includes("application/json")) {
-      resData = await response.json();
+      try {
+        resData = await response.json();
+      } catch {
+        resData = null;
+      }
     } else {
       resData = await response.text();
     }
 
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenExpiration");
+
+      if (endpoint.includes("/api/Auth/login")) {
+        const rawMsg = resData?.msg || resData?.message;
+        if (rawMsg === "Invalid email or password.") {
+          throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+        }
+        throw new Error(rawMsg || "بيانات تسجيل الدخول غير صحيحة.");
+      }
+
+      const serverMsg = resData?.msg || resData?.message;
+      throw new Error(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم");
+    }
+
     if (!response.ok) {
-      const errorMsg = resData?.msg || resData?.message || "تعذَّر الاتصال بخدمة أثر حالياً، يرجى المحاولة لاحقاً";
-      throw new Error(errorMsg);
+      let errorMsg = resData?.msg || resData?.message;
+      if (errorMsg === "Email is not confirmed. Please confirm your email first.") {
+        errorMsg = "البريد الإلكتروني غير مؤكد. يرجى تأكيد حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني أولاً.";
+      }
+      throw new Error(errorMsg || "تعذَّر الاتصال بخدمة أثر حالياً، يرجى المحاولة لاحقاً");
     }
 
     // Unpack backend response wrapper { isSuccess, data, message } if present

@@ -1,15 +1,38 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoLogInOutline, IoPersonAddOutline, IoBookOutline, IoMicOutline, IoStatsChartOutline } from "react-icons/io5";
 import { BsStars } from "react-icons/bs";
-import Navbar from "../components/Navbar";
-import Stat from "../components/Stat";
-import Progress from "../components/Progress";
-import Tasks from "../components/Tasks";
+import Navbar from "../components/shared/Navbar";
+import Stat from "../components/home/Stat";
+import Progress from "../components/home/Progress";
+import Tasks from "../components/home/Tasks";
 import { useAuth } from "../context/AuthContext";
+import { dashboardService } from "../services/dashboardService";
 
 function Home() {
-  const { isGuest, logout } = useAuth();
+  const { isAuthenticated, isGuest, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [summaryData, setSummaryData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadDashboardSummary() {
+      if (isGuest || !isAuthenticated) return;
+
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getSummary();
+        setSummaryData(data);
+      } catch (err) {
+        console.warn("Could not fetch dashboard summary from API:", err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDashboardSummary();
+  }, [isAuthenticated, isGuest]);
 
   const handleLoginRedirect = () => {
     logout();
@@ -20,6 +43,51 @@ function Home() {
     logout();
     navigate("/signup");
   };
+
+  // Extract lastOpenedBook object from summaryData API response
+  const lastOpenedBook = summaryData?.lastOpenedBook || summaryData?.lastBook || null;
+
+  // Memorized hadith count from lastOpenedBook (or top-level summaryData)
+  const memorizedHadithCount =
+    lastOpenedBook?.memorizedHadithCount ??
+    lastOpenedBook?.memorizedHadithsCount ??
+    lastOpenedBook?.memorizedCount ??
+    lastOpenedBook?.hadithCount ??
+    summaryData?.totalMemorizedHadiths ??
+    summaryData?.memorizedHadithsCount ??
+    summaryData?.memorizedCount ??
+    summaryData?.totalMemorized ??
+    0;
+
+  // Progress percentage from lastOpenedBook (or top-level summaryData)
+  const rawProgress =
+    lastOpenedBook?.percentage ??
+    lastOpenedBook?.progressPercentage ??
+    lastOpenedBook?.progressRatio ??
+    lastOpenedBook?.progress ??
+    lastOpenedBook?.completionPercentage ??
+    lastOpenedBook?.completionRate ??
+    summaryData?.progressPercentage ??
+    summaryData?.progress ??
+    0;
+
+  const progressPercentage = Math.min(Math.max(Number(rawProgress) || 0, 0), 100);
+
+  // Extract inProgressHadithCount from lastOpenedBook (or top-level summaryData)
+  const inProgressHadithCount =
+    lastOpenedBook?.inProgressHadithCount ??
+    lastOpenedBook?.inProgressCount ??
+    summaryData?.inProgressHadithCount ??
+    summaryData?.inProgressCount ??
+    0;
+
+  // Streak & accuracy metrics
+  const daysStreak = summaryData?.dayStreak ?? summaryData?.daysStreak ?? summaryData?.streakDays ?? summaryData?.days ?? 0;
+  const accuracyRate = summaryData?.accuracyRate ?? summaryData?.accuracyPercentage ?? summaryData?.accuracy ?? 0;
+
+  // Book title and ID for "أكمل من حيث توقفت"
+  const currentBookTitle = lastOpenedBook?.title ?? lastOpenedBook?.name ?? summaryData?.currentBookTitle ?? summaryData?.title ?? "لم يتم فتح أي كتاب بعد";
+  const currentBookId = lastOpenedBook?.id ?? lastOpenedBook?.bookId ?? null;
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -93,9 +161,28 @@ function Home() {
         ) : (
           /* ── Authenticated User Main Home Content ── */
           <>
-            <Stat days={12} hadith={145} accuracy={92} />
-            <Progress title="الأربعين النووية" progress={100} />
-            <Tasks />
+            {isLoading ? (
+              <div className="space-y-6 mt-8 animate-pulse">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="h-24 bg-base-100 rounded-2xl" />
+                  <div className="h-24 bg-base-100 rounded-2xl" />
+                  <div className="h-24 bg-base-100 rounded-2xl" />
+                </div>
+                <div className="h-32 bg-base-100 rounded-2xl" />
+                <div className="h-44 bg-base-100 rounded-2xl" />
+              </div>
+            ) : (
+              <>
+                <Stat days={daysStreak} hadith={memorizedHadithCount} accuracy={accuracyRate} />
+                <Progress
+                  title={currentBookTitle}
+                  progress={progressPercentage}
+                  bookId={currentBookId}
+                  inProgressHadithCount={inProgressHadithCount}
+                />
+                <Tasks summary={summaryData} />
+              </>
+            )}
           </>
         )}
 
