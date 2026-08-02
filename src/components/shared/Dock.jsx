@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { IoHomeOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
@@ -20,16 +21,36 @@ const NAV_ITEMS = [
 export default function Dock({ activePage = "home" }) {
   return (
     <div className="dock font-2 z-50" dir="rtl">
-      {NAV_ITEMS.map((item) => (
-        <a
-          key={item.id}
-          href={item.href}
-          className={item.id === activePage ? "dock-active" : ""}
-        >
-          <span className="text-xl text-cyan-700">{item.icon}</span>
-          <span className="dock-label">{item.label}</span>
-        </a>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const content = (
+          <>
+            <span className="text-xl text-cyan-700">{item.icon}</span>
+            <span className="dock-label">{item.label}</span>
+          </>
+        );
+
+        if (item.href.startsWith("/")) {
+          return (
+            <Link
+              key={item.id}
+              to={item.href}
+              className={item.id === activePage ? "dock-active" : ""}
+            >
+              {content}
+            </Link>
+          );
+        }
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className={item.id === activePage ? "dock-active" : ""}
+          >
+            {content}
+          </button>
+        );
+      })}
     </div>
   );
 }
