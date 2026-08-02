@@ -27,7 +27,7 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
       </div>
 
       {/* Unified Top Navigation Header Bar */}
-      <header className="flex items-center gap-3 mb-8">
+      <header className="flex items-center gap-3 mb-4">
         {/* Desktop Profile avatar (lg+) – clicking opens sidebar drawer */}
         <label
           htmlFor="sidebar-drawer"

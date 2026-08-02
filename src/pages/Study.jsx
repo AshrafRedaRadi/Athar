@@ -365,7 +365,7 @@ export default function Study() {
                 />
                
                 {/* Hadith Card Area */}
-                <div className="flex-1 flex flex-col justify-center my-4">
+                <div className="flex-1 flex flex-col justify-center mt-1 sm:mt-1 mb-4">
                   <HadithCard 
                     bookTitle={currentHadith.bookTitle || "الأربعون النووية"}
                     hadithLabel={currentHadith.hadithNumber}
@@ -446,6 +446,7 @@ export default function Study() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         explanation={backendExplanations || currentHadith?.explanation}
+        hadith={currentHadith}
       />
 
       {/* ── Guest Login Modal ── */}

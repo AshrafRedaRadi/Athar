@@ -101,9 +101,9 @@ export default function Library() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في المتون والأحاديث..."
+                placeholder="ابحث في المكتبة ..."
                 className="grow"
-                aria-label="بحث في المتون"
+                aria-label="بحث في المكتبة"
               />
             </label>
           }

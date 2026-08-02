@@ -17,46 +17,47 @@ export default function StudyToolbar({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-1.5 sm:gap-3 mb-4 pt-1 ${className}`}
+      className={`sticky -top-6 z-30 flex items-center justify-between gap-1 sm:gap-3 py-3 px-2 w-full bg-base-200/35 backdrop-blur-md transition-all duration-200 ${className}`}
       dir="rtl"
     >
       {/* Right: Back to library & Back to Index buttons */}
-      <div className="flex items-center gap-1 sm:gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
         <Link
           to="/library"
-          className="group btn btn-xs sm:btn-sm border border-base-300 bg-base-100 hover:bg-cyan-700 hover:text-white hover:border-transparent text-base-content/80 font-2 text-[11px] sm:text-sm rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2 sm:px-3.5 h-7 sm:h-auto min-h-0 sm:min-h-[2rem]"
+          className="group btn btn-xs sm:btn-sm border border-base-300 bg-base-100 hover:bg-cyan-700 hover:text-white hover:border-transparent text-base-content/80 font-2 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem]"
         >
-          <IoLibraryOutline className="text-sm sm:text-base text-cyan-700 group-hover:text-white transition-colors" />
+          <IoLibraryOutline className="text-sm sm:text-base text-cyan-700 group-hover:text-white transition-colors shrink-0" />
           <span>المكتبة</span>
         </Link>
 
         <Link
           to={bookId ? `/library/${bookId}/${sectionId}` : "/library"}
-          className="btn btn-xs sm:btn-sm bg-cyan-700/10 hover:bg-cyan-700 text-cyan-800 dark:text-cyan-300 hover:text-white border border-cyan-700/20 hover:border-transparent font-2 text-[11px] sm:text-sm rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2 sm:px-3.5 h-7 sm:h-auto min-h-0 sm:min-h-[2rem]"
+          className="btn btn-xs sm:btn-sm bg-cyan-700/10 hover:bg-cyan-700 text-cyan-800 dark:text-cyan-300 hover:text-white border border-cyan-700/20 hover:border-transparent font-2 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem]"
         >
-          <IoListOutline className="text-sm sm:text-base" />
-          <span>فهرس الكتاب</span>
+          <IoListOutline className="text-sm sm:text-base shrink-0" />
+          <span className="hidden sm:inline">فهرس الكتاب</span>
+          <span className="sm:hidden">الفهرس</span>
         </Link>
       </div>
 
       {/* Left: Prev/Next hadith navigation controls */}
-      <div className="flex items-center gap-0.5 bg-base-100 border border-base-300 rounded-lg sm:rounded-xl p-0.5 sm:p-1 shadow-xs">
+      <div className="flex items-center gap-0.5 bg-base-100 border border-base-300 rounded-lg sm:rounded-xl p-0.5 shadow-xs shrink-0">
         <button
           onClick={onPrevHadith}
           disabled={!hasPrev}
-          className="btn btn-xs btn-ghost font-2 gap-0.5 sm:gap-1 text-[11px] sm:text-sm text-base-content/70 hover:text-cyan-700 hover:bg-base-200 rounded-md sm:rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors h-7 sm:h-auto min-h-0 sm:min-h-[2rem] px-1.5 sm:px-2"
+          className="btn btn-xs btn-ghost font-2 gap-0.5 text-[10px] sm:text-xs text-base-content/70 hover:text-cyan-700 hover:bg-base-200 rounded-md sm:rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors h-7 sm:h-auto min-h-0 sm:min-h-[2rem] px-1 sm:px-2"
           aria-label="الحديث السابق"
         >
           <IoChevronForward className="text-xs sm:text-base" />
           <span>السابق</span>
         </button>
 
-        <div className="w-px h-4 sm:h-5 bg-base-300"></div>
+        <div className="w-px h-3.5 sm:h-5 bg-base-300"></div>
 
         <button
           onClick={onNextHadith}
           disabled={!hasNext}
-          className="btn btn-xs btn-ghost font-2 gap-0.5 sm:gap-1 text-[11px] sm:text-sm text-base-content/70 hover:text-cyan-700 hover:bg-base-200 rounded-md sm:rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors h-7 sm:h-auto min-h-0 sm:min-h-[2rem] px-1.5 sm:px-2"
+          className="btn btn-xs btn-ghost font-2 gap-0.5 text-[10px] sm:text-xs text-base-content/70 hover:text-cyan-700 hover:bg-base-200 rounded-md sm:rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors h-7 sm:h-auto min-h-0 sm:min-h-[2rem] px-1 sm:px-2"
           aria-label="الحديث التالي"
         >
           <span>التالي</span>

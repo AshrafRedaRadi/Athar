@@ -32,6 +32,8 @@ export function formatHadith(item, fallbackIndex = 0) {
     grade: HADITH_GRADE_MAP[item.grade] || "",
     hadithBookId: item.hadithBookId,
     hadithSectionId: item.hadithSectionId,
+    audioUrl: item.audioUrl || "",
+    videoExplanation: item.videoExplanationYouTubeId || "",
   };
 }
 
