@@ -24,19 +24,19 @@ export default function StudyToolbar({
       <div className="flex items-center gap-1.5 sm:gap-2.5">
         <Link
           to="/library"
-          className="group btn btn-xs sm:btn-sm border border-base-300 bg-base-100 hover:bg-cyan-700 hover:text-white hover:border-transparent text-base-content/80 font-2 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem]"
+          className="group inline-flex items-center justify-center gap-1 sm:gap-1.5 btn btn-xs sm:btn-sm border border-base-300 bg-base-100 hover:bg-cyan-700 hover:text-white hover:border-transparent text-base-content/80 font-2 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem] leading-none"
         >
           <IoLibraryOutline className="text-sm sm:text-base text-cyan-700 group-hover:text-white transition-colors shrink-0" />
-          <span>المكتبة</span>
+          <span className="leading-none">المكتبة</span>
         </Link>
 
         <Link
           to={bookId ? `/library/${bookId}/${sectionId}` : "/library"}
-          className="group btn btn-xs sm:btn-sm bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 border border-cyan-600/40 dark:border-cyan-400/50 hover:border-transparent font-2 text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem]"
+          className="group inline-flex items-center justify-center gap-1 sm:gap-1.5 btn btn-xs sm:btn-sm bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 border border-cyan-600/40 dark:border-cyan-400/50 hover:border-transparent font-2 text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl shadow-xs transition-all duration-200 px-2.5 sm:px-3.5 h-7.5 sm:h-auto min-h-0 sm:min-h-[2rem] leading-none"
         >
           <IoListOutline className="text-sm sm:text-base text-cyan-700 dark:text-cyan-200 group-hover:text-white transition-colors shrink-0" />
-          <span className="hidden sm:inline text-cyan-700 dark:text-cyan-200 group-hover:text-white">فهرس الكتاب</span>
-          <span className="sm:hidden text-cyan-700 dark:text-cyan-200 group-hover:text-white">الفهرس</span>
+          <span className="hidden sm:inline-block leading-none text-cyan-700 dark:text-cyan-200 group-hover:text-white">فهرس الكتاب</span>
+          <span className="sm:hidden inline-block leading-none text-cyan-700 dark:text-cyan-200 group-hover:text-white">الفهرس</span>
         </Link>
       </div>
 
