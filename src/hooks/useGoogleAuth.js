@@ -40,12 +40,16 @@ export function useGoogleAuth() {
     setGoogleError('');
     setGoogleLoading(true);
 
-    const fallbackClientId = "1084239857912-g5h1m9k2j3l4a5b6c7d8e9f0.apps.googleusercontent.com";
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || fallbackClientId;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-    if (!clientId) {
+    // Check if missing or using standard dummy placeholder
+    const isInvalidOrPlaceholder = !clientId || 
+      clientId.includes('g5h1m9k2j3l4a5b6c7d8e9f0') || 
+      clientId.includes('YOUR_GOOGLE_CLIENT_ID');
+
+    if (isInvalidOrPlaceholder) {
       setGoogleLoading(false);
-      setGoogleError('يرجى إضافة VITE_GOOGLE_CLIENT_ID في ملف البيئة (.env) لتأكيد الربط مع حسابات Google.');
+      setGoogleError('رمز VITE_GOOGLE_CLIENT_ID غير مهيأ أو يحتوي على قيمة افتراضية. يرجى إضافة Client ID صحيح من Google Cloud Console في ملف .env ثم إعادة تشغيل السيرفر.');
       return;
     }
 
