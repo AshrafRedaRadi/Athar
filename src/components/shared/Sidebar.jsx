@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
@@ -11,17 +11,59 @@ import logoImg from "../../assets/logo.png";
  * Sidebar component with pure Tailwind CSS slide transition from the right.
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
-function Sidebar(props) {
+function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar }) {
   const { user, isGuest } = useAuth();
+  const drawerRef = useRef(null);
 
-  const userName = props.userName || user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
-  const userAvatar = props.user || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+  const userName = customName || user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
+  const userAvatar = customAvatar || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
+  const closeDrawer = () => {
+    if (drawerRef.current) {
+      drawerRef.current.checked = false;
+    }
+  };
+
+  useEffect(() => {
+    // 1024px matches Tailwind CSS 'lg' breakpoint threshold
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+
+    const handleMediaChange = (e) => {
+      // Close sidebar immediately when transitioning from large screen to small screen
+      if (e.matches && drawerRef.current?.checked) {
+        drawerRef.current.checked = false;
+      }
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleMediaChange);
+    } else {
+      mediaQuery.addListener(handleMediaChange);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", handleMediaChange);
+      } else {
+        mediaQuery.removeListener(handleMediaChange);
+      }
+    };
+  }, []);
+
+  const menuItems = [
+    { id: "home",         label: "الرئيسية", icon: <IoHomeOutline />,     href: "/" },
+    { id: "library",      label: "المكتبة",  icon: <BsBook />,            href: "/library" },
+    { id: "review",       label: "التحكم في الخطة",   icon: <BsClipboard2Check />, href: "#" },
+    { id: "achievements", label: "الإنجازات",icon: <RiAwardLine />,       href: "#" },
+    { id: "settings",     label: "الإعدادت", icon: <IoSettingsOutline />,  href: "#" },
+  ];
 
   return (
     <div>
       {/* Hidden checkbox toggle for sidebar */}
       <input
         id="sidebar-drawer"
+        ref={drawerRef}
         type="checkbox"
         className="peer hidden"
       />
@@ -38,79 +80,66 @@ function Sidebar(props) {
       <div
         dir="rtl"
         className="fixed top-0 right-0 h-full w-80 z-50 bg-base-200 text-base-content p-6 
-                   flex flex-col justify-between shadow-2xl
-                   transition-transform duration-500 ease-in-out will-change-transform
-                   translate-x-full peer-checked:translate-x-0"
+                   shadow-2xl transition-transform duration-500 ease-in-out will-change-transform
+                   translate-x-full peer-checked:translate-x-0 overflow-y-auto"
       >
-        <div>
-          {/* User Avatar + Welcome Header */}
-          <div className="flex items-center justify-start gap-3 border-b border-base-300 pb-4">
-            {/* User Avatar (Right in RTL) */}
-            <div className="avatar shrink-0">
-              <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 ring-offset-2 overflow-hidden">
-                <img src={userAvatar} alt={userName} />
-              </div>
-            </div>
-            {/* Welcome Text + Username */}
-            <div className="flex flex-col text-start">
-              <span className="text-xs text-base-content/60 font-2">أهلاً بك،</span>
-              <span className="font-1 font-bold text-base text-base-content">
-                {userName}
-              </span>
+        {/* User Avatar + Welcome Header */}
+        <div className="flex items-center justify-start gap-3 border-b border-base-300 pb-4">
+          {/* User Avatar (Right in RTL) */}
+          <div className="avatar shrink-0">
+            <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 ring-offset-2 overflow-hidden">
+              <img src={userAvatar} alt={userName} />
             </div>
           </div>
-
-          {/* Athar Logo */}
-          <div className="flex justify-center mt-4">
-            <img
-              src={logoImg}
-              alt="Athar Logo"
-              className="w-20"
-            />
+          {/* Welcome Text + Username */}
+          <div className="flex flex-col text-start">
+            <span className="text-xs text-base-content/60 font-2">أهلاً بك،</span>
+            <span className="font-1 font-bold text-base text-base-content">
+              {userName}
+            </span>
           </div>
-          <h1 className="font-1 font-bold text-cyan-600 text-2xl text-center">منصة أثر</h1>
+        </div>
 
-          {/* Menu Items */}
-          <div className="mt-6 space-y-3">
-            {[
-              { id: "home",         label: "الرئيسية",   icon: <IoHomeOutline />,      href: "/" },
-              { id: "library",      label: "المكتبة",    icon: <BsBook />,             href: "/library" },
-              { id: "review",       label: "المراجعة",   icon: <BsClipboard2Check />,  href: "#" },
-              { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "#" },
-              { id: "settings",     label: "الإعدادت",   icon: <IoSettingsOutline />,   href: "#" },
-            ].map((item) => {
-              const isActive = props.activePage === item.id;
-              const classes = `btn font-2 rounded-xl justify-start w-full ${
-                isActive
-                  ? "bg-cyan-700 text-white border-transparent"
-                  : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
-              }`;
+        {/* Athar Logo */}
+        <div className="flex justify-center mt-4">
+          <img src={logoImg} alt="Athar Logo" className="w-20" />
+        </div>
+        <h1 className="font-1 font-bold text-cyan-600 text-2xl text-center">منصة أثر</h1>
 
-              if (item.href.startsWith("/")) {
-                return (
-                  <Link
-                    key={item.id}
-                    to={item.href}
-                    dir="rtl"
-                    className={classes}
-                  >
-                    {item.icon}  {item.label}
-                  </Link>
-                );
-              }
+        {/* Menu Items */}
+        <div className="mt-6 space-y-3">
+          {menuItems.map((item) => {
+            const isActive = activePage === item.id;
+            const classes = `btn font-2 rounded-xl justify-start w-full ${
+              isActive
+                ? "bg-cyan-700 text-white border-transparent"
+                : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
+            }`;
 
+            if (item.href.startsWith("/")) {
               return (
-                <button
+                <Link
                   key={item.id}
-                  type="button"
-                  dir="rtl"
+                  to={item.href}
                   className={classes}
+                  onClick={closeDrawer}
                 >
                   {item.icon}  {item.label}
-                </button>
+                </Link>
               );
-            })}
-          </div>
+            }
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={classes}
+                onClick={closeDrawer}
+              >
+                {item.icon}  {item.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
