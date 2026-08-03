@@ -219,9 +219,17 @@ export default function Study() {
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("text"); // "text" | "video"
-  const [isHidden, setIsHidden] = useState(true);
-
+  const [isHidden, setIsHidden] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const audioControlRef = useRef(null);
+
+  const handleAudioToggle = () => {
+    if (audioControlRef.current && audioControlRef.current.togglePlay) {
+      audioControlRef.current.togglePlay();
+    }
+  };
 
   // Fetch hadiths from backend API if bookId is present in route
   useEffect(() => {
@@ -382,15 +390,30 @@ export default function Study() {
                
                 <RecordButton 
                   isRecording={isListening} 
-                  onToggle={handleRecordToggle} 
-                  onRecite={handleRecordToggle}
-                  onListen={() => {
-                    console.log("Listening mode selected");
+                  onToggle={() => {
+                    if (audioControlRef.current && audioControlRef.current.pause) {
+                      audioControlRef.current.pause();
+                    }
+                    setIsAudioListeningMode(false);
+                    handleRecordToggle();
+                  }} 
+                  onRecite={() => {
+                    if (audioControlRef.current && audioControlRef.current.pause) {
+                      audioControlRef.current.pause();
+                    }
+                    setIsAudioListeningMode(false);
+                    if (!isListening) handleRecordToggle();
                   }}
+                  onListen={() => {
+                    setIsAudioListeningMode(true);
+                  }}
+                  isListenModeActive={isAudioListeningMode}
+                  isAudioPlaying={isAudioPlaying}
+                  onAudioToggle={handleAudioToggle}
                 />
 
-               {/* Bottom Left Action Bar: 3 icon buttons beside AudioPlayer on left side (desktop) / bottom-left above Dock (mobile) */}
-               <div className="fixed z-45 transition-all duration-300 flex items-center gap-2 sm:gap-2.5 bottom-20 left-6 lg:bottom-1.5 lg:right-[calc(50%+265px)] lg:left-auto" dir="rtl">
+               {/* Bottom Action Bar: 3 icon buttons beside AudioPlayer (desktop) / floating above dock (mobile) */}
+               <div className="fixed z-45 transition-all duration-300 flex items-center gap-1.5 sm:gap-2.5 bottom-[72px] left-2 lg:bottom-5 lg:right-[calc(50%+227px)] lg:left-auto" dir="rtl">
                  {/* 1. Hide / Reveal Text Button */}
                  <button
                    onClick={() => setIsHidden(!isHidden)}
@@ -431,11 +454,15 @@ export default function Study() {
           </div>
         </div>
 
-        {/* Audio Player */}
+        {/* Audio Player — Always visible on Desktop, or when Listening Mode is activated on Mobile */}
         <AudioPlayer 
+          hadith={currentHadith}
           hadithLabel={currentHadith?.hadithNumber || ""} 
-          reader={currentHadith?.reader || ""} 
-          duration={currentHadith?.duration || ""} 
+          reader={currentHadith?.reader || "القارئ: أحمد النفيس"} 
+          onClose={() => setIsAudioListeningMode(false)}
+          onPlaybackChange={(playing) => setIsAudioPlaying(playing)}
+          audioControlRef={audioControlRef}
+          isMobileListening={isAudioListeningMode}
         />
       </div>
 

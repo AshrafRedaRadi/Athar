@@ -1,102 +1,241 @@
-import React, { useState } from "react";
-import { IoPlaySharp, IoPauseSharp } from "react-icons/io5";
-import { RiForward10Line, RiReplay10Line } from "react-icons/ri";
-import { HiOutlineSpeakerWave } from "react-icons/hi2";
-import { TbRepeat } from "react-icons/tb";
-import { MdSpeed } from "react-icons/md";
+import React, { useState, useEffect, useRef } from "react";
+import DesktopAudioPlayer from "./DesktopAudioPlayer";
+import MobileAudioPlayer from "./MobileAudioPlayer";
+import { getImageUrl } from "../../api/client";
 
 /**
- * AudioPlayer — compact centered audio bar for Study page.
+ * Format seconds to MM:SS
  */
-export default function AudioPlayer({ hadithLabel, reader, duration = "01:42" }) {
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
+}
+
+const SPEED_OPTIONS = [1, 1.25, 1.5, 2];
+const SAMPLE_FALLBACK_AUDIO = "https://server8.mp3quran.net/afs/001.mp3";
+
+/**
+ * AudioPlayer — Central orchestrator managing audio state and HTML5 audio element,
+ * rendering DesktopAudioPlayer & MobileAudioPlayer modular subcomponents.
+ */
+export default function AudioPlayer({ 
+  hadith, 
+  hadithLabel, 
+  reader = "القارئ: أحمد النفيس", 
+  onClose,
+  onPlaybackChange,
+  audioControlRef,
+  isMobileListening = false
+}) {
+  const audioRef = useRef(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState("00:15");
-  const [progress, setProgress] = useState(15);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+
+  const rawAudioUrl = hadith?.audioUrl;
+  const audioSrc = rawAudioUrl ? getImageUrl(rawAudioUrl) : SAMPLE_FALLBACK_AUDIO;
+
+  // Reset player state when Hadith changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentTimeSec(0);
+    setProgress(0);
+    setDurationSec(0);
+    setShowSpeedMenu(false);
+    setIsMobileExpanded(false);
+  }, [hadith?.id, audioSrc]);
+
+  // Close expanded mobile popup card whenever mobile listening mode is deactivated
+  useEffect(() => {
+    if (!isMobileListening) {
+      setIsMobileExpanded(false);
+    }
+  }, [isMobileListening]);
+
+  // Sync playback speed
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  // Sync loop
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.loop = isLooping;
+    }
+  }, [isLooping]);
+
+  // Sync mute
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const togglePlay = () => {
+    if (!audioRef.current || !audioSrc) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          console.error("Audio playback error:", err);
+          setIsPlaying(false);
+        });
+    }
+  };
+
+  // Notify parent of playback state change
+  useEffect(() => {
+    if (onPlaybackChange) {
+      onPlaybackChange(isPlaying);
+    }
+  }, [isPlaying, onPlaybackChange]);
+
+  // Expose togglePlay & pause ref to parent
+  useEffect(() => {
+    if (audioControlRef) {
+      audioControlRef.current = {
+        togglePlay,
+        pause: () => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+          }
+        },
+        isPlaying
+      };
+    }
+  });
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    const current = audioRef.current.currentTime || 0;
+    const dur = audioRef.current.duration || 0;
+    setCurrentTimeSec(current);
+    if (dur > 0) {
+      setDurationSec(dur);
+      setProgress((current / dur) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDurationSec(audioRef.current.duration || 0);
+    }
+  };
+
+  const handleEnded = () => {
+    if (!isLooping) {
+      setIsPlaying(false);
+      setProgress(0);
+      setCurrentTimeSec(0);
+    }
+  };
+
+  const handleSeek = (e) => {
+    const val = Number(e.target.value);
+    setProgress(val);
+    if (audioRef.current && durationSec > 0) {
+      const newTime = (val / 100) * durationSec;
+      audioRef.current.currentTime = newTime;
+      setCurrentTimeSec(newTime);
+    }
+  };
+
+  const skipTime = (seconds) => {
+    if (!audioRef.current) return;
+    const newTime = Math.max(0, Math.min(durationSec || 0, (audioRef.current.currentTime || 0) + seconds));
+    audioRef.current.currentTime = newTime;
+    setCurrentTimeSec(newTime);
+  };
 
   return (
-    <div
-      className="hidden lg:block fixed bottom-0 left-1/2 -translate-x-1/2 z-40
-                 bg-base-100 border border-base-300 rounded-t-2xl shadow-[0_-2px_16px_rgba(0,0,0,0.10)]
-                 w-[95%] max-w-lg"
-      dir="rtl"
-    >
-      <div className="flex items-center gap-2 px-3 py-1.5">
+    <>
+      {/* Hidden HTML5 Audio Element */}
+      {audioSrc && (
+        <audio
+          ref={audioRef}
+          src={audioSrc}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleEnded}
+          preload="metadata"
+        />
+      )}
 
-        <div className="flex items-center gap-2 min-w-0 shrink-0">
-          <HiOutlineSpeakerWave className="text-lg text-cyan-700 shrink-0" />
-          <div className="min-w-0">
-            <p className="font-3 font-bold text-xs text-base-content truncate">
-              {hadithLabel}
-            </p>
-            <p className="font-2 text-[10px] text-base-content/50 truncate">
-              {reader}
-            </p>
-          </div>
-        </div>
+      {/* Outer Responsive Wrapper Container */}
+      <div
+        className="fixed z-45 transition-all duration-300
+                   bottom-[72px] right-[56px] left-[138px] flex justify-center items-center pointer-events-none lg:pointer-events-auto lg:block
+                   lg:bottom-1.5 lg:left-[calc(50%+38px)] lg:right-auto lg:-translate-x-1/2
+                   w-auto lg:w-[95%] lg:max-w-lg"
+        dir="rtl"
+      >
+        {/* Mobile Sub-component (< lg) */}
+        <MobileAudioPlayer
+          isMobileListening={isMobileListening}
+          audioSrc={audioSrc}
+          isPlaying={isPlaying}
+          togglePlay={togglePlay}
+          isMobileExpanded={isMobileExpanded}
+          setIsMobileExpanded={setIsMobileExpanded}
+          reader={reader}
+          currentTimeSec={currentTimeSec}
+          durationSec={durationSec}
+          formatTime={formatTime}
+          progress={progress}
+          handleSeek={handleSeek}
+          skipTime={skipTime}
+          playbackSpeed={playbackSpeed}
+          setPlaybackSpeed={setPlaybackSpeed}
+          isLooping={isLooping}
+          setIsLooping={setIsLooping}
+          isMuted={isMuted}
+          setIsMuted={setIsMuted}
+        />
 
-        <div className="flex-1 flex flex-col items-center gap-0.5">
-          <div className="flex items-center gap-1">
-            <button
-              className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-cyan-700"
-              aria-label="ترجيع 10 ثوانٍ"
-            >
-              <RiReplay10Line className="text-base" />
-            </button>
-
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="btn btn-circle btn-xs bg-cyan-700 hover:bg-cyan-800 text-white border-none flex items-center justify-center p-0"
-              aria-label={isPlaying ? "إيقاف" : "تشغيل"}
-            >
-              {isPlaying ? (
-                <IoPauseSharp className="text-sm" />
-              ) : (
-                <IoPlaySharp className="text-sm translate-x-[1px]" />
-              )}
-            </button>
-
-            <button
-              className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-cyan-700"
-              aria-label="تقديم 10 ثوانٍ"
-            >
-              <RiForward10Line className="text-base" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 w-full">
-            <span className="font-2 text-[9px] text-base-content/40 min-w-[28px] text-center">
-              {duration}
-            </span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="range range-xs range-info flex-1 [--range-fill-bg:theme(colors.cyan.700)]"
-              dir="ltr"
-            />
-            <span className="font-2 text-[9px] text-base-content/40 min-w-[28px] text-center">
-              {currentTime}
-            </span>
-          </div>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-0.5 shrink-0">
-          <button
-            className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-cyan-700"
-            aria-label="سرعة التشغيل"
-          >
-            <MdSpeed className="text-base" />
-          </button>
-          <button
-            className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-cyan-700"
-            aria-label="تكرار"
-          >
-            <TbRepeat className="text-base" />
-          </button>
-        </div>
+        {/* Desktop Sub-component (>= lg) */}
+        <DesktopAudioPlayer
+          audioSrc={audioSrc}
+          isPlaying={isPlaying}
+          togglePlay={togglePlay}
+          skipTime={skipTime}
+          currentTimeSec={currentTimeSec}
+          durationSec={durationSec}
+          formatTime={formatTime}
+          progress={progress}
+          handleSeek={handleSeek}
+          hadithLabel={hadithLabel}
+          reader={reader}
+          isMuted={isMuted}
+          setIsMuted={setIsMuted}
+          playbackSpeed={playbackSpeed}
+          setPlaybackSpeed={setPlaybackSpeed}
+          showSpeedMenu={showSpeedMenu}
+          setShowSpeedMenu={setShowSpeedMenu}
+          SPEED_OPTIONS={SPEED_OPTIONS}
+          isLooping={isLooping}
+          setIsLooping={setIsLooping}
+        />
       </div>
-    </div>
+    </>
   );
 }

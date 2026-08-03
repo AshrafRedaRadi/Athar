@@ -10,7 +10,10 @@ export default function RecordButton({
   isRecording = false, 
   onToggle,
   onListen,
-  onRecite 
+  onRecite,
+  isListenModeActive = false,
+  isAudioPlaying = false,
+  onAudioToggle
 }) {
   const [showOptions, setShowOptions] = useState(false);
   const [isListenReady, setIsListenReady] = useState(false);
@@ -54,18 +57,17 @@ export default function RecordButton({
       return;
     }
 
-    if (isPlayingAudio) {
-      setIsPlayingAudio(false);
-      setIsListenReady(true);
+    // On mobile (< 1024px), if in listening mode, toggle audio playback
+    if (window.innerWidth < 1024 && (isListenModeActive || isListenReady)) {
+      if (onAudioToggle) {
+        onAudioToggle();
+      } else if (onListen) {
+        onListen();
+      }
       return;
     }
 
-    if (isListenReady) {
-      setIsPlayingAudio(true);
-      if (onListen) onListen();
-      return;
-    }
-
+    // On Desktop or default mode, act as Mic recitation toggle
     if (onToggle) onToggle();
   };
 
@@ -74,6 +76,7 @@ export default function RecordButton({
     if (option === "listen") {
       setIsListenReady(true);
       setIsPlayingAudio(false);
+      if (onListen) onListen();
     } else if (option === "recite") {
       setIsListenReady(false);
       setIsPlayingAudio(false);
@@ -93,8 +96,8 @@ export default function RecordButton({
 
       <div 
         className="fixed z-45 transition-all duration-300
-                   bottom-20 right-6
-                   lg:bottom-1.5 lg:left-[calc(50%+265px)] lg:right-auto lg:translate-x-0"
+                   bottom-[72px] right-2
+                   lg:bottom-3 lg:left-[calc(50%+303px)] lg:right-auto lg:translate-x-0"
         dir="rtl"
       >
         {showOptions && (
@@ -135,23 +138,31 @@ export default function RecordButton({
           onTouchStart={startPressTimer}
           onTouchEnd={cancelPressTimer}
           className={`
-            btn btn-circle w-16 h-16 lg:w-14 lg:h-14 min-h-0 border-none text-white flex items-center justify-center
+            btn btn-circle w-16 h-16 lg:w-16 lg:h-16 min-h-0 border-none text-white flex items-center justify-center
             transition-all duration-300 transform hover:scale-105 active:scale-95
             ${isRecording
               ? "bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 shadow-[0_0_30px_rgba(239,68,68,0.7)] animate-pulse"
               : "bg-gradient-to-tr from-cyan-600 via-cyan-400 to-sky-300 shadow-[0_0_28px_rgba(6,182,212,0.65)] hover:shadow-[0_0_36px_rgba(6,182,212,0.85)]"}
           `}
-          aria-label={isRecording ? "إيقاف التسميع" : isPlayingAudio ? "إيقاف مؤقت" : isListenReady ? "تشغيل الصوت" : "بدء التسميع"}
-          title={isRecording ? "إيقاف التسميع" : isPlayingAudio ? "إيقاف مؤقت" : isListenReady ? "تشغيل الصوت" : "بدء التسميع"}
+          aria-label={isRecording ? "إيقاف التسميع" : "بدء التسميع"}
+          title={isRecording ? "إيقاف التسميع" : "بدء التسميع"}
         >
           {isRecording ? (
-            <BsStopFill className="text-3xl lg:text-2xl" />
-          ) : isPlayingAudio ? (
-            <IoPauseSharp className="text-3xl lg:text-2xl" />
-          ) : isListenReady ? (
-            <IoPlaySharp className="text-3xl lg:text-2xl translate-x-[3px]" />
+            <BsStopFill className="text-3xl lg:text-3xl" />
           ) : (
-            <BsMicFill className="text-3xl lg:text-2xl" />
+            <>
+              {/* Mobile (< lg): show Play/Pause icon if listening mode active */}
+              {(isAudioPlaying || isPlayingAudio) ? (
+                <IoPauseSharp className="text-3xl lg:hidden" />
+              ) : (isListenModeActive || isListenReady) ? (
+                <IoPlaySharp className="text-3xl translate-x-[3px] lg:hidden" />
+              ) : (
+                <BsMicFill className="text-3xl lg:hidden" />
+              )}
+
+              {/* Desktop (>= lg): ALWAYS show Mic icon */}
+              <BsMicFill className="text-3xl hidden lg:block" />
+            </>
           )}
         </button>
       </div>
