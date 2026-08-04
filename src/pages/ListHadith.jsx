@@ -255,14 +255,18 @@ export default function ListHadith() {
             <IoLibraryOutline className="text-base" />
             <span>المكتبة</span>
           </button>
-          <IoChevronBack className="text-xs" />
-          <button
-            onClick={() => navigate(`/library/${bookId}/sections`)}
-            className="flex items-center gap-1 hover:text-cyan-700 transition-colors"
-          >
-            <IoLayersOutline className="text-base" />
-            <span>الأقسام</span>
-          </button>
+          {effectiveSectionId && (
+            <>
+              <IoChevronBack className="text-xs" />
+              <button
+                onClick={() => navigate(`/library/${bookId}/sections`)}
+                className="flex items-center gap-1 hover:text-cyan-700 transition-colors"
+              >
+                <IoLayersOutline className="text-base" />
+                <span>الأقسام</span>
+              </button>
+            </>
+          )}
           <IoChevronBack className="text-xs" />
           <span className="text-base-content/90 font-medium">
             {bookTitle || "فهرس الأحاديث"}

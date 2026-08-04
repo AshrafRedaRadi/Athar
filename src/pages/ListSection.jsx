@@ -35,7 +35,14 @@ export default function ListSection() {
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
         setBookTitle(book?.title || "");
-        setSections(Array.isArray(sectionsData) ? sectionsData : []);
+        const fetchedSections = Array.isArray(sectionsData) ? sectionsData : [];
+        setSections(fetchedSections);
+
+        // If the book has no sections, bypass empty sections view and redirect directly to HadithList
+        if (fetchedSections.length === 0) {
+          navigate(`/library/${bookId}/0`, { replace: true });
+          return;
+        }
       } catch (err) {
         console.error("Error loading sections:", err.message);
         setError("تعذَّر تحميل الأقسام، يرجى المحاولة لاحقاً.");
@@ -44,7 +51,7 @@ export default function ListSection() {
       }
     }
     load();
-  }, [bookId]);
+  }, [bookId, navigate]);
 
   const handleSectionClick = (section) => {
     if (isGuest) {

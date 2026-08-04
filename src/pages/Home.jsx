@@ -23,6 +23,7 @@ function Home() {
       try {
         setIsLoading(true);
         const data = await dashboardService.getSummary();
+        console.log("🏠 [Home Component Dashboard Summary Data]:", data);
         setSummaryData(data);
       } catch (err) {
         console.warn("Could not fetch dashboard summary from API:", err.message);
@@ -44,50 +45,104 @@ function Home() {
     navigate("/signup");
   };
 
-  // Extract lastOpenedBook object from summaryData API response
-  const lastOpenedBook = summaryData?.lastOpenedBook || summaryData?.lastBook || null;
+  // Helper for case-insensitive property lookup across multiple objects
+  const getProp = (obj, ...keys) => {
+    if (!obj || typeof obj !== "object") return undefined;
+    for (const key of keys) {
+      if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+      const lowerKey = key.toLowerCase();
+      const foundKey = Object.keys(obj).find((k) => k.toLowerCase() === lowerKey);
+      if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) {
+        return obj[foundKey];
+      }
+    }
+    return undefined;
+  };
 
-  // Memorized hadith count from lastOpenedBook (or top-level summaryData)
+  // Unwrap summaryData if data property exists (e.g. { data: { inProgressHadithCount, ... } })
+  const actualData =
+    summaryData?.data && typeof summaryData.data === "object" && !Array.isArray(summaryData.data)
+      ? summaryData.data
+      : summaryData;
+
+  // Extract overallProgress object from summaryData API response
+  const overallProgress =
+    getProp(actualData, "overallProgress", "progress", "overall") ||
+    getProp(summaryData, "overallProgress", "progress", "overall") ||
+    null;
+
+  // Extract lastOpenedBook object from summaryData API response
+  const lastOpenedBook =
+    getProp(actualData, "lastOpenedBook", "lastBook", "book") ||
+    getProp(summaryData, "lastOpenedBook", "lastBook", "book") ||
+    null;
+
+  // Memorized hadith count from overallProgress, actualData, summaryData, or lastOpenedBook
   const memorizedHadithCount =
-    lastOpenedBook?.memorizedHadithCount ??
-    lastOpenedBook?.memorizedHadithsCount ??
-    lastOpenedBook?.memorizedCount ??
-    lastOpenedBook?.hadithCount ??
-    summaryData?.totalMemorizedHadiths ??
-    summaryData?.memorizedHadithsCount ??
-    summaryData?.memorizedCount ??
-    summaryData?.totalMemorized ??
+    getProp(overallProgress, "memorizedHadithCount", "memorizedHadithsCount", "totalMemorizedHadiths", "memorizedCount", "totalMemorized") ??
+    getProp(actualData, "memorizedHadithCount", "memorizedHadithsCount", "totalMemorizedHadiths", "memorizedCount", "totalMemorized") ??
+    getProp(summaryData, "memorizedHadithCount", "memorizedHadithsCount", "totalMemorizedHadiths", "memorizedCount", "totalMemorized") ??
+    getProp(lastOpenedBook, "memorizedHadithCount", "memorizedHadithsCount", "memorizedCount", "hadithCount") ??
     0;
 
-  // Progress percentage from lastOpenedBook (or top-level summaryData)
+  // Progress percentage from overallProgress, lastOpenedBook, or actualData/summaryData
   const rawProgress =
-    lastOpenedBook?.percentage ??
-    lastOpenedBook?.progressPercentage ??
-    lastOpenedBook?.progressRatio ??
-    lastOpenedBook?.progress ??
-    lastOpenedBook?.completionPercentage ??
-    lastOpenedBook?.completionRate ??
-    summaryData?.progressPercentage ??
-    summaryData?.progress ??
+    getProp(overallProgress, "percentage", "progressPercentage", "progressRatio", "progress", "completionPercentage") ??
+    getProp(lastOpenedBook, "percentage", "progressPercentage", "progressRatio", "progress", "completionPercentage") ??
+    getProp(actualData, "progressPercentage", "progress", "percentage") ??
+    getProp(summaryData, "progressPercentage", "progress") ??
     0;
 
   const progressPercentage = Math.min(Math.max(Number(rawProgress) || 0, 0), 100);
 
-  // Extract inProgressHadithCount from lastOpenedBook (or top-level summaryData)
+  // Extract inProgressHadithCount directly from overallProgress -> inProgressHadithCount
   const inProgressHadithCount =
-    lastOpenedBook?.inProgressHadithCount ??
-    lastOpenedBook?.inProgressCount ??
-    summaryData?.inProgressHadithCount ??
-    summaryData?.inProgressCount ??
+    getProp(overallProgress, "inProgressHadithCount", "inProgressCount", "inProgressHadithsCount", "inProgressHadiths") ??
+    getProp(actualData, "inProgressHadithCount", "inProgressCount", "inProgressHadithsCount", "inProgressHadiths") ??
+    getProp(summaryData?.data, "inProgressHadithCount", "inProgressCount") ??
+    getProp(summaryData, "inProgressHadithCount", "inProgressCount") ??
+    getProp(lastOpenedBook, "inProgressHadithCount", "inProgressCount") ??
     0;
 
   // Streak & accuracy metrics
-  const daysStreak = summaryData?.dayStreak ?? summaryData?.daysStreak ?? summaryData?.streakDays ?? summaryData?.days ?? 0;
-  const accuracyRate = summaryData?.accuracyRate ?? summaryData?.accuracyPercentage ?? summaryData?.accuracy ?? 0;
+  const daysStreak =
+    getProp(actualData, "dayStreak", "daysStreak", "streakDays", "days", "streak") ??
+    getProp(summaryData, "dayStreak", "daysStreak") ??
+    0;
+  const accuracyRate =
+    getProp(actualData, "accuracyRate", "accuracyPercentage", "accuracy", "rate") ??
+    getProp(summaryData, "accuracyRate", "accuracy") ??
+    0;
 
-  // Book title and ID for "أكمل من حيث توقفت"
-  const currentBookTitle = lastOpenedBook?.title ?? lastOpenedBook?.name ?? summaryData?.currentBookTitle ?? summaryData?.title ?? "لم يتم فتح أي كتاب بعد";
-  const currentBookId = lastOpenedBook?.id ?? lastOpenedBook?.bookId ?? null;
+  // Book title, ID, and total hadith count for "أكمل من حيث توقفت"
+  const currentBookTitle =
+    getProp(lastOpenedBook, "title", "name", "bookTitle") ??
+    getProp(actualData, "currentBookTitle", "title", "name") ??
+    getProp(summaryData, "currentBookTitle", "title") ??
+    "لم يتم فتح أي كتاب بعد";
+
+  const currentBookId =
+    getProp(lastOpenedBook, "id", "bookId") ??
+    getProp(actualData, "currentBookId", "bookId", "id") ??
+    null;
+
+  const resumeHadithId =
+    getProp(lastOpenedBook, "resumeHadithId", "lastHadithId", "lastOpenedHadithId", "hadithId") ??
+    getProp(actualData, "resumeHadithId", "lastHadithId", "lastOpenedHadithId") ??
+    null;
+
+  const resumeSectionId =
+    getProp(lastOpenedBook, "resumeSectionId", "lastSectionId", "lastOpenedSectionId", "sectionId") ??
+    getProp(actualData, "resumeSectionId", "lastSectionId", "sectionId") ??
+    0;
+
+  const totalHadiths =
+    getProp(overallProgress, "totalHadithCount", "totalHadithsCount", "totalHadiths", "hadithsCount", "hadithCount") ??
+    getProp(actualData, "totalHadithCount", "totalHadithsCount", "totalHadiths", "hadithsCount", "hadithCount") ??
+    getProp(summaryData?.data, "totalHadithCount", "totalHadithsCount") ??
+    getProp(summaryData, "totalHadithCount", "totalHadithsCount") ??
+    getProp(lastOpenedBook, "totalHadithCount", "totalHadiths", "hadithsCount") ??
+    40;
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -173,12 +228,21 @@ function Home() {
               </div>
             ) : (
               <>
-                <Stat days={daysStreak} hadith={memorizedHadithCount} accuracy={accuracyRate} />
+                <Stat
+                  days={daysStreak}
+                  hadith={memorizedHadithCount}
+                  inProgressHadithCount={inProgressHadithCount}
+                  accuracy={accuracyRate}
+                />
                 <Progress
                   title={currentBookTitle}
                   progress={progressPercentage}
                   bookId={currentBookId}
                   inProgressHadithCount={inProgressHadithCount}
+                  memorizedHadithCount={memorizedHadithCount}
+                  totalHadiths={totalHadiths}
+                  resumeHadithId={resumeHadithId}
+                  resumeSectionId={resumeSectionId}
                 />
                 <Tasks summary={summaryData} />
               </>
