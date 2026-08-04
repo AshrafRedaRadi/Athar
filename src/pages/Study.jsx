@@ -296,6 +296,7 @@ export default function Study() {
     }
 
     if (currentHadith?.id) {
+      setBackendExplanations(null);
       hadithsService.getHadithExplanations(currentHadith.id)
         .then((data) => {
           if (data) setBackendExplanations(data);
