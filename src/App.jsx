@@ -14,6 +14,7 @@ import ConfirmEmail from './pages/ConfirmEmail';
 import ListSection from './pages/ListSection';
 import ListHadith from './pages/ListHadith';
 import Onboarding from './pages/Onboarding';
+import Plan from './pages/Plan';
 import Error_page from './pages/Error_page';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+        <Route path='/plan' element={<Plan />} />
           {/* Guest-only routes: opening / opens Login page first */}
           <Route element={<GuestRoute fallback="/home" />}>
             <Route path="/" element={<Login />} />
