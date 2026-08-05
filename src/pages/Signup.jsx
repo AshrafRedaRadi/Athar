@@ -73,8 +73,6 @@ export default function Signup() {
   const strengthPercentage = password.length > 0 ? Math.max((passedCount / 5) * 100, 10) : 0;
   const isMatch =
     password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
-  const showPasswordRequirements =
-    password.length > 0 || (isPasswordTouched && passedCount < 5);
 
   const handleGoogleAuth = () => {
     triggerGoogleAuth();
@@ -158,6 +156,10 @@ export default function Signup() {
 
         {/* ── Form content container (No scrollbar, scaled to fit) ── */}
         <div className="flex-1 flex flex-col justify-between overflow-hidden py-1">
+          <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0">
+            إنشاء حساب
+          </h2>
+
           {/* ═══════════════════════════════════════ STEP 1 ═══════════════════════════════════════ */}
           {step === 1 && (
             <form onSubmit={handleStep1Submit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
@@ -216,53 +218,56 @@ export default function Signup() {
                   />
                 </div>
 
-                {/* Match message + Strength track */}
-                <div className="mt-1 mb-1 w-full">
-                  {confirmPassword.length > 0 && (
-                    <small
-                      className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
-                        isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                      }`}
-                    >
-                      {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
-                    </small>
-                  )}
+                {/* Password validation & strength (shown only when user starts typing password) */}
+                {password.length > 0 && (
+                  <>
+                    {/* Match message + Strength track */}
+                    <div className="mt-1 mb-1 w-full">
+                      {confirmPassword.length > 0 && (
+                        <small
+                          className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
+                            isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                          }`}
+                        >
+                          {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
+                        </small>
+                      )}
 
-                  {/* Strength track */}
-                  <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
-                    <div
-                      className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
-                      style={{
-                        width: `${strengthPercentage}%`,
-                        backgroundColor: getStrengthColor(passedCount),
-                      }}
-                    />
-                  </div>
-                </div>
+                      {/* Strength track */}
+                      <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
+                        <div
+                          className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
+                          style={{
+                            width: `${strengthPercentage}%`,
+                            backgroundColor: getStrengthColor(passedCount),
+                          }}
+                        />
+                      </div>
+                    </div>
 
-                {/* Password requirements checklist (Compact 2-column Grid) */}
-                {showPasswordRequirements && (
-                  <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
-                    {[
-                      { key: 'length', label: '8 أحرف على الأقل' },
-                      { key: 'uppercase', label: 'حرف كبير (A-Z)' },
-                      { key: 'lowercase', label: 'حرف صغير (a-z)' },
-                      { key: 'number', label: 'رقم (0-9)' },
-                      { key: 'special', label: 'رمز خاص (@$!%*?&)' },
-                    ].map(({ key, label }) => (
-                      <li
-                        key={key}
-                        className={`relative pr-3 transition-colors duration-300 ${
-                          reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                        }`}
-                      >
-                        <span className="absolute right-0 text-[0.55rem]">
-                          {reqs[key] ? '✔' : '✖'}
-                        </span>
-                        {label}
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Password requirements checklist (Compact 2-column Grid) */}
+                    <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
+                      {[
+                        { key: 'length', label: '8 أحرف على الأقل' },
+                        { key: 'uppercase', label: 'حرف كبير (A-Z)' },
+                        { key: 'lowercase', label: 'حرف صغير (a-z)' },
+                        { key: 'number', label: 'رقم (0-9)' },
+                        { key: 'special', label: 'رمز خاص (@$!%*?&)' },
+                      ].map(({ key, label }) => (
+                        <li
+                          key={key}
+                          className={`relative pr-3 transition-colors duration-300 ${
+                            reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                          }`}
+                        >
+                          <span className="absolute right-0 text-[0.55rem]">
+                            {reqs[key] ? '✔' : '✖'}
+                          </span>
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
               </div>
 

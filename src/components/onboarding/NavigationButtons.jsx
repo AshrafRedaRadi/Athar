@@ -16,18 +16,17 @@ export default function NavigationButtons({
   return (
     <div className="w-full max-w-md mx-auto flex items-center justify-between gap-4 px-6 py-4" dir="rtl">
       {/* Previous Button */}
-      {!isFirstStep ? (
-        <button
-          type="button"
-          onClick={onPrev}
-          className="btn btn-outline border-base-300 hover:bg-base-200 text-base-content/80 rounded-full font-2 px-5 text-sm sm:text-base flex items-center gap-1 cursor-pointer"
-        >
-          <IoChevronForward className="text-lg" />
-          <span>السابق</span>
-        </button>
-      ) : (
-        <div className="w-24" /> /* Spacer for centering when Previous is hidden */
-      )}
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={isFirstStep}
+        className={`btn btn-outline border-base-300 hover:bg-base-200 text-base-content/80 rounded-full font-2 px-5 text-sm sm:text-base flex items-center gap-1 cursor-pointer transition-all ${
+          isFirstStep ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''
+        }`}
+      >
+        <IoChevronForward className="text-lg" />
+        <span>السابق</span>
+      </button>
 
       {/* Next / Finish Button */}
       <button

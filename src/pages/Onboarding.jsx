@@ -75,7 +75,10 @@ export default function Onboarding() {
     }
   };
 
+  const [direction, setDirection] = useState(1); // 1 for Next, -1 for Prev
+
   const handleNext = () => {
+    setDirection(1);
     if (isLastStep) {
       handleExitOnboarding();
     } else {
@@ -84,6 +87,7 @@ export default function Onboarding() {
   };
 
   const handlePrev = () => {
+    setDirection(-1);
     if (currentStepNum > 1) {
       navigate(`/onboarding/${currentStepNum - 1}`, { state: location.state });
     }
@@ -100,12 +104,15 @@ export default function Onboarding() {
 
       {/* Main Content Area: Step Card + Permanent Progress Dots */}
       <main className="flex-1 flex flex-col items-center justify-center py-2 sm:py-4 px-4 relative overflow-hidden">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <OnboardingCard
             key={currentStepData.id}
             icon={currentStepData.icon}
             title={currentStepData.title}
             description={currentStepData.description}
+            direction={direction}
+            onNext={handleNext}
+            onPrev={handlePrev}
           />
         </AnimatePresence>
 

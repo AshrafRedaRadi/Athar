@@ -3,39 +3,66 @@ import { motion } from 'framer-motion';
 import TypewriterText from './TypewriterText';
 
 const cardVariants = {
-  enter: {
+  enter: (direction) => ({
+    x: direction > 0 ? 250 : -250,
     opacity: 0,
     scale: 0.95,
-  },
+  }),
   center: {
     zIndex: 1,
+    x: 0,
     opacity: 1,
     scale: 1,
   },
-  exit: {
+  exit: (direction) => ({
     zIndex: 0,
+    x: direction < 0 ? 250 : -250,
     opacity: 0,
     scale: 0.95,
-  },
+  }),
 };
 
 const transition = {
-  duration: 0.25,
-  ease: 'easeInOut',
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+  mass: 0.8,
 };
 
-export default function OnboardingCard({ icon, title, description, currentStep = 1, totalSteps = 3 }) {
+export default function OnboardingCard({
+  icon,
+  title,
+  description,
+  direction = 1,
+  onNext,
+  onPrev,
+}) {
+  const handleDragEnd = (e, { offset, velocity }) => {
+    const swipePower = Math.abs(offset.x) * velocity.x;
+
+    if (offset.x < -50 || swipePower < -5000) {
+      if (onNext) onNext();
+    } else if (offset.x > 50 || swipePower > 5000) {
+      if (onPrev) onPrev();
+    }
+  };
+
   return (
     <motion.div
+      custom={direction}
       variants={cardVariants}
       initial="enter"
       animate="center"
       exit="exit"
       transition={transition}
-      className="flex flex-col items-center justify-center text-center max-w-md mx-auto p-2 sm:p-4 my-auto"
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.6}
+      onDragEnd={handleDragEnd}
+      className="flex flex-col items-center justify-center text-center max-w-md mx-auto p-2 sm:p-4 my-auto cursor-grab active:cursor-grabbing touch-pan-y selection:bg-transparent"
     >
       {/* Icon Badge Container with 3D Flip & Bounce Entrance */}
-      <div className="perspective-1000 mb-4 sm:mb-6 shrink-0">
+      <div className="perspective-1000 mb-4 sm:mb-6 shrink-0 pointer-events-none">
         <motion.div
           initial={{ rotateY: 180, scale: 0.6, opacity: 0 }}
           animate={{ rotateY: 0, scale: 1, opacity: 1 }}
@@ -50,7 +77,7 @@ export default function OnboardingCard({ icon, title, description, currentStep =
       </div>
 
       {/* Step Title (Alexandria) with Typewriter Animation */}
-      <h2 className="font-1 font-bold text-xl sm:text-3xl text-base-content mb-2 sm:mb-3 leading-snug min-h-[36px] sm:min-h-[40px] flex items-center justify-center">
+      <h2 className="font-1 font-bold text-xl sm:text-3xl text-base-content mb-2 sm:mb-3 leading-snug min-h-[36px] sm:min-h-[40px] flex items-center justify-center pointer-events-none">
         <TypewriterText
           text={title}
           speed={22}
@@ -60,7 +87,7 @@ export default function OnboardingCard({ icon, title, description, currentStep =
       </h2>
 
       {/* Step Description (Tajawal) with Typewriter Animation */}
-      <p className="font-2 text-xs sm:text-base text-base-content/70 leading-relaxed max-w-sm min-h-[60px] sm:min-h-[72px] flex items-start justify-center">
+      <p className="font-2 text-xs sm:text-base text-base-content/70 leading-relaxed max-w-sm min-h-[60px] sm:min-h-[72px] flex items-start justify-center pointer-events-none">
         <TypewriterText
           text={description}
           speed={18}
