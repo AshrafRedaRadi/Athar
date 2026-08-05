@@ -4,7 +4,7 @@ import TypewriterText from './TypewriterText';
 
 const cardVariants = {
   enter: (direction) => ({
-    x: direction > 0 ? 250 : -250,
+    x: direction > 0 ? -250 : 250,
     opacity: 0,
     scale: 0.95,
   }),
@@ -16,7 +16,7 @@ const cardVariants = {
   },
   exit: (direction) => ({
     zIndex: 0,
-    x: direction < 0 ? 250 : -250,
+    x: direction > 0 ? 250 : -250,
     opacity: 0,
     scale: 0.95,
   }),
@@ -40,9 +40,9 @@ export default function OnboardingCard({
   const handleDragEnd = (e, { offset, velocity }) => {
     const swipePower = Math.abs(offset.x) * velocity.x;
 
-    if (offset.x < -50 || swipePower < -5000) {
+    if (offset.x > 50 || swipePower > 5000) {
       if (onNext) onNext();
-    } else if (offset.x > 50 || swipePower > 5000) {
+    } else if (offset.x < -50 || swipePower < -5000) {
       if (onPrev) onPrev();
     }
   };

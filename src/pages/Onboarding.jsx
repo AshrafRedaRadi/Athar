@@ -42,13 +42,28 @@ export default function Onboarding() {
   const { stepId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginGuest } = useAuth();
+  const { token, loginGuest } = useAuth();
 
   const currentStepNum = parseInt(stepId, 10) || 1;
   const totalSteps = ONBOARDING_STEPS.length;
 
   // Preserve entry point state across step navigation
   const entrySource = location.state?.from || 'default';
+
+  // Check if user has already completed/seen onboarding previously
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
+    if (hasSeenOnboarding && !location.state?.from) {
+      if (token) {
+        navigate('/home', { replace: true });
+      } else {
+        navigate('/login', { replace: true });
+      }
+      return;
+    }
+    // Mark as seen so it won't show again on future visits
+    localStorage.setItem('athar_onboarding_seen', 'true');
+  }, [token, navigate, location.state]);
 
   // Ensure stepId parameter is valid (1 <= stepId <= 3)
   useEffect(() => {
@@ -62,13 +77,16 @@ export default function Onboarding() {
 
   /**
    * Navigate to the final destination based on entry source:
-   *  - 'signup' → /login
+   *  - 'confirm-email' → /home
    *  - 'guest' → /home (with guest session)
    *  - default → /login
    */
   const handleExitOnboarding = () => {
+    localStorage.setItem('athar_onboarding_seen', 'true');
     if (entrySource === 'guest') {
       loginGuest();
+      navigate('/home', { replace: true });
+    } else if (entrySource === 'confirm-email') {
       navigate('/home', { replace: true });
     } else {
       navigate('/login', { replace: true });

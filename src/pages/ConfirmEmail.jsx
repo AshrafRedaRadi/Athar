@@ -40,6 +40,15 @@ export default function ConfirmEmail() {
     executeConfirmation();
   }, [userId, token]);
 
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setTimeout(() => {
+        navigate('/onboarding/1', { state: { from: 'confirm-email' } });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [status, navigate]);
+
   return (
     <AuthLayout>
       <AuthCard>
@@ -82,11 +91,11 @@ export default function ConfirmEmail() {
                 {message}
               </p>
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/onboarding/1', { state: { from: 'confirm-email' } })}
                 className="w-full mt-2 py-2 px-6 rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white font-2 text-[0.85rem] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                <IoLogInOutline className="text-lg" />
-                <span>الانتقال لتسجيل الدخول</span>
+                <IoCheckmarkCircleOutline className="text-lg" />
+                <span>متابعة للشرح التوضيحي</span>
               </button>
             </div>
           )}

@@ -41,7 +41,6 @@ function Home() {
   };
 
   const handleSignupRedirect = () => {
-    logout();
     navigate("/signup");
   };
 

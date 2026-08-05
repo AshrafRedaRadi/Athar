@@ -6,7 +6,7 @@ import { BsBook, BsClipboard2Check } from "react-icons/bs";
 
 // Navigation items – same icons used in Sidebar for consistency
 const NAV_ITEMS = [
-  { id: "home",         label: "الرئيسية",   icon: <IoHomeOutline />,      href: "/" },
+  { id: "home",         label: "الرئيسية",   icon: <IoHomeOutline />,      href: "/home" },
   { id: "library",      label: "المكتبة",    icon: <BsBook />,             href: "/library" },
   { id: "review",       label: "الخطة",   icon: <BsClipboard2Check />,  href: "#" },
   { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "#" },

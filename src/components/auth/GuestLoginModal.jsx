@@ -19,7 +19,6 @@ export default function GuestLoginModal({ isOpen, onClose, title = "تسجيل �
   };
 
   const handleSignupRedirect = () => {
-    logout();
     navigate("/signup");
   };
 

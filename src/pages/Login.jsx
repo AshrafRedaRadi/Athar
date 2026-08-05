@@ -38,7 +38,12 @@ export default function Login() {
 
   const handleGuestAuth = () => {
     loginGuest();
-    navigate('/onboarding/1', { state: { from: 'guest' } });
+    const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
+    if (hasSeenOnboarding) {
+      navigate('/home', { replace: true });
+    } else {
+      navigate('/onboarding/1', { state: { from: 'guest' } });
+    }
   };
 
   const handleSubmit = async (e) => {

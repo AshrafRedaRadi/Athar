@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
@@ -11,10 +12,18 @@ import defaultAvatar from "../../assets/user.png";
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
 export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
-  const { user, isGuest } = useAuth();
+  const navigate = useNavigate();
+  const { user, isGuest, logout } = useAuth();
 
   const userName = user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
+  const handleMobileAvatarClick = () => {
+    if (isGuest) {
+      logout();
+      navigate('/login');
+    }
+  };
 
   return (
     <>
@@ -38,10 +47,11 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
           <Avatar src={userAvatar} size="w-10" />
         </label>
 
-        {/* Mobile / Tablet Profile avatar (<lg) – static, does not open sidebar drawer */}
+        {/* Mobile / Tablet Profile avatar (<lg) */}
         <div
-          className="shrink-0 block lg:hidden"
-          title={`أهلاً بك، ${userName}`}
+          onClick={handleMobileAvatarClick}
+          className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
+          title={isGuest ? "تسجيل الدخول" : `أهلاً بك، ${userName}`}
         >
           <Avatar src={userAvatar} size="w-10" />
         </div>

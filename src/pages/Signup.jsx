@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
 import AuthCard from '../components/auth/AuthCard';
+import ConfirmEmailAlertModal from '../components/auth/ConfirmEmailAlertModal';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
@@ -45,27 +46,18 @@ export default function Signup() {
   const { register } = useAuth();
   const { triggerGoogleAuth, googleLoading, googleError } = useGoogleAuth();
 
-  // multi-step state
-  const [step, setStep] = useState(1); // 1 | 2
-
-  // step 1 fields
+  // form fields
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordTouched, setIsPasswordTouched] = useState(false);
 
-  // step 2 fields
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
-
   // API submission states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // derived password state
   const reqs = checkReqs(password);
@@ -78,10 +70,22 @@ export default function Signup() {
     triggerGoogleAuth();
   };
 
-  /* ── Step 1 submit ── */
-  const handleStep1Submit = (e) => {
+  const handleProceedAfterSignup = () => {
+    setShowSuccessModal(false);
+    const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
+    if (hasSeenOnboarding) {
+      navigate('/login', { replace: true });
+    } else {
+      navigate('/onboarding/1', { state: { from: 'signup' } });
+    }
+  };
+
+  /* ── Registration submit ── */
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsPasswordTouched(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     if (passedCount < 5) {
       alert('يرجى استيفاء جميع شروط كلمة المرور أولاً.');
@@ -89,14 +93,6 @@ export default function Signup() {
     }
     if (!isMatch) return;
 
-    setStep(2);
-  };
-
-  /* ── Step 2 submit ── */
-  const handleStep2Submit = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
     setIsSubmitting(true);
 
     try {
@@ -107,12 +103,9 @@ export default function Signup() {
         confirmPassword,
       });
 
-      const message = res?.message || 'تم إنشاء الحساب بنجاح! يُرجى التحقق من بريدك الإلكتروني لتأكيد الحساب.';
+      const message = res?.message || 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني. يُرجى التحقق من صندوق الوارد وتأكيد حسابك.';
       setSuccessMsg(message);
-
-      setTimeout(() => {
-        navigate('/onboarding/1', { state: { from: 'signup' } });
-      }, 2000);
+      setShowSuccessModal(true);
     } catch (err) {
       setErrorMsg(err.message || 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى.');
     } finally {
@@ -160,302 +153,175 @@ export default function Signup() {
             إنشاء حساب
           </h2>
 
-          {/* ═══════════════════════════════════════ STEP 1 ═══════════════════════════════════════ */}
-          {step === 1 && (
-            <form onSubmit={handleStep1Submit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
-              <div className="space-y-1">
-                {/* Full Name */}
-                <div className="flex flex-col gap-0.5">
-                  <label className={labelClass}>الاسم الكامل</label>
-                  <input
-                    type="text"
-                    className={inputClass}
-                    placeholder="ادخل اسمك الكامل"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="flex flex-col gap-0.5">
-                  <label className={labelClass}>البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    className={inputClass}
-                    placeholder="mail@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Password */}
-                <div className="flex flex-col gap-0.5">
-                  <label className={labelClass}>كلمة المرور</label>
-                  <input
-                    type="password"
-                    className={inputClass}
-                    placeholder="كلمة المرور"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => setIsPasswordTouched(true)}
-                    required
-                    minLength={8}
-                  />
-                </div>
-
-                {/* Confirm Password */}
-                <div className="flex flex-col gap-0.5">
-                  <label className={labelClass}>تأكيد كلمة المرور</label>
-                  <input
-                    type="password"
-                    className={inputClass}
-                    placeholder="أعد إدخال كلمة المرور"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Password validation & strength (shown only when user starts typing password) */}
-                {password.length > 0 && (
-                  <>
-                    {/* Match message + Strength track */}
-                    <div className="mt-1 mb-1 w-full">
-                      {confirmPassword.length > 0 && (
-                        <small
-                          className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
-                            isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                          }`}
-                        >
-                          {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
-                        </small>
-                      )}
-
-                      {/* Strength track */}
-                      <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
-                        <div
-                          className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
-                          style={{
-                            width: `${strengthPercentage}%`,
-                            backgroundColor: getStrengthColor(passedCount),
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Password requirements checklist (Compact 2-column Grid) */}
-                    <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
-                      {[
-                        { key: 'length', label: '8 أحرف على الأقل' },
-                        { key: 'uppercase', label: 'حرف كبير (A-Z)' },
-                        { key: 'lowercase', label: 'حرف صغير (a-z)' },
-                        { key: 'number', label: 'رقم (0-9)' },
-                        { key: 'special', label: 'رمز خاص (@$!%*?&)' },
-                      ].map(({ key, label }) => (
-                        <li
-                          key={key}
-                          className={`relative pr-3 transition-colors duration-300 ${
-                            reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                          }`}
-                        >
-                          <span className="absolute right-0 text-[0.55rem]">
-                            {reqs[key] ? '✔' : '✖'}
-                          </span>
-                          {label}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+          {/* ═══════════════════════════════════════ SIGNUP FORM ═══════════════════════════════════════ */}
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
+            <div className="space-y-1">
+              {/* Full Name */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>الاسم الكامل</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="ادخل اسمك الكامل"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
               </div>
 
-              {/* Step 1 Actions & Footer */}
-              <div className="space-y-1 pt-1">
-                {/* Next button */}
-                <button
-                  type="submit"
-                  className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  التالي
-                </button>
-
-                {/* Divider */}
-                <div className="flex items-center gap-2">
-                  <hr className="flex-1 border-white/20" />
-                  <span className="text-white/60 text-[0.68rem] font-2">أو</span>
-                  <hr className="flex-1 border-white/20" />
-                </div>
-
-                {/* Google register */}
-                <button
-                  type="button"
-                  onClick={handleGoogleAuth}
-                  disabled={googleLoading}
-                  className="w-full py-1.5 px-3 bg-white text-[#333] border-0 rounded-full font-2 text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:bg-gray-100 shadow-sm transition-colors disabled:opacity-50"
-                >
-                  <GoogleIcon />
-                  <span>{googleLoading ? 'جاري الاتصال بـ Google...' : 'التسجيل بواسطة Google'}</span>
-                </button>
-
-                {/* Switch to login */}
-                <div className="text-center text-[0.72rem] text-white/80 font-2">
-                  لديك حساب بالفعل؟{' '}
-                  <Link
-                    to="/login"
-                    className="text-white font-bold no-underline hover:underline font-2"
-                  >
-                    سجل الدخول
-                  </Link>
-                </div>
-
-                {/* Footer */}
-                <div className="text-center text-[0.62rem] font-2">
-                  <p className="text-white/50 leading-tight">
-                    هل تواجه مشكلة؟ تواصل معنا عبر{' '}
-                    <span className="text-white/70">Athar@gmail.com</span>
-                  </p>
-                </div>
+              {/* Email */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  className={inputClass}
+                  placeholder="mail@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
-            </form>
-          )}
 
-          {/* ═══════════════════════════════════════ STEP 2 ═══════════════════════════════════════ */}
-          {step === 2 && (
-            <form onSubmit={handleStep2Submit} className="flex-1 flex flex-col justify-between animate-[fadeIn_0.3s_ease]">
-              <div className="space-y-1.5">
-                {/* Age + Gender row */}
-                <div className="flex gap-2 w-full items-end">
-                  {/* Age */}
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <label className={labelClass}>السن</label>
-                    <input
-                      type="number"
-                      className={inputClass}
-                      placeholder="السن"
-                      value={age}
-                      onChange={(e) => setAge(e.target.value)}
-                      min={5}
-                      max={100}
-                      required
-                    />
-                  </div>
+              {/* Password */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>كلمة المرور</label>
+                <input
+                  type="password"
+                  className={inputClass}
+                  placeholder="كلمة المرور"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => setIsPasswordTouched(true)}
+                  required
+                  minLength={8}
+                />
+              </div>
 
-                  {/* Gender */}
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <label className={labelClass}>الجنس</label>
-                    <div className="flex gap-2 bg-black/15 border border-white/10 rounded-full h-8 items-center px-3">
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="male"
-                          checked={gender === 'male'}
-                          onChange={(e) => setGender(e.target.value)}
-                          className="radio radio-xs radio-info"
-                          required
-                        />
-                        <span className="text-white text-[0.75rem] font-2">ذكر</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="female"
-                          checked={gender === 'female'}
-                          onChange={(e) => setGender(e.target.value)}
-                          className="radio radio-xs radio-info"
-                        />
-                        <span className="text-white text-[0.75rem] font-2">أنثى</span>
-                      </label>
+              {/* Confirm Password */}
+              <div className="flex flex-col gap-0.5">
+                <label className={labelClass}>تأكيد كلمة المرور</label>
+                <input
+                  type="password"
+                  className={inputClass}
+                  placeholder="أعد إدخال كلمة المرور"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Password validation & strength (shown only when user starts typing password) */}
+              {password.length > 0 && (
+                <>
+                  {/* Match message + Strength track */}
+                  <div className="mt-1 mb-1 w-full">
+                    {confirmPassword.length > 0 && (
+                      <small
+                        className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
+                          isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                        }`}
+                      >
+                        {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
+                      </small>
+                    )}
+
+                    {/* Strength track */}
+                    <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
+                      <div
+                        className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
+                        style={{
+                          width: `${strengthPercentage}%`,
+                          backgroundColor: getStrengthColor(passedCount),
+                        }}
+                      />
                     </div>
                   </div>
-                </div>
 
-                {/* Phone */}
-                <div className="flex flex-col gap-0.5">
-                  <label className={labelClass}>رقم الهاتف</label>
-                  <input
-                    type="tel"
-                    className={inputClass}
-                    placeholder="010********"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
-                </div>
+                  {/* Password requirements checklist (Compact 2-column Grid) */}
+                  <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
+                    {[
+                      { key: 'length', label: '8 أحرف على الأقل' },
+                      { key: 'uppercase', label: 'حرف كبير (A-Z)' },
+                      { key: 'lowercase', label: 'حرف صغير (a-z)' },
+                      { key: 'number', label: 'رقم (0-9)' },
+                      { key: 'special', label: 'رمز خاص (@$!%*?&)' },
+                    ].map(({ key, label }) => (
+                      <li
+                        key={key}
+                        className={`relative pr-3 transition-colors duration-300 ${
+                          reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                        }`}
+                      >
+                        <span className="absolute right-0 text-[0.55rem]">
+                          {reqs[key] ? '✔' : '✖'}
+                        </span>
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
 
-                {/* Country + City row */}
-                <div className="flex gap-2 w-full items-end">
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <label className={labelClass}>الدولة</label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      placeholder="فلسطين"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <label className={labelClass}>المدينة</label>
-                    <input
-                      type="text"
-                      className={inputClass}
-                      placeholder="القدس"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+            {/* Step 1 Actions & Footer */}
+            <div className="space-y-1 pt-1">
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                {isSubmitting ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-2">
+                <hr className="flex-1 border-white/20" />
+                <span className="text-white/60 text-[0.68rem] font-2">أو</span>
+                <hr className="flex-1 border-white/20" />
               </div>
 
-              {/* Step 2 Actions & Footer */}
-              <div className="space-y-1.5 pt-2">
-                {/* Complete registration button */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
+              {/* Google register */}
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={googleLoading}
+                className="w-full py-1.5 px-3 bg-white text-[#333] border-0 rounded-full font-2 text-[0.78rem] font-semibold cursor-pointer flex items-center justify-center gap-2 hover:bg-gray-100 shadow-sm transition-colors disabled:opacity-50"
+              >
+                <GoogleIcon />
+                <span>{googleLoading ? 'جاري الاتصال بـ Google...' : 'التسجيل بواسطة Google'}</span>
+              </button>
+
+              {/* Switch to login */}
+              <div className="text-center text-[0.72rem] text-white/80 font-2">
+                لديك حساب بالفعل؟{' '}
+                <Link
+                  to="/login"
+                  className="text-white font-bold no-underline hover:underline font-2"
                 >
-                  {isSubmitting ? 'جاري التسجيل...' : 'إتمام التسجيل'}
-                </button>
-
-                {/* Back button */}
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.8rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors"
-                >
-                  رجوع للخطوة السابقة
-                </button>
-
-                {/* Switch to login */}
-                <div className="text-center text-[0.72rem] text-white/80 font-2">
-                  لديك حساب بالفعل؟{' '}
-                  <Link
-                    to="/login"
-                    className="text-white font-bold no-underline hover:underline font-2"
-                  >
-                    سجل الدخول
-                  </Link>
-                </div>
-
-                {/* Footer */}
-                <div className="text-center text-[0.62rem] font-2">
-                  <p className="text-white/50 leading-tight">
-                    هل تواجه مشكلة؟ تواصل معنا عبر{' '}
-                    <span className="text-white/70">Athar@gmail.com</span>
-                  </p>
-                </div>
+                  سجل الدخول
+                </Link>
               </div>
-            </form>
-          )}
+
+              {/* Footer */}
+              <div className="text-center text-[0.62rem] font-2">
+                <p className="text-white/50 leading-tight">
+                  هل تواجه مشكلة؟ تواصل معنا عبر{' '}
+                  <span className="text-white/70">Athar@gmail.com</span>
+                </p>
+              </div>
+            </div>
+          </form>
         </div>
       </AuthCard>
+
+      {/* Animated SweetAlert Modal for Email Confirmation */}
+      <ConfirmEmailAlertModal
+        isOpen={showSuccessModal}
+        onClose={handleProceedAfterSignup}
+        onConfirm={handleProceedAfterSignup}
+        message={successMsg}
+      />
     </AuthLayout>
   );
 }

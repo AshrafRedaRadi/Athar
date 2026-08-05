@@ -10,16 +10,16 @@ const LEVEL_STYLES = {
   متقدم: "badge-error text-error-content",
 };
 
-// Ultra-smooth Spring Physics
+// Ultra-smooth GPU Spring Physics for mobile 60 FPS
 const SMOOTH_SPRING = {
   type: "spring",
-  stiffness: 210,
-  damping: 24,
-  mass: 0.75,
+  stiffness: 260,
+  damping: 28,
+  mass: 0.5,
 };
 
 /**
- * Clean & Refactored Card component for Library with Shared Element Transition.
+ * Clean & Refactored Card component for Library with Optimized Shared Element Transition.
  */
 export default function Card({
   id,
@@ -40,16 +40,12 @@ export default function Card({
     "متن شريف يتضمن أصول العبادات والأحكام والأخلاق الإيمانية، حظي باهتمام واسع ودراسة مستفيضة من كبار العلماء، ويعتبر من أمهات الكتب المقررة لطلاب العلم.";
 
   const renderCover = (heightClass = "h-32 sm:h-38 lg:h-44", showLevelBadge = true, categoryPosClass = "top-2.5 right-2.5") => (
-    <motion.div
-      layoutId={`card-image-container-${layoutKey}`}
-      className={`relative w-full ${heightClass} p-0 flex items-center justify-center overflow-hidden shrink-0 rounded-t-2xl`}
-    >
+    <div className={`relative w-full ${heightClass} p-0 flex items-center justify-center overflow-hidden shrink-0 rounded-t-2xl`}>
       {coverImage ? (
-        <motion.img
-          layoutId={`card-image-${layoutKey}`}
+        <img
           src={coverImage}
           alt={title}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 transform-gpu"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-cyan-900/15 via-cyan-800/25 to-base-300 flex flex-col items-center justify-center gap-1 text-cyan-700 dark:text-cyan-400">
@@ -59,7 +55,7 @@ export default function Card({
       )}
 
       {category && (
-        <span className={`absolute ${categoryPosClass} badge bg-black/65 backdrop-blur-md text-white border-none font-2 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-lg shadow-sm z-10`}>
+        <span className={`absolute ${categoryPosClass} badge bg-black/65 backdrop-blur-xs text-white border-none font-2 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-lg shadow-sm z-10`}>
           {category}
         </span>
       )}
@@ -69,24 +65,21 @@ export default function Card({
           {level}
         </span>
       )}
-    </motion.div>
+    </div>
   );
 
   const renderTitleAuthor = (titleSizeClass) => (
-    <motion.div layoutId={`card-body-${layoutKey}`}>
-      <motion.h2
-        layoutId={`card-title-${layoutKey}`}
-        className={`card-title font-1 font-bold ${titleSizeClass} text-base-content leading-snug mb-0.5 group-hover:text-cyan-700 transition-colors duration-300 line-clamp-1`}
-      >
+    <div>
+      <h2 className={`card-title font-1 font-bold ${titleSizeClass} text-base-content leading-snug mb-0.5 group-hover:text-cyan-700 transition-colors duration-200 line-clamp-1`}>
         {title}
-      </motion.h2>
-      <motion.div layoutId={`card-author-${layoutKey}`} className="flex flex-col gap-0.5">
+      </h2>
+      <div className="flex flex-col gap-0.5">
         <span className="text-[9px] sm:text-[10px] text-base-content/50 font-2">المؤلف</span>
         <span className="text-xs font-2 text-base-content/80 font-medium line-clamp-1">
           {author}
         </span>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 
   return (
@@ -94,10 +87,10 @@ export default function Card({
       <motion.div
         layoutId={`card-container-${layoutKey}`}
         onClick={() => setIsExpanded(true)}
-        whileHover={{ scale: 1.02, y: -3 }}
+        whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
         transition={SMOOTH_SPRING}
-        className="card bg-base-100 border border-base-200 shadow-sm hover:shadow-xl w-full overflow-hidden flex flex-col justify-between rounded-2xl cursor-pointer hover:border-cyan-600/40 group h-full"
+        className="card bg-base-100 border border-base-200 shadow-sm hover:shadow-xl w-full overflow-hidden flex flex-col justify-between rounded-2xl cursor-pointer hover:border-cyan-600/40 group h-full transform-gpu will-change-transform"
         dir="rtl"
       >
         {renderCover("h-32 sm:h-38 lg:h-44", true, "top-2.5 right-2.5")}
@@ -113,15 +106,15 @@ export default function Card({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
               onClick={() => setIsExpanded(false)}
-              className="fixed inset-0 bg-black/65 backdrop-blur-md z-40 cursor-pointer"
+              className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 cursor-pointer"
             />
 
             <motion.div
               layoutId={`card-container-${layoutKey}`}
               transition={SMOOTH_SPRING}
-              className="relative card bg-base-100 border border-base-200/80 shadow-2xl w-full max-w-sm sm:max-w-md lg:max-w-lg max-h-[85vh] overflow-hidden rounded-3xl z-50 flex flex-col origin-center"
+              className="relative card bg-base-100 border border-base-200/80 shadow-2xl w-full max-w-sm sm:max-w-md lg:max-w-lg max-h-[85vh] overflow-hidden rounded-3xl z-50 flex flex-col origin-center transform-gpu will-change-transform"
             >
               <button
                 onClick={() => setIsExpanded(false)}
@@ -137,10 +130,10 @@ export default function Card({
                 {renderTitleAuthor("text-lg sm:text-xl")}
 
                 <motion.div
-                  initial={{ opacity: 0, y: 14 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6, transition: { duration: 0.12 } }}
-                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  exit={{ opacity: 0, y: 5, transition: { duration: 0.1 } }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="space-y-3.5 border-t border-base-200/80 pt-3.5"
                 >
                   <div className="flex items-center gap-2">
