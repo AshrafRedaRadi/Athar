@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { HiOutlineMenuAlt3 } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
@@ -10,8 +11,9 @@ import defaultAvatar from "../../assets/user.png";
 /**
  * Unified Navbar component for Athar platform.
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
+ * Features a dedicated 'القائمة' button on the right edge to open the drawer.
  */
-export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
+export default function Navbar({ activePage = "home", searchSlot, rightSlot, drawerId = "sidebar-drawer" }) {
   const navigate = useNavigate();
   const { user, isGuest, logout } = useAuth();
 
@@ -37,15 +39,24 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
 
       {/* Unified Top Navigation Header Bar */}
       <header className="flex items-center gap-3 mb-4">
-        {/* Desktop Profile avatar (lg+) – clicking opens sidebar drawer */}
+        {/* Dedicated Sidebar Drawer Toggle Button on Right Edge */}
         <label
-          htmlFor="sidebar-drawer"
-          className="shrink-0 cursor-pointer hidden lg:block transition-transform hover:scale-105"
-          aria-label="فتح القائمة والبروفايل"
+          htmlFor={drawerId}
+          className="btn btn-ghost border border-base-300 font-2 rounded-xl gap-2 shrink-0 cursor-pointer hover:bg-cyan-700 hover:text-white hover:border-transparent transition-all hidden lg:flex items-center px-3.5 py-2"
+          aria-label="فتح القائمة الجانبية"
+          title="فتح القائمة الجانبية"
+        >
+          <HiOutlineMenuAlt3 className="text-xl" />
+          <span className="font-bold text-sm">القائمة</span>
+        </label>
+
+        {/* User Profile Avatar (kept intact as static profile display) */}
+        <div
+          className="shrink-0 hidden lg:block"
           title={`أهلاً بك، ${userName}`}
         >
           <Avatar src={userAvatar} size="w-10" />
-        </label>
+        </div>
 
         {/* Mobile / Tablet Profile avatar (<lg) */}
         <div
@@ -68,3 +79,4 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot }) {
     </>
   );
 }
+
