@@ -4,6 +4,7 @@ import { FiSearch } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import Navbar from "../components/shared/Navbar";
+import CategoryFilters from "../components/shared/CategoryFilters";
 import Card from "../components/library/Card";
 import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
@@ -78,11 +79,12 @@ export default function Library() {
     }
   };
 
-  // Client-side filter on books list
+  // Client-side filter on books list (only display visible books to public users)
   const filteredBooks = books.filter((book) => {
+    const isVisible       = book.status !== "مخفي";
     const matchesSearch   = (book.title || "").includes(searchQuery) || (book.author || "").includes(searchQuery);
     const matchesCategory = activeCategory === "الكل" || book.category === activeCategory;
-    return matchesSearch && matchesCategory;
+    return isVisible && matchesSearch && matchesCategory;
   });
 
   return (
@@ -123,46 +125,12 @@ export default function Library() {
           </p>
         </header>
 
-        {/* ── Category filter tabs ── */}
-        <div
-          className="flex flex-wrap items-center gap-2 mb-6"
-          role="tablist"
-          aria-label="تصنيفات المتون"
-        >
-          {MOCK_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              id={`cat-btn-${cat.id}`}
-              role="tab"
-              aria-selected={activeCategory === cat.label}
-              onClick={() => setActiveCategory(cat.label)}
-              className={`
-                btn btn-sm rounded-full font-2 transition-all duration-200
-                ${activeCategory === cat.label
-                  ? "bg-2 text-white border-transparent shadow-md"
-                  : "btn-outline border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"}
-              `}
-            >
-              {cat.label}
-            </button>
-          ))}
-
-          {/* Advanced filter button */}
-          <button
-            id="library-filter-btn"
-            className="btn btn-sm btn-square btn-outline border-base-300 bg-base-100
-                       hover:bg-2 hover:text-white hover:border-transparent
-                       ms-auto transition-colors duration-200"
-            aria-label="فلتر متقدم"
-          >
-            <HiOutlineAdjustmentsHorizontal className="text-base" />
-          </button>
-        </div>
-
-        {/* ── Results count ── */}
-        <p className="font-2 text-sm text-base-content/50 mb-4">
-          {isLoading ? "جاري استحضار الكتب والمتون ..." : filteredBooks.length > 0 ? `يتوفر ${filteredBooks.length} متناً` : "لم نجد متوناً مطابقة"}
-        </p>
+        {/* ── Category filter tabs (Shared Component) ── */}
+        <CategoryFilters
+          activeCategory={activeCategory}
+          onSelectCategory={setActiveCategory}
+          categories={MOCK_CATEGORIES}
+        />
 
         {/* ── Books grid ── */}
         {isLoading ? (

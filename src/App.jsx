@@ -16,6 +16,7 @@ import ListHadith from './pages/ListHadith';
 import Onboarding from './pages/Onboarding';
 import Plan from './pages/Plan';
 import ControlPanel from './pages/admin/ControlPanel';
+import ContentManagement from './pages/admin/ContentManagement';
 import Error_page from './pages/Error_page';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Routes>
           <Route path='/plan' element={<Plan />} />
           <Route path='/admin/controlpanel' element={<ControlPanel />} />
+          <Route path='/admin/content' element={<ContentManagement />} />
           {/* Guest-only routes: opening / opens Login page first */}
           <Route element={<GuestRoute fallback="/home" />}>
             <Route path="/" element={<Login />} />

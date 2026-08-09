@@ -1,11 +1,5 @@
 import { apiFetch } from "../api/client";
 
-/**
- * Mapping for hadith grade enum:
- * 1 -> "صحيح" (Sahih)
- * 2 -> "حسن" (Hasan)
- * 3 -> "ضعيف" (Daif)
- */
 export const HADITH_GRADE_MAP = {
   1: "صحيح",
   2: "حسن",
@@ -124,6 +118,53 @@ export const hadithsService = {
       console.warn("Error fetching hadith explanations:", err.message);
       return null;
     }
+  },
+
+  /**
+   * Fetch all Explanation Books from API (/api/ExplanationBooks)
+   * @returns {Promise<Array>}
+   */
+  async getExplanationBooks() {
+    try {
+      const data = await apiFetch("/api/ExplanationBooks");
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Resolve explanation title / scholar dynamically from backend DTO or ExplanationBook API
+   * @param {object} item 
+   * @returns {Promise<string>}
+   */
+  async resolveExplanationTitle(item) {
+    if (!item) return "";
+    const direct = item.title || item.explanationBookTitle || item.author;
+
+    if (direct && typeof direct === "string" && direct.trim().length > 0 && !direct.startsWith("الحديث")) {
+      return direct.trim();
+    }
+
+    const expBookId = item.explanationBookId;
+    if (expBookId) {
+      try {
+        const expBooks = await this.getExplanationBooks();
+        const found = expBooks.find((b) => Number(b.id) === Number(expBookId));
+        if (found) {
+          return found.title || found.author || "";
+        }
+
+        const singleBook = await apiFetch(`/api/ExplanationBooks/${expBookId}`);
+        if (singleBook) {
+          return singleBook.title || singleBook.author || "";
+        }
+      } catch {
+        // Fallthrough if API lookup fails
+      }
+    }
+
+    return "";
   },
 
   /**

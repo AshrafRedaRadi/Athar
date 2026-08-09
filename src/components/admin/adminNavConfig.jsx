@@ -1,0 +1,14 @@
+import React from "react";
+import { IoGridOutline } from "react-icons/io5";
+import { HiOutlineUsers, HiOutlineDocumentText, HiOutlineSparkles } from "react-icons/hi";
+
+/**
+ * Shared Admin Navigation Items configuration.
+ * Single source of truth for both AdminSidebar and AdminDock.
+ */
+export const ADMIN_NAV_ITEMS = [
+  { id: "dashboard", label: "الرئيسية",   icon: <IoGridOutline className="text-xl" />,         href: "/admin/controlpanel" },
+  { id: "users",     label: "المستخدمون", icon: <HiOutlineUsers className="text-xl" />,        href: "#" },
+  { id: "content",   label: "إدارة المحتوى", icon: <HiOutlineDocumentText className="text-xl" />, href: "/admin/content" },
+  { id: "plans",     label: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "/plan" },
+];
