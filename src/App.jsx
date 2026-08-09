@@ -46,11 +46,8 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Home />} />
-<<<<<<< HEAD
             <Route path="/achievements" element={<Achievements />} />
-=======
-            <Route path='/plan' element={<Plan />} />
->>>>>>> 3875c3597f7e705128fd7899947c723b6e5422e0
+            <Route path="/plan" element={<Plan />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:bookId/sections" element={<ListSection />} />
             <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />
