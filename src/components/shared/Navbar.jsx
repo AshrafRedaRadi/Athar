@@ -1,10 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { HiOutlineMenuAlt3 } from "react-icons/hi";
+import { HiOutlineMenuAlt3, HiOutlineHome, HiOutlineCog } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
 import Dock from "./Dock";
+import AdminSidebar from "../admin/AdminSidebar";
+import AdminDock from "../admin/AdminDock";
 import { useAuth } from "../../context/AuthContext";
 import defaultAvatar from "../../assets/user.png";
 
@@ -13,7 +15,16 @@ import defaultAvatar from "../../assets/user.png";
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  * Features a dedicated 'القائمة' button on the right edge to open the drawer.
  */
-export default function Navbar({ activePage = "home", searchSlot, rightSlot, drawerId = "sidebar-drawer" }) {
+export default function Navbar({
+  activePage = "home",
+  searchSlot,
+  rightSlot,
+  drawerId = "sidebar-drawer",
+  showSidebar = true,
+  showDock = true,
+  isAdmin = false,
+  onOpenSettings,
+}) {
   const navigate = useNavigate();
   const { user, isGuest, logout } = useAuth();
 
@@ -30,12 +41,24 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot, dra
   return (
     <>
       {/* Sidebar drawer component */}
-      <Sidebar activePage={activePage} />
+      {showSidebar && (
+        isAdmin ? (
+          <AdminSidebar activePage={activePage} drawerId={drawerId} onOpenSettings={onOpenSettings} />
+        ) : (
+          <Sidebar activePage={activePage} />
+        )
+      )}
 
       {/* Dock navigation for mobile / tablet (below lg) */}
-      <div className="block lg:hidden">
-        <Dock activePage={activePage} />
-      </div>
+      {showDock && (
+        <div className="block lg:hidden">
+          {isAdmin ? (
+            <AdminDock activePage={activePage} onOpenSettings={onOpenSettings} />
+          ) : (
+            <Dock activePage={activePage} />
+          )}
+        </div>
+      )}
 
       {/* Unified Top Navigation Header Bar */}
       <header className="flex items-center gap-3 mb-4">
@@ -50,30 +73,56 @@ export default function Navbar({ activePage = "home", searchSlot, rightSlot, dra
           <span className="font-bold text-sm">القائمة</span>
         </label>
 
-        {/* User Profile Avatar (kept intact as static profile display) */}
-        <div
-          className="shrink-0 hidden lg:block"
-          title={`أهلاً بك، ${userName}`}
-        >
-          <Avatar src={userAvatar} size="w-10" />
-        </div>
-
-        {/* Mobile / Tablet Profile avatar (<lg) */}
-        <div
-          onClick={handleMobileAvatarClick}
-          className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
-          title={isGuest ? "تسجيل الدخول" : `أهلاً بك، ${userName}`}
-        >
-          <Avatar src={userAvatar} size="w-10" />
-        </div>
-
         {/* Center slot (optional search bar or breadcrumbs) */}
         <div className="flex-1">{searchSlot}</div>
 
-        {/* Action icons slot (Theme toggle, Notifications, Settings) */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Left Action icons slot (Avatar Profile, Notifications, Theme toggle) */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {rightSlot}
+
+          {/* Admin Mode Switcher Button */}
+          {user?.isAdmin && (
+            isAdmin ? (
+              <button
+                type="button"
+                onClick={() => navigate('/home')}
+                className="btn btn-sm btn-ghost border border-cyan-700/40 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-700 hover:text-white rounded-xl gap-1.5 font-bold font-2 text-xs transition-all shadow-xs"
+                title="الذهاب للموقع الرئيسي وتصفح المنصة"
+              >
+                <HiOutlineHome className="text-base shrink-0" />
+                <span className="hidden sm:inline">الموقع الرئيسي</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/admin/users')}
+                className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl gap-1.5 font-bold font-2 text-xs transition-all shadow-xs"
+                title="الذهاب إلى لوحة تحكم الأدمن"
+              >
+                <HiOutlineCog className="text-base shrink-0" />
+                <span className="hidden sm:inline">لوحة التحكم</span>
+              </button>
+            )
+          )}
+
           <HeaderActions />
+
+          {/* Desktop Profile avatar (lg+) */}
+          <div
+            className="shrink-0 hidden lg:block cursor-pointer"
+            title={`أهلاً بك، ${userName}`}
+          >
+            <Avatar src={userAvatar} size="w-10" />
+          </div>
+
+          {/* Mobile / Tablet Profile avatar (<lg) */}
+          <div
+            onClick={handleMobileAvatarClick}
+            className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
+            title={isGuest ? "تسجيل الدخول" : `أهلاً بك، ${userName}`}
+          >
+            <Avatar src={userAvatar} size="w-10" />
+          </div>
         </div>
       </header>
     </>

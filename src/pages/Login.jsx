@@ -43,8 +43,20 @@ export default function Login() {
 
     try {
       await login(email, password);
-      const from = location.state?.from?.pathname || '/home';
-      navigate(from, { replace: true });
+      let savedUser = null;
+      try {
+        savedUser = JSON.parse(localStorage.getItem('user'));
+      } catch {
+        // ignore
+      }
+
+      if (location.state?.from?.pathname) {
+        navigate(location.state.from.pathname, { replace: true });
+      } else if (savedUser?.isAdmin) {
+        navigate('/admin/users', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
     } catch (err) {
       setErrorMsg(err.message || 'فشل تسجيل الدخول، يُرجى التحقق من البيانات.');
     } finally {

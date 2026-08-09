@@ -46,15 +46,6 @@ export default function HeaderActions({ className = "", buttonClassName = "" }) 
       >
         <IoIosNotificationsOutline className="text-xl" />
       </button>
-
-      {/* Settings Icon */}
-      <button
-        aria-label="الإعدادات"
-        title="الإعدادات"
-        className={baseBtnClass}
-      >
-        <IoSettingsOutline className="text-xl" />
-      </button>
     </div>
   );
 }

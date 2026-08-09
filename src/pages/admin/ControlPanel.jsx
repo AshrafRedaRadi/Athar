@@ -6,17 +6,16 @@ import {
   HiOutlineViewGrid,
   HiOutlineCalendar,
   HiOutlineDownload,
-  HiOutlineMenuAlt3,
   HiOutlineCheck,
   HiOutlineDocumentText,
   HiOutlineCog
 } from "react-icons/hi";
 import { HiOutlineChartBar } from "react-icons/hi2";
-import AdminSidebar from "../../components/admin/AdminSidebar";
+import Navbar from "../../components/shared/Navbar";
 
 /**
  * Admin Control Panel Page (لوحة التحكم).
- * Static layout matching the admin dashboard mockup design.
+ * Uses unified Navbar & AdminSidebar.
  * Route: /admin/controlpanel
  */
 function ControlPanel() {
@@ -95,28 +94,21 @@ function ControlPanel() {
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-base-100 text-base-content p-4 md:p-8 font-2">
-      {/* Admin Sidebar Drawer */}
-      <AdminSidebar activePage="dashboard" drawerId="admin-sidebar-drawer" />
+    <div dir="rtl" className="min-h-screen bg-base-100 text-base-content px-3 sm:px-8 py-8 pt-3 font-2">
+      {/* Top Navbar with Admin Dock for Mobile/Tablet */}
+      <Navbar
+        drawerId="admin-sidebar-drawer"
+        activePage="dashboard"
+        isAdmin={true}
+        showSidebar={true}
+        showDock={true}
+      />
 
-      {/* Top Bar / Header */}
+      {/* Top Bar / Header below Navbar */}
       <header className="flex items-center justify-between mb-8 pb-4 border-b border-base-200">
-        <div className="flex items-center gap-3">
-          {/* Menu Toggle for Admin Sidebar */}
-          <label
-            htmlFor="admin-sidebar-drawer"
-            className="btn btn-ghost border border-base-300 rounded-xl gap-2 cursor-pointer hover:bg-cyan-700 hover:text-white transition-all flex items-center px-3.5 py-2"
-            aria-label="فتح قائمة الإدارة"
-            title="فتح قائمة الإدارة"
-          >
-            <HiOutlineMenuAlt3 className="text-xl" />
-            <span className="font-bold text-sm">القائمة</span>
-          </label>
-
-          <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content">
-            نظرة عامة
-          </h1>
-        </div>
+        <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content">
+          نظرة عامة
+        </h1>
 
         {/* Filter / Date selector button */}
         <button

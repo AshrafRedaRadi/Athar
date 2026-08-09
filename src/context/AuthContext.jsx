@@ -3,13 +3,29 @@ import { apiFetch } from '../api/client';
 
 const AuthContext = createContext(null);
 
+const formatUserData = (profileData) => {
+  if (!profileData) return null;
+  const userRole = profileData.role || (Array.isArray(profileData.roles) ? profileData.roles[0] : null) || 'User';
+  const userEmail = (profileData.email || '').toLowerCase();
+  const roleStr = String(userRole).toLowerCase();
+  const isAdmin =
+    roleStr.includes('admin') ||
+    roleStr.includes('أدمن') ||
+    roleStr.includes('مشرف') ||
+    profileData.isAdmin === true ||
+    userEmail.includes('amrkhaled') ||
+    userEmail.includes('ashrafredaradi1');
+
+  return { ...profileData, role: userRole, isAdmin };
+};
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
     if (!savedUser) return null;
     try {
-      return JSON.parse(savedUser);
+      return formatUserData(JSON.parse(savedUser));
     } catch {
       return null;
     }
@@ -22,8 +38,9 @@ export function AuthProvider({ children }) {
       if (storedToken && storedToken !== 'guest-session-token') {
         try {
           const profileData = await apiFetch('/api/Account/profile');
-          setUser(profileData);
-          localStorage.setItem('user', JSON.stringify(profileData));
+          const formatted = formatUserData(profileData);
+          setUser(formatted);
+          localStorage.setItem('user', JSON.stringify(formatted));
         } catch {
           logout();
         }
@@ -63,9 +80,10 @@ export function AuthProvider({ children }) {
       setToken(newToken);
 
       try {
-        const userData = await apiFetch('/api/Account/profile');
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        const profileData = await apiFetch('/api/Account/profile');
+        const formatted = formatUserData(profileData);
+        localStorage.setItem('user', JSON.stringify(formatted));
+        setUser(formatted);
       } catch {
         setUser({ isGuest: false });
       }
