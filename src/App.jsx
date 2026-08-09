@@ -27,7 +27,6 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path='/plan' element={<Plan />} />
 
           {/* Admin routes protected by AdminRoute */}
           <Route element={<AdminRoute />}>
@@ -46,6 +45,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Home />} />
+            <Route path='/plan' element={<Plan />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:bookId/sections" element={<ListSection />} />
             <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />
