@@ -62,7 +62,7 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
     { id: "home",         label: "الرئيسية", icon: <IoHomeOutline />,     href: "/home" },
     { id: "library",      label: "المكتبة",  icon: <BsBook />,            href: "/library" },
     { id: "review",       label: "التحكم في الخطة",   icon: <BsClipboard2Check />, href: "#" },
-    { id: "achievements", label: "الإنجازات",icon: <RiAwardLine />,       href: "#" },
+    { id: "achievements", label: "الإنجازات",icon: <RiAwardLine />,       href: "/achievements" },
     { id: "settings",     label: "الإعدادت", icon: <IoSettingsOutline />,  href: "#" },
   ];
 
