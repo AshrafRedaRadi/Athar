@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { HiOutlineMenuAlt3 } from "react-icons/hi";
+import { HiOutlineMenuAlt3, HiOutlineHome, HiOutlineCog } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
 import Sidebar from "./Sidebar";
@@ -79,6 +79,32 @@ export default function Navbar({
         {/* Left Action icons slot (Avatar Profile, Notifications, Theme toggle) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {rightSlot}
+
+          {/* Admin Mode Switcher Button */}
+          {user?.isAdmin && (
+            isAdmin ? (
+              <button
+                type="button"
+                onClick={() => navigate('/home')}
+                className="btn btn-sm btn-ghost border border-cyan-700/40 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-700 hover:text-white rounded-xl gap-1.5 font-bold font-2 text-xs transition-all shadow-xs"
+                title="الذهاب للموقع الرئيسي وتصفح المنصة"
+              >
+                <HiOutlineHome className="text-base shrink-0" />
+                <span className="hidden sm:inline">الموقع الرئيسي</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/admin/users')}
+                className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl gap-1.5 font-bold font-2 text-xs transition-all shadow-xs"
+                title="الذهاب إلى لوحة تحكم الأدمن"
+              >
+                <HiOutlineCog className="text-base shrink-0" />
+                <span className="hidden sm:inline">لوحة التحكم</span>
+              </button>
+            )
+          )}
+
           <HeaderActions />
 
           {/* Desktop Profile avatar (lg+) */}

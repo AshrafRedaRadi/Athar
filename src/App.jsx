@@ -5,6 +5,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import GuestRoute from './components/auth/GuestRoute';
 
+import AdminRoute from './components/auth/AdminRoute';
+
 import Home from './pages/Home';
 import Library from './pages/Library';
 import Study from './pages/Study';
@@ -17,6 +19,7 @@ import Onboarding from './pages/Onboarding';
 import Plan from './pages/Plan';
 import ControlPanel from './pages/admin/ControlPanel';
 import ContentManagement from './pages/admin/ContentManagement';
+import UsersManagement from './pages/admin/UsersManagement';
 import Error_page from './pages/Error_page';
 
 function App() {
@@ -25,8 +28,13 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/plan' element={<Plan />} />
-          <Route path='/admin/controlpanel' element={<ControlPanel />} />
-          <Route path='/admin/content' element={<ContentManagement />} />
+
+          {/* Admin routes protected by AdminRoute */}
+          <Route element={<AdminRoute />}>
+            <Route path='/admin/controlpanel' element={<ControlPanel />} />
+            <Route path='/admin/content' element={<ContentManagement />} />
+            <Route path='/admin/users' element={<UsersManagement />} />
+          </Route>
           {/* Guest-only routes: opening / opens Login page first */}
           <Route element={<GuestRoute fallback="/home" />}>
             <Route path="/" element={<Login />} />

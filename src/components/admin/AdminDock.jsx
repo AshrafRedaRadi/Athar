@@ -16,7 +16,7 @@ export default function AdminDock({ activePage = "dashboard" }) {
         const content = (
           <>
             <span className="text-xl text-cyan-700">{item.icon}</span>
-            <span className="dock-label">{item.label}</span>
+            <span className="dock-label">{item.dockLabel || item.label}</span>
           </>
         );
 

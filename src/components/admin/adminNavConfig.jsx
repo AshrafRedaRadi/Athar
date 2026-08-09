@@ -7,8 +7,8 @@ import { HiOutlineUsers, HiOutlineDocumentText, HiOutlineSparkles } from "react-
  * Single source of truth for both AdminSidebar and AdminDock.
  */
 export const ADMIN_NAV_ITEMS = [
-  { id: "dashboard", label: "الرئيسية",   icon: <IoGridOutline className="text-xl" />,         href: "/admin/controlpanel" },
-  { id: "users",     label: "المستخدمون", icon: <HiOutlineUsers className="text-xl" />,        href: "#" },
-  { id: "content",   label: "إدارة المحتوى", icon: <HiOutlineDocumentText className="text-xl" />, href: "/admin/content" },
-  { id: "plans",     label: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "/plan" },
+  { id: "dashboard", label: "الرئيسية",       dockLabel: "الرئيسية",   icon: <IoGridOutline className="text-xl" />,         href: "/admin/controlpanel" },
+  { id: "users",     label: "إدارة المستخدمين", dockLabel: "المستخدمون", icon: <HiOutlineUsers className="text-xl" />,        href: "/admin/users" },
+  { id: "content",   label: "إدارة المحتوى",     dockLabel: "المحتوى",     icon: <HiOutlineDocumentText className="text-xl" />, href: "/admin/content" },
+  { id: "plans",     label: "الباقات",         dockLabel: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "/plan" },
 ];

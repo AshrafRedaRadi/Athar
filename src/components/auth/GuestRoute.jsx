@@ -12,8 +12,8 @@ function LoadingScreen() {
   );
 }
 
-export default function GuestRoute({ children, fallback = '/library' }) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function GuestRoute({ children, fallback = '/home' }) {
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -21,7 +21,8 @@ export default function GuestRoute({ children, fallback = '/library' }) {
   }
 
   if (isAuthenticated) {
-    const destination = location.state?.from?.pathname || fallback;
+    const defaultTarget = user?.isAdmin ? '/admin/users' : fallback;
+    const destination = location.state?.from?.pathname || defaultTarget;
     return <Navigate to={destination} replace />;
   }
 
