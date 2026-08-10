@@ -8,6 +8,7 @@ import { HiOutlineSpeakerWave } from "react-icons/hi2";
  */
 export default function RecordButton({ 
   isRecording = false, 
+  isConnecting = false,
   onToggle,
   onListen,
   onRecite,
@@ -45,6 +46,8 @@ export default function RecordButton({
   };
 
   const handleClick = (e) => {
+    if (isConnecting) return;
+
     if (isLongPress.current) {
       e.preventDefault();
       e.stopPropagation();
@@ -132,6 +135,7 @@ export default function RecordButton({
 
         <button
           onClick={handleClick}
+          disabled={isConnecting}
           onMouseDown={startPressTimer}
           onMouseUp={cancelPressTimer}
           onMouseLeave={cancelPressTimer}
@@ -140,14 +144,18 @@ export default function RecordButton({
           className={`
             btn btn-circle w-16 h-16 lg:w-16 lg:h-16 min-h-0 border-none text-white flex items-center justify-center
             transition-all duration-300 transform hover:scale-105 active:scale-95
-            ${isRecording
+            ${isConnecting
+              ? "bg-cyan-700 opacity-90 shadow-md cursor-wait animate-pulse"
+              : isRecording
               ? "bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 shadow-[0_0_30px_rgba(239,68,68,0.7)] animate-pulse"
               : "bg-gradient-to-tr from-cyan-600 via-cyan-400 to-sky-300 shadow-[0_0_28px_rgba(6,182,212,0.65)] hover:shadow-[0_0_36px_rgba(6,182,212,0.85)]"}
           `}
-          aria-label={isRecording ? "إيقاف التسميع" : "بدء التسميع"}
-          title={isRecording ? "إيقاف التسميع" : "بدء التسميع"}
+          aria-label={isConnecting ? "جاري الاتصال..." : isRecording ? "إيقاف التسميع" : "بدء التسميع"}
+          title={isConnecting ? "جاري الاتصال..." : isRecording ? "إيقاف التسميع" : "بدء التسميع"}
         >
-          {isRecording ? (
+          {isConnecting ? (
+            <span className="loading loading-spinner loading-md text-white"></span>
+          ) : isRecording ? (
             <BsStopFill className="text-3xl lg:text-3xl" />
           ) : (
             <>

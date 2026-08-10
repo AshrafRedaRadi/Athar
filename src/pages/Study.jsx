@@ -1,216 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
+import { FiBarChart2 } from "react-icons/fi";
 import Navbar from "../components/shared/Navbar";
 import StudyToolbar from "../components/study/StudyToolbar";
 import HadithCard from "../components/study/HadithCard";
-import RecordButton from "../components/study/RecordButton";
+import RecordButton from "../components/study/recitation/RecordButton";
+import RecitationResultsModal from "../components/study/recitation/RecitationResultsModal";
 import AudioPlayer from "../components/study/AudioPlayer";
 import ExplanationPanel from "../components/study/ExplanationPanel";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";
+import { useRecitation } from "../components/study/recitation/useRecitation";
 import GuestLoginModal from "../components/auth/GuestLoginModal";
-import logo from "../assets/logo.png";
-import user from "../assets/user.png";
 
-// ─────────────────────────────────────────────
-//  Mock Data for multiple hadiths (for prev/next navigation)
-// ─────────────────────────────────────────────
-/*
-const MOCK_HADITHS = [
-  {
-    id: 1,
-    bookTitle: "الأربعون النووية",
-    hadithNumber: "الحديث الأول",
-    title: "إنما الأعمال بالنيات",
-    text: "عَنْ أَمِيرِ المُؤْمِنِينَ أَبِي حَفْصٍ عُمَرَ بْنِ الخَطَّابِ رَضِيَ اللهُ عَنْهُ قَالَ: سَمِعْتُ رَسُولَ اللَّهِ ﷺ يَقُولُ: «إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى، فَمَنْ كَانَتْ هِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ فَهِجْرَتُهُ إِلَى اللَّهِ وَرَسُولِهِ، وَمَنْ كَانَتْ هِجْرَتُهُ لِدُنْيَا يُصِيبُهَا أَوِ امْرَأَةٍ يَنْكِحُهَا فَهِجْرَتُهُ إِلَى مَا هَاجَرَ إِلَيْهِ»",
-    source: "رواه البخاري ومسلم",
-    reader: "القارئ: أحمد النفيس",
-    duration: "01:42",
-    explanation: {
-      videoTitle: "شرح الحديث الأول: إنما الأعمال بالنيات",
-      videoDuration: "15:20 دقيقة",
-      videoSpeaker: "الشيخ د. عبدالكريم الخضير",
-      keyPoints: [
-        "أهمية النية في قبول الأعمال",
-        "الفرق بين نية العادة ونية العبادة",
-        "سبب إيراد المصنفين لهذا الحديث في أوائل كتبهم",
-      ],
-      summary: "هذا الحديث قاعدة عظيمة من قواعد الإسلام، ومدار الإيمان عليه، فكل عمل لا يراد به وجه الله فهو باطل.",
-      sections: [
-        {
-          title: "معنى النية لغة واصطلاحاً",
-          content: "النية في اللغة هي القصد، وفي الاصطلاح هي عزم القلب على فعل العبادة تقرباً إلى الله تعالى."
-        },
-        {
-          title: "قوله ﷺ \"إنما الأعمال بالنيات\"",
-          content: "أي: إنما صحة الأعمال أو قبولها أو كمالها معتبر بالنيات، فلا يصح عمل شرعي إلا بنية."
-        },
-        {
-          title: "وقوله ﷺ \"وإنما لكل امرئ ما نوى\"",
-          content: "تأكيد للجملة الأولى، وبيان أن ثواب العامل على عمله بحسب نيته، فمن نوى بعمله وجه الله والدار الآخرة أثيب، ومن نوى به الدنيا أو الرياء لم يثب."
-        },
-        {
-          title: "مقاصد النية",
-          items: [
-            "تمييز العبادات عن العادات (كتمييز الغسل للتبرد عن الغسل للجنابة).",
-            "تمييز العبادات بعضها عن بعض (كتمييز صلاة الظهر عن صلاة العصر)."
-          ]
-        },
-        {
-          title: "الهجرة",
-          content: "ثم ضرب النبي ﷺ مثلاً بالهجرة، وهي الانتقال من بلد الشرك إلى بلد الإسلام، فمن كانت هجرته لله ورسوله فثوابه عند الله، ومن كانت لغرض دنيوي فليس له إلا ما طلب."
-        }
-      ]
-    }
-  }
-];
-*/
 
-// ─────────────────────────────────────────────
-//  Custom hook for Web Speech API
-// ─────────────────────────────────────────────
-function useSpeechRecognition(hadithText) {
-  const [spokenWords, setSpokenWords] = useState([]);
-  const [isListening, setIsListening] = useState(false);
-  const [recitationStopped, setRecitationStopped] = useState(false);
-  const recognitionRef = useRef(null);
-
-  const hadithWords = hadithText ? hadithText.split(" ") : [];
-
-  /**
-   * Strip tashkeel (diacritics) from Arabic text for comparison.
-   */
-  const stripTashkeel = useCallback((text) => {
-    return text.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g, "");
-  }, []);
-
-  /**
-   * Compare two Arabic words ignoring tashkeel.
-   */
-  const compareWords = useCallback((spoken, expected) => {
-    const cleanSpoken = stripTashkeel(spoken).trim();
-    const cleanExpected = stripTashkeel(expected).trim();
-    return cleanSpoken === cleanExpected;
-  }, [stripTashkeel]);
-
-  const startListening = useCallback(() => {
-    // Check browser support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn("Web Speech API is not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ar-SA";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-      const lastResult = event.results[event.results.length - 1];
-      if (!lastResult.isFinal) return;
-
-      const transcript = lastResult[0].transcript.trim();
-      const spokenWordsList = transcript.split(" ").filter(w => w.length > 0);
-
-      setSpokenWords(prev => {
-        const currentIndex = prev.length;
-        const newWords = [];
-
-        for (let i = 0; i < spokenWordsList.length; i++) {
-          const wordIndex = currentIndex + i;
-          if (wordIndex >= hadithWords.length) break;
-
-          const isCorrect = compareWords(spokenWordsList[i], hadithWords[wordIndex]);
-          newWords.push({ word: spokenWordsList[i], correct: isCorrect });
-
-          // If the last spoken word is wrong, check if full sentence is wrong
-          if (!isCorrect) {
-            // Check if all words so far are wrong
-            const allWrong = [...prev, ...newWords].every(w => !w.correct);
-            if (allWrong && [...prev, ...newWords].length >= 3) {
-              setRecitationStopped(true);
-            }
-          }
-        }
-
-        return [...prev, ...newWords];
-      });
-    };
-
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      if (event.error !== "no-speech") {
-        setIsListening(false);
-      }
-    };
-
-    recognition.onend = () => {
-      // Restart if still supposed to be listening
-      if (recognitionRef.current && isListening) {
-        try {
-          recognition.start();
-        } catch (e) {
-          // Already started
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-
-    try {
-      recognition.start();
-      setIsListening(true);
-      setSpokenWords([]);
-      setRecitationStopped(false);
-    } catch (e) {
-      console.error("Failed to start speech recognition:", e);
-    }
-  }, [hadithWords, compareWords, isListening]);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.abort();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  }, []);
-
-  const resetRecitation = useCallback(() => {
-    setSpokenWords([]);
-    setRecitationStopped(false);
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-        recognitionRef.current = null;
-      }
-    };
-  }, []);
-
-  return {
-    spokenWords,
-    isListening,
-    recitationStopped,
-    startListening,
-    stopListening,
-    resetRecitation,
-  };
-}
 
 // ─────────────────────────────────────────────
 //  Study Page
 // ─────────────────────────────────────────────
 export default function Study() {
   const { bookId, sectionId, hadithId } = useParams();
-  const navigate = useNavigate();
 
   // sectionId "0" means the book has no sections → omit &sectionId from API call
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
@@ -223,6 +36,7 @@ export default function Study() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
   const audioControlRef = useRef(null);
 
   const handleAudioToggle = () => {
@@ -307,15 +121,27 @@ export default function Study() {
     }
   }, [currentHadith?.id, isGuest]);
 
-  // Speech recognition
+  // SignalR Real-Time Speech Recitation Hook
   const {
     spokenWords,
+    extras,
+    activeWordIndex,
     isListening,
+    isConnecting,
     recitationStopped,
+    completedSummary,
+    errorMsg: recitationError,
     startListening,
     stopListening,
     resetRecitation,
-  } = useSpeechRecognition(currentHadith?.text || "");
+  } = useRecitation();
+
+  // Automatically switch to revealed mode (isHidden = false) when recitation finishes
+  useEffect(() => {
+    if (completedSummary || (recitationStopped && spokenWords.length > 0)) {
+      setIsHidden(false);
+    }
+  }, [completedSummary, recitationStopped, spokenWords.length]);
 
   // Toggle recording
   const handleRecordToggle = () => {
@@ -326,7 +152,7 @@ export default function Study() {
     if (isListening) {
       stopListening();
     } else {
-      startListening();
+      startListening(currentHadith?.id);
     }
   };
 
@@ -373,6 +199,13 @@ export default function Study() {
                   hadithLabel={currentHadith.hadithNumber}
                 />
                
+                {/* Recitation Error Banner if any */}
+                {recitationError && (
+                  <div className="alert alert-error shadow-sm text-xs font-2 my-2 rounded-xl text-white">
+                    <span>{recitationError}</span>
+                  </div>
+                )}
+
                 {/* Hadith Card Area */}
                 <div className="flex-1 flex flex-col justify-center mt-1 sm:mt-1 mb-4">
                   <HadithCard 
@@ -383,7 +216,7 @@ export default function Study() {
                     source={currentHadith.source}
                     mode={isListening ? "reciting" : "reading"}
                     spokenWords={spokenWords}
-                    recitationStopped={recitationStopped}
+                    activeWordIndex={activeWordIndex}
                     isHidden={isHidden}
                     onToggleHide={() => setIsHidden(!isHidden)}
                   />
@@ -391,6 +224,7 @@ export default function Study() {
                
                 <RecordButton 
                   isRecording={isListening} 
+                  isConnecting={isConnecting}
                   onToggle={() => {
                     if (audioControlRef.current && audioControlRef.current.pause) {
                       audioControlRef.current.pause();
@@ -437,7 +271,22 @@ export default function Study() {
                    <AiOutlineInfoCircle className="text-lg" />
                  </button>
 
-                 {/* 3. AI Helper Button */}
+                 {/* 3. Recitation Results Button */}
+                 <button
+                   onClick={() => setIsResultsOpen(true)}
+                   disabled={!completedSummary}
+                   className={`btn btn-circle w-10 h-10 min-h-0 flex items-center justify-center transition-all duration-300 ${
+                     completedSummary
+                       ? "bg-cyan-700 hover:bg-cyan-800 text-white shadow-md shadow-cyan-700/30 border-none scale-105"
+                       : "bg-base-100 border border-base-300 text-base-content/40 shadow-sm cursor-not-allowed"
+                   }`}
+                   aria-label="نتيجة التسميع"
+                   title={completedSummary ? "عرض نتيجة التسميع" : "لا توجد نتيجة بعد"}
+                 >
+                   <FiBarChart2 className={`text-lg ${completedSummary ? "text-white" : "text-base-content/40"}`} />
+                 </button>
+
+                 {/* 4. AI Helper Button */}
                  <button
                    onClick={() => console.log("AI Helper clicked")}
                    className="btn btn-circle w-10 h-10 min-h-0 bg-cyan-700 hover:bg-cyan-800 text-white shadow-md border-none flex items-center justify-center"
@@ -483,6 +332,14 @@ export default function Study() {
         onClose={() => setIsGuestModalOpen(false)}
         title="تسجيل الدخول لبدء التسميع"
         message="التسميع الصوتي واكتشاف أخطاء الحفظ بالذكاء الاصطناعي يتطلب تسجيل الدخول إلى حسابك."
+      />
+
+      {/* ── Recitation Results Modal ── */}
+      <RecitationResultsModal
+        isOpen={isResultsOpen}
+        onClose={() => setIsResultsOpen(false)}
+        summary={completedSummary}
+        extras={extras}
       />
     </div>
   );

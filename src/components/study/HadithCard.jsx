@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
+import RecitationWord from "./recitation/RecitationWord";
 
 /**
  * HadithCard — displays the hadith text with hide/reveal toggle
  * and speech recognition recitation coloring support.
+ *
+ * Uses RecitationWord for each word, which renders the same content
+ * in both hidden and visible states (CSS-only visibility control)
+ * to eliminate all layout jumps and flashes.
  */
 export default function HadithCard({
   bookTitle,
@@ -11,63 +16,35 @@ export default function HadithCard({
   text = "",
   source,
   spokenWords = [],
+  activeWordIndex = -1,
   recitationStopped = false,
+  completedSummary = null,
   isHidden: externalIsHidden,
+  mode = "reading",
 }) {
-  const [internalIsHidden] = useState(true);
-
-  const isHidden = externalIsHidden !== undefined ? externalIsHidden : internalIsHidden;
-
-  const renderBlank = (word, key, extraClass = "") => {
-    if (word === "ﷺ") {
-      return <span key={key} className="text-base-content font-4 mx-0.5">{word} </span>;
-    }
-    return (
-      <span
-        key={key}
-        className={`inline-block border-b-2 border-base-content/50 text-transparent select-none pb-0.5 mx-0.5 ${extraClass}`}
-      >
-        {word}{" "}
-      </span>
-    );
-  };
+  const isHidden = externalIsHidden !== undefined ? externalIsHidden : true;
+  const isReciting = mode === "reciting";
 
   const renderText = () => {
     const words = text.trim().split(/\s+/);
-    const totalSpoken = spokenWords.length;
 
     return words.map((word, i) => {
-      const isSpoken = i < totalSpoken;
-
-      if (isSpoken) {
-        const spoken = spokenWords[i];
-        const isCorrect = spoken?.correct;
-        const colorClass = isCorrect ? "text-hadith font-semibold" : "text-hadith-error font-semibold";
-        return (
-          <span key={i} className={`${colorClass} inline-block mx-0.5`}>
-            {word}{" "}
-          </span>
-        );
-      }
-
-      if (recitationStopped) {
-        return isHidden ? (
-          renderBlank(word, i, "opacity-40")
-        ) : (
-          <span key={i} className="opacity-40 inline-block mx-0.5">
-            {word}{" "}
-          </span>
-        );
-      }
-
-      if (isHidden) {
-        return renderBlank(word, i);
-      }
+      const spoken = spokenWords[i];
+      const state = spoken?.state || "Pending";
+      const isRecited = spoken != null && state !== "Pending";
+      const isActive = isReciting && (i === activeWordIndex || spoken?.isCurrentActive === true);
 
       return (
-        <span key={i} className="inline-block mx-0.5">
-          {word}{" "}
-        </span>
+        <RecitationWord
+          key={i}
+          word={word}
+          isHidden={isHidden}
+          isActive={isActive}
+          state={state}
+          isReciting={isReciting}
+          isRecited={isRecited}
+          recognizedText={spoken?.recognizedText}
+        />
       );
     });
   };

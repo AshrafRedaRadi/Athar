@@ -129,3 +129,52 @@ html {
 .panel-slide {
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease-in-out !important;
 }
+
+/* Modal enter & exit animations */
+@keyframes modalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modalScaleOut {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+    }
+}
+
+@keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes backdropFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.animate-modalIn {
+    animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modalOut {
+    animation: modalScaleOut 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+.animate-backdropIn {
+    animation: backdropFadeIn 0.25s ease-out forwards;
+}
+
+.animate-backdropOut {
+    animation: backdropFadeOut 0.2s ease-in forwards;
+}
