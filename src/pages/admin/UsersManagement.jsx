@@ -22,6 +22,7 @@ export default function UsersManagement() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
 
   // Mobile Category Tabs list
   const ROLE_CATEGORIES = [
@@ -66,11 +67,13 @@ export default function UsersManagement() {
   // Modal Handlers
   const handleOpenAddModal = () => {
     setEditingUser(null);
+    setFormError(null);
     setIsFormOpen(true);
   };
 
   const handleOpenEditModal = (user) => {
     setEditingUser(user);
+    setFormError(null);
     setIsFormOpen(true);
   };
 
@@ -81,10 +84,11 @@ export default function UsersManagement() {
 
   const handleSaveUser = async (formData) => {
     setIsSubmitting(true);
+    setFormError(null);
     try {
       if (editingUser) {
         // Edit
-        const updated = await usersService.updateUser(editingUser.id, formData);
+        await usersService.updateUser(editingUser.id, formData);
         setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...formData } : u)));
       } else {
         // Add new
@@ -94,6 +98,7 @@ export default function UsersManagement() {
       setIsFormOpen(false);
     } catch (err) {
       console.error("Error saving user:", err);
+      setFormError(err?.message || "تعذَّر إنشاء أو تعديل الحساب، يرجى التأكد من البيانات والمحاولة مجدداً.");
     } finally {
       setIsSubmitting(false);
     }
@@ -356,6 +361,7 @@ export default function UsersManagement() {
         onSubmit={handleSaveUser}
         initialData={editingUser}
         isSaving={isSubmitting}
+        serverError={formError}
       />
 
       {/* Delete Confirmation Modal */}

@@ -19,6 +19,41 @@ export function getImageUrl(relativePath) {
 }
 
 /**
+ * Translate raw English backend error messages into user-friendly Arabic
+ */
+export function translateServerError(rawMsg) {
+  if (!rawMsg) return "تعذَّر إكمال العملية حالياً، يرجى المحاولة لاحقاً";
+  const s = String(rawMsg).toLowerCase();
+
+  if (s.includes("already registered") || s.includes("already exists") || s.includes("is taken") || s.includes("duplicateemail")) {
+    return "هذا البريد الإلكتروني مسجل بالفعل لدى حساب آخر.";
+  }
+  if (s.includes("invalid email or password")) {
+    return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  }
+  if (s.includes("email is not confirmed")) {
+    return "البريد الإلكتروني غير مؤكد. يرجى تأكيد حسابك من خلال الرابط المرسل إلى بريدك أولاً.";
+  }
+  if (s.includes("non alphanumeric") || s.includes("passwords must have")) {
+    return "كلمة المرور يجب أن تحتوي على حرف كبير وحرف صغير ورقم ورمز خاص (@$!%*?&).";
+  }
+  if (s.includes("passwordtooshort") || s.includes("password is too short")) {
+    return "كلمة المرور قصيرة جداً، يرجى استخدام 6 أحرف/أرقام على الأقل.";
+  }
+  if (s.includes("user not found") || s.includes("usernotfound")) {
+    return "لم يتم العثور على هذا المستخدم.";
+  }
+  if (s.includes("unauthorized") || s.includes("token")) {
+    return "انتهت جلسة التسجيل، يرجى إعادة تسجيل الدخول لمتابعة العمل.";
+  }
+  if (s === "bad request") {
+    return "بيانات الطلب غير صحيحة، يرجى مراجعة المدخلات والمحاولة مجدداً.";
+  }
+
+  return rawMsg;
+}
+
+/**
  * Core fetch wrapper with auth header, error handling, and 401 redirect support.
  * @param {string} endpoint - e.g. "/api/HadithBooks"
  * @param {object} options - fetch options
@@ -61,28 +96,28 @@ export async function apiFetch(endpoint, options = {}) {
 
       if (endpoint.includes("/api/Auth/login")) {
         const rawMsg = resData?.msg || resData?.message;
-        if (rawMsg === "Invalid email or password.") {
-          throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
-        }
-        throw new Error(rawMsg || "بيانات تسجيل الدخول غير صحيحة.");
+        throw new Error(translateServerError(rawMsg || "Invalid email or password."));
       }
 
       const serverMsg = resData?.msg || resData?.message;
-      throw new Error(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم");
+      throw new Error(translateServerError(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم"));
     }
 
     if (!response.ok) {
       let errorMsg = resData?.msg || resData?.message;
-      if (errorMsg === "Email is not confirmed. Please confirm your email first.") {
-        errorMsg = "البريد الإلكتروني غير مؤكد. يرجى تأكيد حسابك من خلال الرابط المرسل إلى بريدك الإلكتروني أولاً.";
+      if (!errorMsg && resData?.errors && typeof resData.errors === "object") {
+        const errList = Object.values(resData.errors).flat().filter(Boolean);
+        if (errList.length > 0) {
+          errorMsg = errList.join(" | ");
+        }
       }
-      throw new Error(errorMsg || "تعذَّر الاتصال بخدمة أثر حالياً، يرجى المحاولة لاحقاً");
+      throw new Error(translateServerError(errorMsg || "تعذَّر إكمال العملية حالياً، يرجى المحاولة لاحقاً"));
     }
 
     // Unpack backend response wrapper { isSuccess, data, message } if present
     if (resData && typeof resData === "object" && "isSuccess" in resData) {
       if (!resData.isSuccess) {
-        throw new Error(resData.message || "عذراً، تعذَّر إكمال الطلب في الوقت الحالي");
+        throw new Error(translateServerError(resData.message || "عذراً، تعذَّر إكمال الطلب في الوقت الحالي"));
       }
       return resData.data;
     }

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { HiOutlineX, HiOutlineUser, HiOutlineMail, HiOutlineLockClosed, HiOutlineUserGroup, HiOutlineBadgeCheck } from "react-icons/hi";
+import { normalizeRole } from "../../services/usersService";
 
 /**
  * UserFormModal - Modal for Adding or Editing User accounts (Teachers, Students, Admins).
  */
-export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, isSaving }) {
+export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, isSaving, serverError }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,11 +19,11 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
   useEffect(() => {
     if (initialData) {
       setFormData({
-        name: initialData.name,
-        email: initialData.email,
+        name: initialData.name || "",
+        email: initialData.email || "",
         password: "",
-        role: initialData.role,
-        status: initialData.status,
+        role: normalizeRole(initialData.role),
+        status: initialData.status || "نشط",
       });
     } else {
       setFormData({
@@ -48,6 +49,8 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
     }
     if (!initialData && !formData.password.trim()) {
       errs.password = "كلمة المرور مطلوبة للحساب الجديد";
+    } else if (!initialData && formData.password.trim().length < 6) {
+      errs.password = "كلمة المرور يجب أن لا تقل عن 6 أحرف أو أرقام";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -85,6 +88,13 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
             <HiOutlineX className="text-xl" />
           </button>
         </div>
+
+        {/* Server Error Alert Banner */}
+        {serverError && (
+          <div className="alert alert-error text-xs rounded-xl font-2 font-medium flex items-center justify-between py-2.5 px-4">
+            <span>{serverError}</span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 font-2">

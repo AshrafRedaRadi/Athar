@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
   HiOutlineX,
+  HiOutlineBookOpen,
+  HiOutlineDocumentText,
+  HiOutlineExclamationCircle,
   HiOutlineVideoCamera,
   HiOutlineVolumeUp,
   HiOutlinePhotograph,

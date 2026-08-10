@@ -21,6 +21,7 @@ import Achievements from './pages/Achievements';
 import ControlPanel from './pages/admin/ControlPanel';
 import ContentManagement from './pages/admin/ContentManagement';
 import UsersManagement from './pages/admin/UsersManagement';
+import AiAssistantManagement from './pages/admin/AiAssistantManagement';
 import Error_page from './pages/Error_page';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path='/admin/controlpanel' element={<ControlPanel />} />
             <Route path='/admin/content' element={<ContentManagement />} />
             <Route path='/admin/users' element={<UsersManagement />} />
+            <Route path='/admin/ai-assistant' element={<AiAssistantManagement />} />
           </Route>
           {/* Guest-only routes: opening / opens Login page first */}
           <Route element={<GuestRoute fallback="/home" />}>
