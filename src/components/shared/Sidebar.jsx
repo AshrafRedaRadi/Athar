@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
-import { RiAwardLine } from "react-icons/ri";
-import { BsBook, BsClipboard2Check } from "react-icons/bs";
 import { HiOutlineLogout } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
+import { MAIN_NAV_ITEMS } from "./mainNavConfig";
 import defaultAvatar from "../../assets/user.png";
 import logoImg from "../../assets/logo.png";
 
@@ -12,7 +10,7 @@ import logoImg from "../../assets/logo.png";
  * Sidebar component with pure Tailwind CSS slide transition from the right.
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
-function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar }) {
+function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar, drawerId = "sidebar-drawer", onOpenSettings }) {
   const navigate = useNavigate();
   const { user, isGuest, logout } = useAuth();
   const drawerRef = useRef(null);
@@ -30,6 +28,13 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
     closeDrawer();
     logout();
     navigate("/login");
+  };
+
+  const handleItemClick = (item) => {
+    closeDrawer();
+    if (item.id === "settings" && onOpenSettings) {
+      onOpenSettings();
+    }
   };
 
   useEffect(() => {
@@ -58,19 +63,11 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
     };
   }, []);
 
-  const menuItems = [
-    { id: "home", label: "الرئيسية", icon: <IoHomeOutline />, href: "/home" },
-    { id: "library", label: "المكتبة", icon: <BsBook />, href: "/library" },
-    { id: "review", label: "التحكم في الخطة", icon: <BsClipboard2Check />, href: "/plan" },
-    { id: "achievements", label: "الإنجازات", icon: <RiAwardLine />, href: "/achievements" },
-    { id: "settings", label: "الإعدادت", icon: <IoSettingsOutline />, href: "#" },
-  ];
-
   return (
     <div>
       {/* Hidden checkbox toggle for sidebar */}
       <input
-        id="sidebar-drawer"
+        id={drawerId}
         ref={drawerRef}
         type="checkbox"
         className="peer hidden"
@@ -78,7 +75,7 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
 
       {/* Overlay — pure Tailwind fade transition */}
       <label
-        htmlFor="sidebar-drawer"
+        htmlFor={drawerId}
         className="fixed inset-0 bg-black/40 z-50
                    transition-opacity duration-500 ease-in-out
                    opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto"
@@ -117,12 +114,13 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
 
           {/* Menu Items */}
           <div className="mt-6 space-y-3">
-            {menuItems.map((item) => {
+            {MAIN_NAV_ITEMS.map((item) => {
               const isActive = activePage === item.id;
-              const classes = `btn font-2 rounded-xl justify-start w-full ${isActive
+              const classes = `btn font-2 rounded-xl justify-start w-full gap-3 ${
+                isActive
                   ? "bg-cyan-700 text-white border-transparent"
                   : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
-                }`;
+              }`;
 
               if (item.href.startsWith("/")) {
                 return (
@@ -130,9 +128,10 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
                     key={item.id}
                     to={item.href}
                     className={classes}
-                    onClick={closeDrawer}
+                    onClick={() => handleItemClick(item)}
                   >
-                    {item.icon}  {item.label}
+                    {item.icon}
+                    <span>{item.label}</span>
                   </Link>
                 );
               }
@@ -142,9 +141,10 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
                   key={item.id}
                   type="button"
                   className={classes}
-                  onClick={closeDrawer}
+                  onClick={() => handleItemClick(item)}
                 >
-                  {item.icon}  {item.label}
+                  {item.icon}
+                  <span>{item.label}</span>
                 </button>
               );
             })}

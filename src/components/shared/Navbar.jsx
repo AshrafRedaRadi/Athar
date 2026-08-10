@@ -45,7 +45,7 @@ export default function Navbar({
         isAdmin ? (
           <AdminSidebar activePage={activePage} drawerId={drawerId} onOpenSettings={onOpenSettings} />
         ) : (
-          <Sidebar activePage={activePage} />
+          <Sidebar activePage={activePage} drawerId={drawerId} onOpenSettings={onOpenSettings} />
         )
       )}
 

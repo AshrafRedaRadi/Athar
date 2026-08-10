@@ -1,31 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { IoHomeOutline } from "react-icons/io5";
-import { RiAwardLine } from "react-icons/ri";
-import { BsBook, BsClipboard2Check } from "react-icons/bs";
-
-// Navigation items – same icons used in Sidebar for consistency
-const NAV_ITEMS = [
-  { id: "home",         label: "الرئيسية",   icon: <IoHomeOutline />,      href: "/home" },
-  { id: "library",      label: "المكتبة",    icon: <BsBook />,             href: "/library" },
-  { id: "review",       label: "الخطة",   icon: <BsClipboard2Check />,  href: "/plan" },
-  { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "/achievements" },
-];
+import { MAIN_NAV_ITEMS } from "./mainNavConfig";
 
 /**
  * Dock – bottom navigation bar for mobile / tablet screens.
+ * Single source of truth driven by mainNavConfig.
  *
  * @param {string} activePage - id of the currently active page
- *                              ("home" | "review" | "library" | "achievements" | "settings")
+ *                              ("home" | "library" | "review" | "achievements" | "settings")
  */
 export default function Dock({ activePage = "home" }) {
+  const dockItems = MAIN_NAV_ITEMS.filter((item) => !item.isSidebarOnly);
+
   return (
     <div className="dock font-2 z-50" dir="rtl">
-      {NAV_ITEMS.map((item) => {
+      {dockItems.map((item) => {
         const content = (
           <>
             <span className="text-xl text-cyan-700">{item.icon}</span>
-            <span className="dock-label">{item.label}</span>
+            <span className="dock-label">{item.dockLabel || item.label}</span>
           </>
         );
 
