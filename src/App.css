@@ -178,3 +178,13 @@ html {
 .animate-backdropOut {
     animation: backdropFadeOut 0.2s ease-in forwards;
 }
+
+/* Streak calendar track background colors */
+.streak-track-bg {
+    background-color: #fff0dc;
+}
+
+[data-theme="dark"] .streak-track-bg,
+.dark .streak-track-bg {
+    background-color: #3d2417 !important;
+}

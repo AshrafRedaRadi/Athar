@@ -8,8 +8,8 @@ import { BsBook, BsClipboard2Check } from "react-icons/bs";
 const NAV_ITEMS = [
   { id: "home",         label: "الرئيسية",   icon: <IoHomeOutline />,      href: "/home" },
   { id: "library",      label: "المكتبة",    icon: <BsBook />,             href: "/library" },
-  { id: "review",       label: "الخطة",   icon: <BsClipboard2Check />,  href: "#" },
-  { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "#" },
+  { id: "review",       label: "الخطة",   icon: <BsClipboard2Check />,  href: "/plan" },
+  { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "/achievements" },
 ];
 
 /**
