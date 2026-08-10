@@ -24,10 +24,17 @@ function checkReqs(pass) {
   };
 }
 
-function getStrengthColor(passedCount) {
-  if (passedCount <= 2) return '#e74c3c';
-  if (passedCount <= 4) return '#f1c40f';
-  return '#2ecc71';
+function getStrengthInfo(passedCount) {
+  if (passedCount <= 1) {
+    return { label: 'ضعيفة جداً', color: '#e74c3c', filledSegments: 1 };
+  }
+  if (passedCount === 2) {
+    return { label: 'ضعيفة', color: '#e67e22', filledSegments: 2 };
+  }
+  if (passedCount <= 4) {
+    return { label: 'متوسطة', color: '#f1c40f', filledSegments: 3 };
+  }
+  return { label: 'قوية جداً', color: '#2ecc71', filledSegments: 4 };
 }
 
 export default function Signup() {
@@ -51,7 +58,6 @@ export default function Signup() {
   // derived password state
   const reqs = checkReqs(password);
   const passedCount = Object.values(reqs).filter(Boolean).length;
-  const strengthPercentage = password.length > 0 ? Math.max((passedCount / 5) * 100, 10) : 0;
   const isMatch =
     password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
 
@@ -199,14 +205,26 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Password validation & strength (shown only when user starts typing password) */}
-              {password.length > 0 && (
-                <>
-                  {/* Match message + Strength track */}
-                  <div className="mt-1 mb-1 w-full">
+              {/* Password strength indicator & match message (shown when typing password) */}
+              {password.length > 0 && (() => {
+                const strength = getStrengthInfo(passedCount);
+
+                // Dynamic hint: pick the first failing requirement
+                const hints = [
+                  { key: 'length',    text: 'يجب أن تكون 8 أحرف على الأقل' },
+                  { key: 'uppercase', text: 'أضف حرفاً كبيراً (A-Z)' },
+                  { key: 'lowercase', text: 'أضف حرفاً صغيراً (a-z)' },
+                  { key: 'number',    text: 'أضف رقماً (0-9)' },
+                  { key: 'special',   text: 'أضف رمزاً خاصاً (@$!%*?&)' },
+                ];
+                const firstMissing = hints.find((h) => !reqs[h.key]);
+
+                return (
+                  <div className="mt-1 mb-0.5 w-full space-y-1 font-2">
+                    {/* Password match message */}
                     {confirmPassword.length > 0 && (
                       <small
-                        className={`block text-[0.68rem] font-2 mb-0.5 font-semibold ${
+                        className={`block text-[0.68rem] font-semibold ${
                           isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
                         }`}
                       >
@@ -214,42 +232,43 @@ export default function Signup() {
                       </small>
                     )}
 
-                    {/* Strength track */}
-                    <div className="w-full h-1 bg-black/25 rounded-full overflow-hidden border border-white/10">
-                      <div
-                        className="h-full rounded-full transition-all duration-[350ms] ease-in-out"
-                        style={{
-                          width: `${strengthPercentage}%`,
-                          backgroundColor: getStrengthColor(passedCount),
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password requirements checklist (Compact 2-column Grid) */}
-                  <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5 list-none p-0 mt-0.5 text-[0.62rem] font-2">
-                    {[
-                      { key: 'length', label: '8 أحرف على الأقل' },
-                      { key: 'uppercase', label: 'حرف كبير (A-Z)' },
-                      { key: 'lowercase', label: 'حرف صغير (a-z)' },
-                      { key: 'number', label: 'رقم (0-9)' },
-                      { key: 'special', label: 'رمز خاص (@$!%*?&)' },
-                    ].map(({ key, label }) => (
-                      <li
-                        key={key}
-                        className={`relative pr-3 transition-colors duration-300 ${
-                          reqs[key] ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                        }`}
+                    {/* Strength indicator: label + 4 segments */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="text-[0.68rem] font-semibold transition-colors duration-300"
+                        style={{ color: strength.color }}
                       >
-                        <span className="absolute right-0 text-[0.55rem]">
-                          {reqs[key] ? '✔' : '✖'}
-                        </span>
-                        {label}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
+                        قوة كلمة المرور: {strength.label}
+                      </span>
+
+                      <div className="flex gap-1 items-center flex-1 max-w-[120px]">
+                        {[1, 2, 3, 4].map((seg) => {
+                          const isFilled = seg <= strength.filledSegments;
+                          return (
+                            <div
+                              key={seg}
+                              className="h-1.5 flex-1 rounded-full transition-all duration-300 border border-white/10"
+                              style={{
+                                backgroundColor: isFilled ? strength.color : 'rgba(0, 0, 0, 0.25)',
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dynamic hint: shows the most important missing requirement */}
+                    {firstMissing && (
+                      <p
+                        className="text-[0.62rem] transition-colors duration-300 m-0"
+                        style={{ color: strength.color }}
+                      >
+                        {firstMissing.text}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Step 1 Actions & Footer */}

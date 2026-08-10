@@ -2,18 +2,20 @@ import React from 'react';
 
 const QuickActions = () => {
   return (
-    <div 
-      className="w-full font-sans md:bg-[#35829D] md:text-white md:p-5 md:rounded-2xl md:space-y-4 md:shadow-md" 
+    <div
+      className="bg-base-100 p-6 rounded-3xl shadow-sm border border-base-300 w-full space-y-4 font-2"
       dir="rtl"
     >
-      <h3 className="hidden md:block text-right text-base font-semibold">
-        إجراءات سريعة
-      </h3>
+      <div className="flex items-center justify-start gap-2 text-base-content font-bold font-1 text-lg mb-1">
+        <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <h3>إجراءات سريعة</h3>
+      </div>
 
-      <div className="flex flex-row md:flex-col gap-3 w-full">
-        
+      <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full">
         <button
-          className="flex-1 w-full bg-[#35829D] text-white md:bg-white md:text-[#35829D] font-medium py-3 px-5 rounded-full md:rounded-xl flex items-center justify-center gap-2 hover:opacity-90 md:hover:bg-gray-100 transition-all shadow-sm"
+          className="flex-1 w-full bg-cyan-700 hover:bg-cyan-800 text-white font-semibold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
         >
           {/* أيقونة (+) */}
           <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -23,7 +25,7 @@ const QuickActions = () => {
         </button>
 
         <button
-          className="flex-1 w-full bg-[#EBF3F6] text-[#35829D] md:bg-transparent md:border md:border-white/40 md:text-white font-medium py-3 px-5 rounded-full md:rounded-xl flex items-center justify-center gap-2 hover:bg-[#dcebf0] md:hover:bg-white/10 transition-all"
+          className="flex-1 w-full bg-base-100 !text-cyan-600 border-2 border-cyan-700 hover:bg-cyan-700 hover:!text-white font-semibold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
         >
           {/* أيقونة التشغيل/المراجعة */}
           <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -31,7 +33,6 @@ const QuickActions = () => {
           </svg>
           <span className="whitespace-nowrap">بدء مراجعة</span>
         </button>
-
       </div>
     </div>
   );

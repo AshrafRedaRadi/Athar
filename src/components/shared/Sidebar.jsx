@@ -59,11 +59,11 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
   }, []);
 
   const menuItems = [
-    { id: "home",         label: "الرئيسية", icon: <IoHomeOutline />,     href: "/home" },
-    { id: "library",      label: "المكتبة",  icon: <BsBook />,            href: "/library" },
-    { id: "review",       label: "التحكم في الخطة",   icon: <BsClipboard2Check />, href: "#" },
-    { id: "achievements", label: "الإنجازات",icon: <RiAwardLine />,       href: "/achievements" },
-    { id: "settings",     label: "الإعدادت", icon: <IoSettingsOutline />,  href: "#" },
+    { id: "home", label: "الرئيسية", icon: <IoHomeOutline />, href: "/home" },
+    { id: "library", label: "المكتبة", icon: <BsBook />, href: "/library" },
+    { id: "review", label: "التحكم في الخطة", icon: <BsClipboard2Check />, href: "/plan" },
+    { id: "achievements", label: "الإنجازات", icon: <RiAwardLine />, href: "/achievements" },
+    { id: "settings", label: "الإعدادت", icon: <IoSettingsOutline />, href: "#" },
   ];
 
   return (
@@ -119,11 +119,10 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
           <div className="mt-6 space-y-3">
             {menuItems.map((item) => {
               const isActive = activePage === item.id;
-              const classes = `btn font-2 rounded-xl justify-start w-full ${
-                isActive
+              const classes = `btn font-2 rounded-xl justify-start w-full ${isActive
                   ? "bg-cyan-700 text-white border-transparent"
                   : "bg-base-300 text-base-content hover:bg-cyan-700 hover:text-white"
-              }`;
+                }`;
 
               if (item.href.startsWith("/")) {
                 return (

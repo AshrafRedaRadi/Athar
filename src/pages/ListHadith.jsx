@@ -154,9 +154,14 @@ export default function ListHadith() {
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [progressMap, setProgressMap] = useState({});
 
-  // View Mode state: 'table' (default) or 'cards', persisted in localStorage
+  // View Mode state: 'cards' by default on mobile size (<640px) or 'table' on desktop, persisted in localStorage
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem("athar_hadith_view_mode") || "table";
+    const savedMode = localStorage.getItem("athar_hadith_view_mode");
+    if (savedMode) return savedMode;
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      return "cards";
+    }
+    return "table";
   });
 
   // Mobile cards column layout switcher: "1" or "2" cards per row on mobile
@@ -386,15 +391,15 @@ export default function ListHadith() {
             {/* ── 1. Table View ── */}
             {viewMode === "table" && (
               <div className="overflow-x-auto rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-                <table className="table table-zebra font-2 w-full">
+                <table className="table table-zebra font-2 w-full [&_th]:px-2 [&_th]:sm:px-4 [&_td]:px-2 [&_td]:sm:px-4">
                   {/* Head */}
                   <thead>
                     <tr className="bg-base-200 text-base-content/70 text-xs">
-                      <th className="text-center w-10">#</th>
-                      <th>رقم الحديث</th>
+                      <th className="text-center w-8 px-1 sm:w-10 sm:px-4">#</th>
+                      <th className="whitespace-nowrap">رقم الحديث</th>
                       <th className="hidden md:table-cell">العنوان</th>
-                      <th>حالة الحفظ</th>
-                      <th className="text-center">الإجراء</th>
+                      <th className="whitespace-nowrap">حالة الحفظ</th>
+                      <th className="text-center whitespace-nowrap">الإجراء</th>
                     </tr>
                   </thead>
 
@@ -418,13 +423,13 @@ export default function ListHadith() {
                             className="hover:bg-base-200/60 transition-colors"
                           >
                             {/* Row number */}
-                            <td className="text-center font-2 text-xs text-base-content/50">
+                            <td className="text-center font-2 text-xs text-base-content/50 px-1 sm:px-4">
                               {idx + 1}
                             </td>
 
                             {/* Hadith number */}
-                            <td>
-                              <span className="font-2 font-semibold text-sm text-cyan-700">
+                            <td className="whitespace-nowrap">
+                              <span className="font-2 font-semibold text-xs sm:text-sm text-cyan-700">
                                 {hadith.hadithNumber}
                               </span>
                             </td>
@@ -437,18 +442,18 @@ export default function ListHadith() {
                             </td>
 
                             {/* Status badge */}
-                            <td>
-                              <span className={`badge badge-sm font-2 inline-flex items-center gap-1.5 ${cfg.badgeClass}`}>
+                            <td className="whitespace-nowrap">
+                              <span className={`badge badge-xs sm:badge-sm font-2 inline-flex items-center gap-1 whitespace-nowrap ${cfg.badgeClass}`}>
                                 {cfg.icon}
                                 <span>{cfg.label}</span>
                               </span>
                             </td>
 
                             {/* Action button */}
-                            <td className="text-center">
+                            <td className="text-center whitespace-nowrap">
                               <button
                                 onClick={() => handleAction(hadith)}
-                                className={`btn btn-xs sm:btn-sm rounded-full font-2 w-32 justify-center shrink-0 ${ACTION_CLASS[status]}`}
+                                className={`btn btn-xs sm:btn-sm rounded-full font-2 px-3.5 sm:w-32 justify-center whitespace-nowrap shrink-0 ${ACTION_CLASS[status]}`}
                               >
                                 {ACTION_LABEL[status]}
                               </button>
