@@ -1,6 +1,8 @@
 /* Fonts */
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+    themes: all;
+}
 
 /* Default typography rules */
 h1,
@@ -63,6 +65,11 @@ a,
 
 .text-hadith-error {
     color: #dc2626;
+}
+
+.settingPage {
+    direction: rtl;
+    padding: 15px;
 }
 
 /* Slide-in animation for explanation panel */

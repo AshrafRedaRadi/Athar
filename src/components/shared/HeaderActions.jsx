@@ -1,6 +1,7 @@
 import React from "react";
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { IoSettingsOutline } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
 
 /* ── Sun / Moon SVGs (DaisyUI swap-rotate pattern) ──────────────── */
@@ -24,6 +25,7 @@ const MoonIcon = () => (
  */
 export default function HeaderActions({ className = "", buttonClassName = "" }) {
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const baseBtnClass =
     buttonClassName ||
@@ -49,6 +51,8 @@ export default function HeaderActions({ className = "", buttonClassName = "" }) 
 
       {/* Settings Icon */}
       <button
+        type="button"
+        onClick={() => navigate("/settings")}
         aria-label="الإعدادات"
         title="الإعدادات"
         className={baseBtnClass}

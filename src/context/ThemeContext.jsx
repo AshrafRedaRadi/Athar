@@ -1,62 +1,116 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const DAISYUI_THEMES = [
+  'light',
+  'dark',
+  'cupcake',
+  'bumblebee',
+  'emerald',
+  'corporate',
+  'synthwave',
+  'retro',
+  'cyberpunk',
+  'valentine',
+  'halloween',
+  'garden',
+  'forest',
+  'aqua',
+  'lofi',
+  'pastel',
+  'fantasy',
+  'wireframe',
+  'black',
+  'luxury',
+  'dracula',
+  'cmyk',
+  'autumn',
+  'business',
+  'acid',
+  'lemonade',
+  'night',
+  'coffee',
+  'winter',
+  'dim',
+  'nord',
+  'sunset',
+  'caramellatte',
+  'abyss',
+  'silk',
+];
 
-/** Read theme from localStorage, falling back to OS preference, then 'light'. */
+const DARK_THEMES = new Set([
+  'dark',
+  'synthwave',
+  'halloween',
+  'forest',
+  'aqua',
+  'black',
+  'luxury',
+  'dracula',
+  'business',
+  'night',
+  'coffee',
+  'dim',
+  'sunset',
+  'abyss',
+]);
+
 function getInitialTheme() {
   try {
     const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') return saved;
+    if (DAISYUI_THEMES.includes(saved)) return saved;
   } catch {
-    // localStorage unavailable (SSR, private mode, etc.)
+    // localStorage can be unavailable in restricted browser modes.
   }
-  // OS-level preference
+
   if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
   return 'light';
 }
 
-/** Apply the theme to the <html> element so DaisyUI picks it up. */
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
-
 export const ThemeContext = createContext({
   theme: 'light',
   isDark: false,
+  themes: DAISYUI_THEMES,
+  setTheme: () => {},
   toggleTheme: () => {},
 });
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const initial = getInitialTheme();
-    applyTheme(initial); // apply before first render to avoid flash
+    applyTheme(initial);
     return initial;
   });
 
-  // Keep <html data-theme> and localStorage in sync whenever theme changes
   useEffect(() => {
     applyTheme(theme);
     try {
       localStorage.setItem('theme', theme);
     } catch {
-      // ignore write errors
+      // Ignore write errors.
     }
   }, [theme]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => setTheme((prev) => (DARK_THEMES.has(prev) ? 'light' : 'dark'));
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark: theme === 'dark', toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        isDark: DARK_THEMES.has(theme),
+        themes: DAISYUI_THEMES,
+        setTheme,
+        toggleTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
 }
-
-// ── Consumer hook (convenience) ───────────────────────────────────────────────
 
 export function useTheme() {
   return useContext(ThemeContext);

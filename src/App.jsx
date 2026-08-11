@@ -17,6 +17,7 @@ import Onboarding from './pages/Onboarding';
 import Plan from './pages/Plan';
 import ControlPanel from './pages/admin/ControlPanel';
 import Error_page from './pages/Error_page';
+import SettingPage from './pages/SettingPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Home />} />
+            <Route path="/settings" element={<SettingPage />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:bookId/sections" element={<ListSection />} />
             <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { IoHomeOutline } from "react-icons/io5";
+import { IoHomeOutline, IoSettingsOutline } from "react-icons/io5";
 import { RiAwardLine } from "react-icons/ri";
 import { BsBook, BsClipboard2Check } from "react-icons/bs";
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { id: "library",      label: "المكتبة",    icon: <BsBook />,             href: "/library" },
   { id: "review",       label: "الخطة",   icon: <BsClipboard2Check />,  href: "#" },
   { id: "achievements", label: "الإنجازات",  icon: <RiAwardLine />,        href: "#" },
+  { id: "settings",     label: "الإعدادت", icon: <IoSettingsOutline />, href: "/settings" },
 ];
 
 /**
