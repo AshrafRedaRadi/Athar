@@ -1,3 +1,4 @@
+import { HiOutlineCalendar } from "react-icons/hi";
 import Navbar from '../components/shared/Navbar';
 import ProgressCard from '../components/plan/ProgressCard';
 import QuickActions from '../components/plan/QuickActions';
@@ -13,7 +14,7 @@ export default function Plan() {
         <Navbar activePage="review" />
 
         <header className="text-start space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold font-1 text-cyan-800 dark:text-cyan-800">
+          <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
             إدارة خطة الحفظ والمراجعة
           </h1>
           <p className="text-sm md:text-base text-base-content/60 font-normal mt-2 mb-5">
@@ -37,8 +38,9 @@ export default function Plan() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 bg-base-100 p-4 sm:p-6 rounded-3xl shadow-sm border border-base-300 mt-4">
           
-          <div className="col-span-1 lg:col-span-3 text-lg sm:text-xl font-bold font-1 text-cyan-800 dark:text-cyan-800 border-b border-base-200/60 ">
-            <h3>التعديل علي الخطة</h3>
+          <div className="col-span-1 lg:col-span-3 text-lg sm:text-xl font-bold font-1 text-base-content border-b border-base-200/60 pb-2 flex items-center gap-2">
+            <HiOutlineCalendar className="text-2xl text-cyan-700 dark:text-cyan-400 shrink-0" />
+            <h3>خطة الحفظ والمراجعة</h3>
           </div>
 
           <SelectedTrack />
