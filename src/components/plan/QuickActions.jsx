@@ -18,7 +18,8 @@ const QuickActions = () => {
           className="flex-1 w-full bg-cyan-700 hover:bg-cyan-800 text-white font-semibold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
         >
           {/* أيقونة (+) */}
-          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <svg
+            className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
           </svg>
           <span className="whitespace-nowrap">إضافة حديث</span>
@@ -28,7 +29,8 @@ const QuickActions = () => {
           className="flex-1 w-full bg-base-100 !text-cyan-600 border-2 border-cyan-700 hover:bg-cyan-700 hover:!text-white font-semibold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
         >
           {/* أيقونة التشغيل/المراجعة */}
-          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <svg
+            className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
           </svg>
           <span className="whitespace-nowrap">بدء مراجعة</span>
