@@ -65,12 +65,12 @@ export default function Navbar({
         {/* Dedicated Sidebar Drawer Toggle Button on Right Edge */}
         <label
           htmlFor={drawerId}
-          className="btn btn-ghost border border-base-300 font-2 rounded-xl gap-2 shrink-0 cursor-pointer hover:bg-cyan-700 hover:text-white hover:border-transparent transition-all hidden lg:flex items-center px-3.5 py-2"
+          className="bg-base-200 border-2 border-cyan-600/50 text-base-content hover:bg-cyan-700 hover:text-white dark:hover:bg-cyan-600 dark:hover:text-white hover:border-cyan-700 shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all font-2 rounded-2xl gap-2 shrink-0 cursor-pointer hidden lg:flex items-center px-4 py-2 font-bold group"
           aria-label="فتح القائمة الجانبية"
           title="فتح القائمة الجانبية"
         >
-          <HiOutlineMenuAlt3 className="text-xl" />
-          <span className="font-bold text-sm">القائمة</span>
+          <HiOutlineMenuAlt3 className="text-xl text-cyan-700 dark:text-cyan-400 group-hover:text-white transition-colors" />
+          <span className="text-sm font-bold text-base-content group-hover:text-white transition-colors">القائمة</span>
         </label>
 
         {/* Center slot (optional search bar or breadcrumbs) */}

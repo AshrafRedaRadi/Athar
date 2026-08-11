@@ -125,7 +125,7 @@ export async function apiFetch(endpoint, options = {}) {
     return resData;
   } catch (error) {
     if (error.name === "TypeError" || error.message?.includes("fetch")) {
-      throw new Error("تعذَّر الاتصال بالشبكة، يرجى التأكد من اتصالك بالإنترنت والمحاولة مجدداً");
+      throw new Error("تعذَّر الاتصال بالسيرفر حالياً، يرجى التأكد من اتصالك بالإنترنت أو المحاولة لاحقاً");
     }
     throw error;
   }

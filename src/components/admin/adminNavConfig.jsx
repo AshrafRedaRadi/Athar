@@ -11,5 +11,5 @@ export const ADMIN_NAV_ITEMS = [
   { id: "users",        label: "إدارة المستخدمين",     dockLabel: "المستخدمون", icon: <HiOutlineUsers className="text-xl" />,        href: "/admin/users" },
   { id: "content",      label: "إدارة المحتوى",         dockLabel: "المحتوى",     icon: <HiOutlineDocumentText className="text-xl" />, href: "/admin/content" },
   { id: "ai-assistant", label: "إدارة المساعد الذكي", dockLabel: "المساعد",    icon: <HiOutlineSparkles className="text-xl" />,     href: "/admin/ai-assistant" },
-  { id: "plans",        label: "إدارة الباقات",             dockLabel: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "/plan" },
+  { id: "plans",        label: "إدارة الباقات",             dockLabel: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "#" },
 ];
