@@ -33,9 +33,8 @@ function PanelContent({ isOpen, activeTab, onTabChange, explanation, hadith }) {
           role="tab"
           aria-selected={activeTab === "video"}
           onClick={() => onTabChange("video")}
-          className={`flex-1 py-2 font-2 text-sm text-center transition-all duration-300 relative ${
-            activeTab === "video" ? "text-cyan-700 font-bold" : "text-base-content/50 hover:text-base-content"
-          }`}
+          className={`flex-1 py-2 font-2 text-sm text-center transition-all duration-300 relative ${activeTab === "video" ? "text-cyan-700 font-bold" : "text-base-content/50 hover:text-base-content"
+            }`}
         >
           الشرح المرئي
           {activeTab === "video" && (
@@ -46,9 +45,8 @@ function PanelContent({ isOpen, activeTab, onTabChange, explanation, hadith }) {
           role="tab"
           aria-selected={activeTab === "text"}
           onClick={() => onTabChange("text")}
-          className={`flex-1 py-2 font-2 text-sm text-center transition-all duration-300 relative ${
-            activeTab === "text" ? "text-cyan-700 font-bold" : "text-base-content/50 hover:text-base-content"
-          }`}
+          className={`flex-1 py-2 font-2 text-sm text-center transition-all duration-300 relative ${activeTab === "text" ? "text-cyan-700 font-bold" : "text-base-content/50 hover:text-base-content"
+            }`}
         >
           الشرح النصي
           {activeTab === "text" && (
@@ -145,15 +143,13 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
     <>
       {/* Desktop Backdrop & Drawer */}
       <div
-        className={`hidden lg:block fixed inset-0 bg-black/30 z-40 transition-opacity duration-500 ease-in-out ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`hidden lg:block fixed inset-0 bg-black/30 z-40 transition-opacity duration-500 ease-in-out ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
         onClick={onClose}
       />
       <div
-        className={`hidden lg:flex flex-col fixed top-0 left-0 h-full w-[450px] xl:w-[500px] z-50 bg-base-100 border-e border-base-300 shadow-2xl transition-transform duration-500 ease-in-out will-change-transform ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`hidden lg:flex flex-col fixed top-0 left-0 h-full w-[450px] xl:w-[500px] z-50 bg-base-100 border-e border-base-300 shadow-2xl transition-transform duration-500 ease-in-out will-change-transform ${isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         dir="rtl"
       >
         <DrawerHeader onClose={onClose} />
@@ -170,16 +166,14 @@ export default function ExplanationPanel({ isOpen, onClose, activeTab, onTabChan
 
       {/* Mobile Backdrop & Bottom Sheet */}
       <div
-        className={`lg:hidden fixed inset-0 bg-black/40 z-50 transition-opacity duration-500 ease-in-out ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`lg:hidden fixed inset-0 bg-black/40 z-50 transition-opacity duration-500 ease-in-out ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
         onClick={onClose}
       />
       <div
         style={{ height: `${sheetHeight}vh` }}
-        className={`lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col bg-base-100 rounded-t-2xl shadow-2xl ${
-          isDragging ? "transition-none" : "transition-all duration-300 ease-out"
-        } ${isOpen ? "translate-y-0" : "translate-y-full"}`}
+        className={`lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col bg-base-100 rounded-t-2xl shadow-2xl ${isDragging ? "transition-none" : "transition-all duration-300 ease-out"
+          } ${isOpen ? "translate-y-0" : "translate-y-full"}`}
         dir="rtl"
       >
         {/* Drag Handle Area */}

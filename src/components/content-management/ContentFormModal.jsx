@@ -9,9 +9,11 @@ import {
   HiOutlinePhotograph,
   HiOutlineUpload,
   HiOutlineEye,
+  HiOutlineSparkles,
   HiPlus,
   HiTrash,
 } from "react-icons/hi";
+import KeyTermsModal from "./KeyTermsModal";
 
 // Helper to generate empty section object
 const createEmptySection = (index = 1) => ({
@@ -25,6 +27,7 @@ const createEmptySection = (index = 1) => ({
       text: "",
     },
   ],
+  keyTerms: [],
   videoUrl: "",
   audioFile: null,
   audioFileName: "",
@@ -62,6 +65,7 @@ export default function ContentFormModal({
 
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [isFormTouched, setIsFormTouched] = useState(false);
+  const [activeKeyTermsSectionId, setActiveKeyTermsSectionId] = useState(null);
 
   // Populate data when editing or reset when adding
   useEffect(() => {
@@ -79,22 +83,22 @@ export default function ContentFormModal({
           initialData.sections && initialData.sections.length > 0
             ? initialData.sections
             : [
-                {
-                  id: Date.now(),
-                  title: initialData.matnTitle || "",
-                  matnText: initialData.matnText || "",
-                  explanations: [
-                    {
-                      id: Date.now() + 1,
-                      scholarOrBook: initialData.scholarName || "",
-                      text: initialData.textExplanation || "",
-                    },
-                  ],
-                  videoUrl: initialData.videoExplanation || "",
-                  audioFile: null,
-                  audioFileName: initialData.audioUrl ? "تسجيل صوتي سابق" : "",
-                },
-              ],
+              {
+                id: Date.now(),
+                title: initialData.matnTitle || "",
+                matnText: initialData.matnText || "",
+                explanations: [
+                  {
+                    id: Date.now() + 1,
+                    scholarOrBook: initialData.scholarName || "",
+                    text: initialData.textExplanation || "",
+                  },
+                ],
+                videoUrl: initialData.videoExplanation || "",
+                audioFile: null,
+                audioFileName: initialData.audioUrl ? "تسجيل صوتي سابق" : "",
+              },
+            ],
       });
       setIsFormTouched(false);
     } else {
@@ -271,6 +275,17 @@ export default function ContentFormModal({
         })),
       };
     });
+  };
+
+  const handleSaveSectionKeyTerms = (keyTermsList) => {
+    if (!activeKeyTermsSectionId) return;
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s) =>
+        s.id === activeKeyTermsSectionId ? { ...s, keyTerms: keyTermsList } : s
+      ),
+    }));
   };
 
   // Request Close with Unsaved Guard
@@ -491,7 +506,7 @@ export default function ContentFormModal({
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-cyan-700 text-white text-xs flex items-center justify-center font-bold">2</span>
                 <h3 className="font-1 font-bold text-base text-cyan-700 dark:text-cyan-400">
-                  أقسام المتن والشروحات والصوتيات (Hadith Sections & Explanations)
+                  أقسام المتن والشروحات والصوتيات
                 </h3>
               </div>
 
@@ -558,6 +573,23 @@ export default function ContentFormModal({
                     placeholder="اكتب أو ألصق نص المتن الأصلي لهذا القسم..."
                     className="w-full p-4 rounded-xl border border-base-300 bg-base-100 text-base font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
                   />
+
+                  {/* Button right below Matn Text Area */}
+                  <div className="mt-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setActiveKeyTermsSectionId(sec.id)}
+                      className="btn btn-xs sm:btn-sm btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-xl text-xs flex items-center gap-1.5 font-bold transition-all shadow-2xs group"
+                    >
+                      <HiOutlineSparkles className="text-sm text-cyan-700 group-hover:text-white" />
+                      <span>إدارة الكلمات الحساسة في النطق</span>
+                      {(sec.keyTerms?.length || 0) > 0 && (
+                        <span className="badge badge-sm bg-cyan-700 text-white font-bold px-2 py-0.5 rounded-full text-[10px]">
+                          {sec.keyTerms.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 2.2 Text Explanations List (Multiple Allowed) */}
@@ -565,7 +597,7 @@ export default function ContentFormModal({
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-base-content/90 flex items-center gap-1.5">
                       <HiOutlineBookOpen className="text-base text-cyan-700" />
-                      <span>الشروحات النصية المكتوبة لهذا القسم (Explanation Books)</span>
+                      <span>الشروحات النصية المكتوبة لهذا القسم</span>
                     </label>
 
                     <button
@@ -682,6 +714,20 @@ export default function ContentFormModal({
           </div>
         </form>
       </div>
+
+      {/* ── KeyTermsModal Popup ── */}
+      <KeyTermsModal
+        isOpen={Boolean(activeKeyTermsSectionId)}
+        onClose={() => setActiveKeyTermsSectionId(null)}
+        hadithId={activeKeyTermsSectionId}
+        initialKeyTerms={
+          formData.sections.find((s) => s.id === activeKeyTermsSectionId)?.keyTerms || []
+        }
+        onSaveKeyTerms={handleSaveSectionKeyTerms}
+        sectionTitle={
+          formData.sections.find((s) => s.id === activeKeyTermsSectionId)?.title || ""
+        }
+      />
 
       {/* ── Unsaved Changes Guard Dialog ── */}
       {showConfirmClose && (

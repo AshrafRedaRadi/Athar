@@ -1,0 +1,319 @@
+import React, { useState, useEffect } from "react";
+import { HiOutlineX, HiPlus, HiTrash, HiOutlineSparkles, HiOutlineCheck, HiOutlineExclamationCircle } from "react-icons/hi";
+import { hadithsService } from "../../services/hadithsService";
+
+/**
+ * Remove Arabic diacritics, harakat, tanween, and normalize Alef/Ta-Marbuta.
+ */
+export function normalizeArabicText(text) {
+  if (!text) return "";
+  return text
+    .replace(/[\u064B-\u065F\u0670]/g, "") // Remove tashkeel / harakat / sukun / shadda
+    .replace(/[أإآٱ]/g, "ا")             // Normalize Alef
+    .replace(/ى/g, "ي")                  // Normalize Alef Maqsura
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه");                 // Normalize Ta Marbuta
+}
+
+/**
+ * KeyTermsModal - Modal Card for managing HadithKeyTerms (Text, NormalizedText, Order).
+ */
+export default function KeyTermsModal({ isOpen, onClose, initialKeyTerms = [], onSaveKeyTerms, sectionTitle = "", hadithId = null }) {
+  const [termsList, setTermsList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+    } else if (shouldRender) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsClosing(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  };
+
+  useEffect(() => {
+    async function initKeyTerms() {
+      if (!isOpen) return;
+      setErrorMessage(null);
+
+      const hasNonEmptyTerms =
+        Array.isArray(initialKeyTerms) &&
+        initialKeyTerms.some((kt) => {
+          const t = kt.text ?? kt.Text ?? kt.term ?? kt.word ?? "";
+          const n = kt.normalizedText ?? kt.NormalizedText ?? "";
+          return String(t).trim().length > 0 || String(n).trim().length > 0;
+        });
+
+      if (hasNonEmptyTerms) {
+        setTermsList(
+          initialKeyTerms.map((kt, index) => {
+            const t = kt.text ?? kt.Text ?? kt.term ?? kt.word ?? "";
+            const n = kt.normalizedText ?? kt.NormalizedText ?? "";
+            return {
+              id: kt.id ?? kt.Id ?? Date.now() + Math.random(),
+              text: t,
+              normalizedText: n || normalizeArabicText(t),
+              order: kt.order ?? kt.Order ?? index + 1,
+            };
+          })
+        );
+      } else if (hadithId) {
+        setIsLoading(true);
+        try {
+          const apiTerms = await hadithsService.getHadithKeyTerms(hadithId);
+          if (Array.isArray(apiTerms) && apiTerms.length > 0) {
+            setTermsList(
+              apiTerms.map((kt, index) => {
+                const t = kt.text ?? kt.Text ?? kt.term ?? kt.word ?? "";
+                const n = kt.normalizedText ?? kt.NormalizedText ?? "";
+                return {
+                  id: kt.id ?? kt.Id ?? Date.now() + Math.random(),
+                  text: t,
+                  normalizedText: n || normalizeArabicText(t),
+                  order: kt.order ?? kt.Order ?? index + 1,
+                };
+              })
+            );
+          } else {
+            setTermsList([{ id: Date.now(), text: "", normalizedText: "", order: 1 }]);
+          }
+        } catch (err) {
+          console.error("Error fetching HadithKeyTerms:", err.message);
+          setErrorMessage("عذراً، الـ API بالباكإند يرفض وصول طلبك لهذه الكلمات (HTTP 403 Forbidden). يرجى التأكد من مراجعة صلاحيات الـ Roles في الـ Controller على الباكإند.");
+          setTermsList([{ id: Date.now(), text: "", normalizedText: "", order: 1 }]);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setTermsList([{ id: Date.now(), text: "", normalizedText: "", order: 1 }]);
+      }
+    }
+    initKeyTerms();
+  }, [isOpen, initialKeyTerms, hadithId]);
+
+  if (!shouldRender) return null;
+
+  const handleAddTerm = () => {
+    setTermsList((prev) => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        text: "",
+        normalizedText: "",
+        order: prev.length + 1,
+      },
+    ]);
+  };
+
+  const handleRemoveTerm = (id) => {
+    setTermsList((prev) => {
+      const filtered = prev.filter((item) => item.id !== id);
+      return filtered.map((item, idx) => ({ ...item, order: idx + 1 }));
+    });
+  };
+
+  const handleTextChange = (id, newText) => {
+    setTermsList((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            text: newText,
+            normalizedText: normalizeArabicText(newText),
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleNormalizedTextChange = (id, newNormalized) => {
+    setTermsList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, normalizedText: newNormalized } : item))
+    );
+  };
+
+  const handleSave = () => {
+    // Filter out empty terms
+    const validTerms = termsList
+      .filter((t) => t.text && t.text.trim().length > 0)
+      .map((t, idx) => ({
+        id: t.id,
+        text: t.text.trim(),
+        normalizedText: t.normalizedText.trim() || normalizeArabicText(t.text.trim()),
+        order: idx + 1,
+      }));
+
+    onSaveKeyTerms(validTerms);
+    handleClose();
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 md:p-6 overflow-y-auto transition-opacity duration-200 ${
+        isClosing ? "animate-backdropOut" : "animate-backdropIn"
+      }`}
+      dir="rtl"
+    >
+      <div
+        className={`bg-base-100 border border-base-300 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden my-4 flex flex-col max-h-[90vh] transition-all duration-300 ease-in-out ${
+          isClosing ? "animate-modalOut" : "animate-modalIn"
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-base-200 bg-base-200/50 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-xl shrink-0">
+              <HiOutlineSparkles />
+            </div>
+            <div>
+              <h3 className="font-1 font-bold text-lg text-base-content flex items-center gap-2">
+                <span>إدارة الكلمات الحساسة في النطق</span>
+                <span className="badge badge-ghost text-[10px] font-2 font-normal">اختياري</span>
+              </h3>
+              <p className="font-2 text-xs text-base-content/60">
+                {sectionTitle ? `الخاصة بـ: "${sectionTitle}"` : "تخصيص الكلمات الحساسة لنموذج التعرف الصوتي (النص الأصلي والمعالج)"}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="btn btn-ghost btn-circle btn-sm text-base-content/60 hover:text-base-content"
+          >
+            <HiOutlineX className="text-xl" />
+          </button>
+        </div>
+
+        {/* Body Form */}
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 font-2 transition-all duration-300 ease-in-out">
+          <div className="bg-cyan-700/10 text-cyan-900 dark:text-cyan-300 p-3.5 rounded-2xl border border-cyan-700/20 text-xs leading-relaxed">
+            💡 <strong>توضيح:</strong> هذه الكلمات تُستخدم لتغذية نموذج التعرف الصوتي بالباكإند لئلا يخطئ في الألفاظ الصعبة أو التشكيل المعقد أثناء التسميع المباشر.
+          </div>
+
+          {errorMessage && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 p-3.5 rounded-2xl text-xs flex items-center gap-2 animate-cardIn">
+              <HiOutlineExclamationCircle className="text-lg shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="py-12 text-center space-y-2">
+              <span className="loading loading-spinner loading-md text-cyan-700" />
+              <p className="text-xs text-base-content/60 font-semibold">جاري جلب الكلمات المعرفة لهذا الحديث من الباكإند...</p>
+            </div>
+          ) : (
+            <div className="space-y-3 transition-all duration-300 ease-in-out">
+              <div className="flex items-center justify-between pb-2 border-b border-base-200">
+                <span className="text-xs font-bold text-base-content">
+                  قائمة الكلمات المعرفة ({termsList.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddTerm}
+                  className="btn btn-xs bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg gap-1 font-bold shadow-xs active:scale-95 transition-transform"
+                >
+                  <HiPlus className="text-xs" />
+                  <span>إضافة كلمة أخرى</span>
+                </button>
+              </div>
+
+              {termsList.map((termItem, idx) => (
+                <div
+                  key={termItem.id}
+                  className="bg-base-200/40 p-4 rounded-2xl border border-base-300 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center relative transition-all duration-300 ease-in-out animate-cardIn hover:border-cyan-700/40 hover:shadow-xs"
+                >
+                  {/* Order Badge */}
+                  <div className="sm:col-span-1 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-full bg-cyan-700/10 text-cyan-700 font-bold text-xs flex items-center justify-center">
+                      #{idx + 1}
+                    </span>
+                  </div>
+
+                  {/* Text (Original with Diacritics) */}
+                  <div className="sm:col-span-5">
+                    <label className="block text-[11px] font-semibold text-base-content/80 mb-1">
+                      الكلمة الأصلية بالتشكيل
+                    </label>
+                    <input
+                      type="text"
+                      value={termItem.text}
+                      onChange={(e) => handleTextChange(termItem.id, e.target.value)}
+                      placeholder="مثال: بِالنِّيَّاتِ"
+                      className="w-full px-3 py-2 rounded-xl border border-base-300 bg-base-100 text-xs font-4 text-base-content focus:outline-hidden focus:border-cyan-600 transition-colors"
+                    />
+                  </div>
+
+                  {/* NormalizedText (Processed without Diacritics) */}
+                  <div className="sm:col-span-5">
+                    <label className="block text-[11px] font-semibold text-base-content/80 mb-1">
+                      النص المعالج بدون تشكيل
+                    </label>
+                    <input
+                      type="text"
+                      value={termItem.normalizedText}
+                      onChange={(e) => handleNormalizedTextChange(termItem.id, e.target.value)}
+                      placeholder="مثال: بالنيات"
+                      className="w-full px-3 py-2 rounded-xl border border-base-300 bg-base-100 text-xs text-base-content focus:outline-hidden focus:border-cyan-600 transition-colors"
+                    />
+                  </div>
+
+                  {/* Delete button */}
+                  <div className="sm:col-span-1 flex justify-end">
+                    {termsList.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTerm(termItem.id)}
+                        className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 rounded-lg shrink-0 active:scale-90 transition-transform"
+                        title="حذف هذه الكلمة"
+                      >
+                        <HiTrash className="text-sm" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 border-t border-base-200 flex items-center justify-end gap-3 shrink-0 bg-base-200/30">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="btn btn-ghost rounded-xl text-xs font-2 px-5"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="btn bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl text-xs font-bold px-7 shadow-md gap-1.5 active:scale-95 transition-transform"
+          >
+            <HiOutlineCheck className="text-base" />
+            <span>حفظ الكلمات وتطبيقها</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

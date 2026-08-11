@@ -10,7 +10,7 @@ import { aiAssistantService } from "../../services/aiAssistantService";
 
 export default function AiAssistantManagement() {
   const [activeTab, setActiveTab] = useState("knowledge"); // "knowledge" | "prompt" | "sandbox"
-  
+
   // RAG Data States
   const [documents, setDocuments] = useState([]);
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -100,11 +100,10 @@ export default function AiAssistantManagement() {
         <button
           type="button"
           onClick={() => setActiveTab("knowledge")}
-          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${
-            activeTab === "knowledge"
+          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${activeTab === "knowledge"
               ? "bg-cyan-700 text-white shadow-sm"
               : "bg-base-200/60 hover:bg-base-200 text-base-content/80 border-transparent"
-          }`}
+            }`}
         >
           <HiOutlineDatabase className="text-base" />
           <span>قاعدة المعرفة والكتب (PDF Documents)</span>
@@ -113,11 +112,10 @@ export default function AiAssistantManagement() {
         <button
           type="button"
           onClick={() => setActiveTab("prompt")}
-          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${
-            activeTab === "prompt"
+          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${activeTab === "prompt"
               ? "bg-cyan-700 text-white shadow-sm"
               : "bg-base-200/60 hover:bg-base-200 text-base-content/80 border-transparent"
-          }`}
+            }`}
         >
           <HiOutlineDocumentText className="text-base" />
           <span>البرومبت المخصص (System Prompt)</span>
@@ -126,11 +124,10 @@ export default function AiAssistantManagement() {
         <button
           type="button"
           onClick={() => setActiveTab("sandbox")}
-          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${
-            activeTab === "sandbox"
+          className={`btn btn-sm rounded-xl font-bold text-xs gap-2 transition-all ${activeTab === "sandbox"
               ? "bg-cyan-700 text-white shadow-sm"
               : "bg-base-200/60 hover:bg-base-200 text-base-content/80 border-transparent"
-          }`}
+            }`}
         >
           <HiOutlineTerminal className="text-base" />
           <span>مختبر التجارب (Sandbox Playground)</span>

@@ -175,7 +175,7 @@ export default function Study() {
     <div className="h-screen bg-base-200 overflow-hidden flex">
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col h-full relative">
-        
+
         {/* Scrollable Page Content */}
         <div className="flex-1 overflow-y-auto pb-20 lg:pb-12 px-4 sm:px-8 py-6" dir="rtl">
           <Navbar activePage="library" />
@@ -189,7 +189,7 @@ export default function Study() {
             ) : currentHadith ? (
               <>
                 {/* Hadith navigation and index toolbar */}
-                <StudyToolbar 
+                <StudyToolbar
                   bookId={bookId}
                   sectionId={sectionId}
                   onPrevHadith={goToPrev}
@@ -198,7 +198,7 @@ export default function Study() {
                   hasNext={currentHadithIndex < hadithsList.length - 1}
                   hadithLabel={currentHadith.hadithNumber}
                 />
-               
+
                 {/* Recitation Error Banner if any */}
                 {recitationError && (
                   <div className="alert alert-error shadow-sm text-xs font-2 my-2 rounded-xl text-white">
@@ -208,7 +208,7 @@ export default function Study() {
 
                 {/* Hadith Card Area */}
                 <div className="flex-1 flex flex-col justify-center mt-1 sm:mt-1 mb-4">
-                  <HadithCard 
+                  <HadithCard
                     bookTitle={currentHadith.bookTitle || "الأربعون النووية"}
                     hadithLabel={currentHadith.hadithNumber}
                     title={currentHadith.title}
@@ -221,9 +221,9 @@ export default function Study() {
                     onToggleHide={() => setIsHidden(!isHidden)}
                   />
                 </div>
-               
-                <RecordButton 
-                  isRecording={isListening} 
+
+                <RecordButton
+                  isRecording={isListening}
                   isConnecting={isConnecting}
                   onToggle={() => {
                     if (audioControlRef.current && audioControlRef.current.pause) {
@@ -231,7 +231,7 @@ export default function Study() {
                     }
                     setIsAudioListeningMode(false);
                     handleRecordToggle();
-                  }} 
+                  }}
                   onRecite={() => {
                     if (audioControlRef.current && audioControlRef.current.pause) {
                       audioControlRef.current.pause();
@@ -247,54 +247,53 @@ export default function Study() {
                   onAudioToggle={handleAudioToggle}
                 />
 
-               {/* Bottom Action Bar: 3 icon buttons beside AudioPlayer (desktop) / floating above dock (mobile) */}
-               <div className="fixed z-45 transition-all duration-300 flex items-center gap-1.5 sm:gap-2.5 bottom-[72px] left-2 lg:bottom-5 lg:right-[calc(50%+227px)] lg:left-auto" dir="rtl">
-                 {/* 1. Hide / Reveal Text Button */}
-                 <button
-                   onClick={() => setIsHidden(!isHidden)}
-                   className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100 shadow-sm flex items-center justify-center"
-                   aria-label={isHidden ? "إظهار النص" : "إخفاء النص"}
-                 >
-                   {isHidden ? (
-                     <IoEyeOutline className="text-lg" />
-                   ) : (
-                     <IoEyeOffOutline className="text-lg" />
-                   )}
-                 </button>
+                {/* Bottom Action Bar: 3 icon buttons beside AudioPlayer (desktop) / floating above dock (mobile) */}
+                <div className="fixed z-45 transition-all duration-300 flex items-center gap-1.5 sm:gap-2.5 bottom-[72px] left-2 lg:bottom-5 lg:right-[calc(50%+227px)] lg:left-auto" dir="rtl">
+                  {/* 1. Hide / Reveal Text Button */}
+                  <button
+                    onClick={() => setIsHidden(!isHidden)}
+                    className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100 shadow-sm flex items-center justify-center"
+                    aria-label={isHidden ? "إظهار النص" : "إخفاء النص"}
+                  >
+                    {isHidden ? (
+                      <IoEyeOutline className="text-lg" />
+                    ) : (
+                      <IoEyeOffOutline className="text-lg" />
+                    )}
+                  </button>
 
-                 {/* 2. Explanation Info Button */}
-                 <button
-                   onClick={() => setIsExplanationOpen(!isExplanationOpen)}
-                   className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100 shadow-sm flex items-center justify-center"
-                   aria-label="شرح الحديث"
-                 >
-                   <AiOutlineInfoCircle className="text-lg" />
-                 </button>
+                  {/* 2. Explanation Info Button */}
+                  <button
+                    onClick={() => setIsExplanationOpen(!isExplanationOpen)}
+                    className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100 shadow-sm flex items-center justify-center"
+                    aria-label="شرح الحديث"
+                  >
+                    <AiOutlineInfoCircle className="text-lg" />
+                  </button>
 
-                 {/* 3. Recitation Results Button */}
-                 <button
-                   onClick={() => setIsResultsOpen(true)}
-                   disabled={!completedSummary}
-                   className={`btn btn-circle w-10 h-10 min-h-0 flex items-center justify-center transition-all duration-300 ${
-                     completedSummary
-                       ? "bg-cyan-700 hover:bg-cyan-800 text-white shadow-md shadow-cyan-700/30 border-none scale-105"
-                       : "bg-base-100 border border-base-300 text-base-content/40 shadow-sm cursor-not-allowed"
-                   }`}
-                   aria-label="نتيجة التسميع"
-                   title={completedSummary ? "عرض نتيجة التسميع" : "لا توجد نتيجة بعد"}
-                 >
-                   <FiBarChart2 className={`text-lg ${completedSummary ? "text-white" : "text-base-content/40"}`} />
-                 </button>
+                  {/* 3. Recitation Results Button */}
+                  <button
+                    onClick={() => setIsResultsOpen(true)}
+                    disabled={!completedSummary}
+                    className={`btn btn-circle w-10 h-10 min-h-0 flex items-center justify-center transition-all duration-300 ${completedSummary
+                        ? "bg-cyan-700 hover:bg-cyan-800 text-white shadow-md shadow-cyan-700/30 border-none scale-105"
+                        : "bg-base-100 border border-base-300 text-base-content/40 shadow-sm cursor-not-allowed"
+                      }`}
+                    aria-label="نتيجة التسميع"
+                    title={completedSummary ? "عرض نتيجة التسميع" : "لا توجد نتيجة بعد"}
+                  >
+                    <FiBarChart2 className={`text-lg ${completedSummary ? "text-white" : "text-base-content/40"}`} />
+                  </button>
 
-                 {/* 4. AI Helper Button */}
-                 <button
-                   onClick={() => console.log("AI Helper clicked")}
-                   className="btn btn-circle w-10 h-10 min-h-0 bg-cyan-700 hover:bg-cyan-800 text-white shadow-md border-none flex items-center justify-center"
-                   aria-label="المساعد الذكي"
-                 >
-                   <BsStars className="text-base" />
-                 </button>
-               </div>
+                  {/* 4. AI Helper Button */}
+                  <button
+                    onClick={() => console.log("AI Helper clicked")}
+                    className="btn btn-circle w-10 h-10 min-h-0 bg-cyan-700 hover:bg-cyan-800 text-white shadow-md border-none flex items-center justify-center"
+                    aria-label="المساعد الذكي"
+                  >
+                    <BsStars className="text-base" />
+                  </button>
+                </div>
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
@@ -305,10 +304,10 @@ export default function Study() {
         </div>
 
         {/* Audio Player — Always visible on Desktop, or when Listening Mode is activated on Mobile */}
-        <AudioPlayer 
+        <AudioPlayer
           hadith={currentHadith}
-          hadithLabel={currentHadith?.hadithNumber || ""} 
-          reader={currentHadith?.reader || "القارئ: أحمد النفيس"} 
+          hadithLabel={currentHadith?.hadithNumber || ""}
+          reader={currentHadith?.reader || "القارئ: أحمد النفيس"}
           onClose={() => setIsAudioListeningMode(false)}
           onPlaybackChange={(playing) => setIsAudioPlaying(playing)}
           audioControlRef={audioControlRef}
@@ -317,8 +316,8 @@ export default function Study() {
       </div>
 
       {/* ── Explanation Panel (Drawer on Desktop / Bottom-sheet on Mobile) ── */}
-      <ExplanationPanel 
-        isOpen={isExplanationOpen} 
+      <ExplanationPanel
+        isOpen={isExplanationOpen}
         onClose={() => setIsExplanationOpen(false)}
         activeTab={activeTab}
         onTabChange={setActiveTab}

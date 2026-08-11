@@ -14,7 +14,7 @@ export function formatHadith(item, fallbackIndex = 0) {
   return {
     id: item.id,
     title: item.title || "",
-    text: item.text, // Authoritative hadith text
+    text: item.text,
     normalizedText: item.normalizedText,
     order: item.order || fallbackIndex + 1,
     hadithNumber: item.hadithNumber
@@ -32,14 +32,11 @@ export function formatHadith(item, fallbackIndex = 0) {
 }
 
 /**
- * Service for fetching Hadith content from backend API.
+ * Dynamic Service for fetching Hadith content from backend API.
  */
 export const hadithsService = {
   /**
    * Fetch list of hadiths for a given book (and optional section)
-   * @param {number|string} bookId 
-   * @param {number|string} [sectionId]
-   * @returns {Promise<Array>}
    */
   async getHadithsByBook(bookId, sectionId = null) {
     if (!bookId) return [];
@@ -55,8 +52,6 @@ export const hadithsService = {
 
   /**
    * Fetch single hadith details by ID
-   * @param {number|string} id 
-   * @returns {Promise<object>}
    */
   async getHadithById(id) {
     if (!id) return null;
@@ -66,49 +61,42 @@ export const hadithsService = {
 
   /**
    * Fetch user progress list for hadiths in a book
-   * @param {number|string} bookId
-   * @returns {Promise<Array>}
    */
-  async getHadithsProgress(bookId) {
+  async getHadithProgress(bookId) {
     if (!bookId) return [];
     try {
       return await apiFetch(`/api/hadiths/progress?bookId=${bookId}`);
     } catch (err) {
-      console.warn("Error fetching hadiths progress:", err.message);
+      console.warn("Could not fetch hadith progress:", err.message);
       return [];
     }
   },
 
   /**
-   * Update progress status for a specific hadith (e.g. to InProgress = 1)
-   * @param {number|string} hadithId
-   * @param {number} [status=1]
-   * @returns {Promise<object>}
+   * Update hadith completion status for current user
    */
   async updateHadithProgress(hadithId, status = 1) {
     if (!hadithId) return null;
     try {
       return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
-        method: "PUT",
+        method: "POST",
         body: JSON.stringify({ status }),
       });
-    } catch (err) {
+    } catch {
       try {
         return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
-          method: "POST",
+          method: "PUT",
           body: JSON.stringify({ status }),
         });
-      } catch (err2) {
-        console.warn("Could not update hadith progress:", err2.message);
-        throw err;
+      } catch (err) {
+        console.warn("Could not update hadith progress:", err.message);
+        return null;
       }
     }
   },
 
   /**
-   * Fetch explanations for a given hadith ID
-   * @param {number|string} hadithId
-   * @returns {Promise<object|Array>}
+   * Fetch explanations for a given hadith from API (/api/Hadiths/{id}/explanations)
    */
   async getHadithExplanations(hadithId) {
     if (!hadithId) return null;
@@ -121,8 +109,20 @@ export const hadithsService = {
   },
 
   /**
+   * Fetch all Hadith Explanations dynamically in 1 batch request (/api/Explanations)
+   */
+  async getAllExplanations() {
+    try {
+      const data = await apiFetch("/api/Explanations");
+      return Array.isArray(data) ? data : data?.data || data?.items || [];
+    } catch (err) {
+      console.warn("Could not fetch all explanations:", err.message);
+      return [];
+    }
+  },
+
+  /**
    * Fetch all Explanation Books from API (/api/ExplanationBooks)
-   * @returns {Promise<Array>}
    */
   async getExplanationBooks() {
     try {
@@ -134,11 +134,9 @@ export const hadithsService = {
   },
 
   /**
-   * Resolve explanation title / scholar dynamically from backend DTO or ExplanationBook API
-   * @param {object} item 
-   * @returns {Promise<string>}
+   * Synchronously resolve explanation title / scholar from pre-fetched explanation books list.
    */
-  async resolveExplanationTitle(item) {
+  resolveExplanationTitleSync(item, expBooks = []) {
     if (!item) return "";
     const direct = item.title || item.explanationBookTitle || item.author;
 
@@ -147,20 +145,10 @@ export const hadithsService = {
     }
 
     const expBookId = item.explanationBookId;
-    if (expBookId) {
-      try {
-        const expBooks = await this.getExplanationBooks();
-        const found = expBooks.find((b) => Number(b.id) === Number(expBookId));
-        if (found) {
-          return found.title || found.author || "";
-        }
-
-        const singleBook = await apiFetch(`/api/ExplanationBooks/${expBookId}`);
-        if (singleBook) {
-          return singleBook.title || singleBook.author || "";
-        }
-      } catch {
-        // Fallthrough if API lookup fails
+    if (expBookId && Array.isArray(expBooks)) {
+      const found = expBooks.find((b) => Number(b.id) === Number(expBookId));
+      if (found) {
+        return found.title || found.author || "";
       }
     }
 
@@ -168,10 +156,7 @@ export const hadithsService = {
   },
 
   /**
-   * Update last opened hadith on account for dashboard stats update
-   * Endpoint: PUT /api/Account/last-opened-hadith/{hadithId}
-   * @param {number|string} hadithId
-   * @returns {Promise<object>}
+   * Update last opened hadith on account
    */
   async updateLastOpenedHadith(hadithId) {
     if (!hadithId) return null;
@@ -183,5 +168,105 @@ export const hadithsService = {
       console.warn("Could not update last opened hadith:", err.message);
       return null;
     }
+  },
+
+  /**
+   * Fetch Hadith Key Terms dynamically from backend API (/api/HadithKeyTerms)
+   * @param {number|string} [hadithId]
+   * @returns {Promise<Array>}
+   */
+  async getHadithKeyTerms(hadithId = null) {
+    try {
+      let data = null;
+      if (hadithId) {
+        try {
+          data = await apiFetch(`/api/HadithKeyTerms?hadithId=${hadithId}`);
+        } catch {
+          data = await apiFetch("/api/HadithKeyTerms");
+        }
+      } else {
+        data = await apiFetch("/api/HadithKeyTerms");
+      }
+
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.keyTerms)
+        ? data.keyTerms
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+      let filtered = list;
+      if (hadithId && Array.isArray(list) && list.length > 0) {
+        const matches = list.filter((kt) => {
+          const ktHadithId = kt.hadithId ?? kt.hadithID ?? kt.HadithId ?? kt.hadith_id ?? kt.HadithID;
+          return ktHadithId != null && Number(ktHadithId) === Number(hadithId);
+        });
+        if (matches.length > 0) {
+          filtered = matches;
+        }
+      }
+
+      return filtered.map((kt, index) => {
+        const rawText = kt.text ?? kt.Text ?? kt.term ?? kt.word ?? kt.KeyTerm ?? "";
+        const rawNorm = kt.normalizedText ?? kt.NormalizedText ?? kt.normalized_text ?? "";
+        return {
+          id: kt.id ?? kt.Id ?? Date.now() + index,
+          hadithId: kt.hadithId ?? kt.HadithId ?? hadithId,
+          text: rawText,
+          normalizedText: rawNorm,
+          order: kt.order ?? kt.Order ?? index + 1,
+        };
+      });
+    } catch (err) {
+      console.warn("Could not fetch HadithKeyTerms from API:", err.message);
+      throw err;
+    }
+  },
+
+  /**
+   * Create a new HadithKeyTerm via POST /api/HadithKeyTerms
+   */
+  async createHadithKeyTerm(keyTermData) {
+    const payload = {
+      hadithId: Number(keyTermData.hadithId),
+      text: keyTermData.text || "",
+      normalizedText: keyTermData.normalizedText || "",
+      order: Number(keyTermData.order || 1),
+    };
+
+    return await apiFetch("/api/HadithKeyTerms", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Update an existing HadithKeyTerm via PUT /api/HadithKeyTerms/{id}
+   */
+  async updateHadithKeyTerm(id, keyTermData) {
+    const payload = {
+      id: Number(id) || id,
+      hadithId: Number(keyTermData.hadithId),
+      text: keyTermData.text || "",
+      normalizedText: keyTermData.normalizedText || "",
+      order: Number(keyTermData.order || 1),
+    };
+
+    return await apiFetch(`/api/HadithKeyTerms/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Delete a HadithKeyTerm via DELETE /api/HadithKeyTerms/{id}
+   */
+  async deleteHadithKeyTerm(id) {
+    return await apiFetch(`/api/HadithKeyTerms/${id}`, {
+      method: "DELETE",
+    });
   },
 };

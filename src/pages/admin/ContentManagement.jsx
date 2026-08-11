@@ -152,61 +152,67 @@ export default function ContentManagement() {
   const handleOpenEditModal = async (book) => {
     setIsLoading(true);
     try {
-      const [sections, realHadiths] = await Promise.all([
+      const [sections, realHadiths, allKeyTerms, expBooks, allExplanations] = await Promise.all([
         booksService.getBookSections(book.id).catch(() => []),
         hadithsService.getHadithsByBook(book.id).catch(() => []),
+        hadithsService.getHadithKeyTerms().catch(() => []),
+        hadithsService.getExplanationBooks().catch(() => []),
+        hadithsService.getAllExplanations().catch(() => []),
       ]);
 
       if (Array.isArray(realHadiths) && realHadiths.length > 0) {
-        const sectionsWithExplanations = await Promise.all(
-          realHadiths.map(async (h, idx) => {
-            let explanationsList = [];
-            try {
-              const expData = await hadithsService.getHadithExplanations(h.id);
-              if (Array.isArray(expData) && expData.length > 0) {
-                explanationsList = await Promise.all(
-                  expData.map(async (e, eIdx) => ({
-                    id: e.id || eIdx,
-                    scholarOrBook: await hadithsService.resolveExplanationTitle(e),
-                    text: e.text || "",
-                  }))
-                );
-              }
-            } catch (err) {
-              console.warn("Could not fetch explanations for hadith", h.id);
-            }
+        const sectionsWithExplanations = realHadiths.map((h, idx) => {
+          let explanationsList = [];
+          const hExplanations = Array.isArray(allExplanations)
+            ? allExplanations.filter((exp) => Number(exp.hadithId) === Number(h.id))
+            : [];
 
-            if (explanationsList.length === 0) {
-              explanationsList = [{ id: 1, scholarOrBook: "", text: "" }];
-            }
+          if (hExplanations.length > 0) {
+            explanationsList = hExplanations.map((e, eIdx) => ({
+              id: e.id || eIdx,
+              scholarOrBook:
+                e.explanationBookName ||
+                e.explanationBookAuthor ||
+                hadithsService.resolveExplanationTitleSync(e, expBooks),
+              text: e.text || "",
+            }));
+          }
 
-            // Find matching section name
-            const matchingSection = Array.isArray(sections)
-              ? sections.find((s) => s.id === h.hadithSectionId)
-              : null;
-            const secName = matchingSection?.title || "";
+          if (explanationsList.length === 0) {
+            explanationsList = [{ id: 1, scholarOrBook: "", text: "" }];
+          }
 
-            // Construct section/hadith title
-            let constructedTitle = h.title || "";
-            if (!constructedTitle && secName) {
-              constructedTitle = secName;
-            } else if (secName && constructedTitle && !constructedTitle.includes(secName)) {
-              constructedTitle = `${secName}: ${constructedTitle}`;
-            } else if (!constructedTitle && h.hadithNumber) {
-              constructedTitle = h.hadithNumber;
-            }
+          // Find matching section name
+          const matchingSection = Array.isArray(sections)
+            ? sections.find((s) => s.id === h.hadithSectionId)
+            : null;
+          const secName = matchingSection?.title || "";
 
-            return {
-              id: h.id || idx + 1,
-              title: constructedTitle,
-              matnText: h.text || "",
-              explanations: explanationsList,
-              videoUrl: h.videoExplanation || "",
-              audioFile: null,
-              audioFileName: h.audioUrl || "",
-            };
-          })
-        );
+          // Construct section/hadith title
+          let constructedTitle = h.title || "";
+          if (!constructedTitle && secName) {
+            constructedTitle = secName;
+          } else if (secName && constructedTitle && !constructedTitle.includes(secName)) {
+            constructedTitle = `${secName}: ${constructedTitle}`;
+          } else if (!constructedTitle && h.hadithNumber) {
+            constructedTitle = h.hadithNumber;
+          }
+
+          const fetchedKeyTerms = Array.isArray(allKeyTerms)
+            ? allKeyTerms.filter((kt) => Number(kt.hadithId) === Number(h.id))
+            : [];
+
+          return {
+            id: h.id || idx + 1,
+            title: constructedTitle,
+            matnText: h.text || "",
+            explanations: explanationsList,
+            keyTerms: fetchedKeyTerms,
+            videoUrl: h.videoExplanation || "",
+            audioFile: null,
+            audioFileName: h.audioUrl || "",
+          };
+        });
 
         setEditingBook({
           ...book,
@@ -355,15 +361,32 @@ export default function ContentManagement() {
         onSelectCategory={setActiveCategory}
       />
 
-      {/* Loading Indicator */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <span className="loading loading-spinner loading-lg text-cyan-700"></span>
+      {/* Full screen / page dimmed overlay loader when editing an existing book */}
+      {isLoading && filteredBooks.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center gap-3 animate-fadeIn" dir="rtl">
+          <div className="bg-base-100/95 border border-base-300 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3.5 max-w-xs text-center animate-modalIn">
+            <span className="loading loading-spinner loading-lg text-cyan-700"></span>
+            <span className="text-sm font-bold font-2 text-base-content">جاري جلب تفاصيل ومحتوى الكتاب...</span>
+          </div>
         </div>
       )}
 
-      {/* Content Cards Grid (Rendered when results are found) */}
-      {!isLoading && filteredBooks.length > 0 && (
+      {/* Initial Page Loading Skeletons */}
+      {isLoading && filteredBooks.length === 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="bg-base-100 border border-base-200 shadow-xs p-5 rounded-3xl space-y-4 animate-pulse">
+              <div className="h-6 bg-base-200 rounded-xl w-3/4"></div>
+              <div className="h-4 bg-base-200 rounded-xl w-1/2"></div>
+              <div className="h-20 bg-base-200 rounded-2xl w-full"></div>
+              <div className="h-8 bg-base-200 rounded-xl w-full"></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Content Cards Grid (Always visible underneath loader when editing) */}
+      {filteredBooks.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {/* Render Book Cards First */}
           {filteredBooks.map((book) => (

@@ -179,6 +179,21 @@ html {
     animation: backdropFadeOut 0.2s ease-in forwards;
 }
 
+@keyframes cardSlideDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.96);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-cardIn {
+    animation: cardSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Streak calendar track background colors */
 .streak-track-bg {
     background-color: #fff0dc;
