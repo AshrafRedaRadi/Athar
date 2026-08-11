@@ -72,6 +72,11 @@ export const hadithsService = {
     }
   },
 
+  /** Alias for getHadithProgress */
+  async getHadithsProgress(bookId) {
+    return this.getHadithProgress(bookId);
+  },
+
   /**
    * Update hadith completion status for current user
    */

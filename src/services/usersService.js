@@ -8,9 +8,7 @@ export function normalizeRole(rawRole, userObj = null) {
   const email = (userObj?.email || (typeof rawRole === "object" ? rawRole?.email : "") || "").toLowerCase();
   const isAdminFlag =
     userObj?.isAdmin === true ||
-    (typeof rawRole === "object" && rawRole?.isAdmin === true) ||
-    email.includes("amrkhaled") ||
-    email.includes("ashrafredaradi1");
+    (typeof rawRole === "object" && rawRole?.isAdmin === true)
 
   if (isAdminFlag) return "أدمن";
 
@@ -33,12 +31,14 @@ export function normalizeRole(rawRole, userObj = null) {
  */
 export function formatUserItem(u, override = {}) {
   const roleDisplay = override.role || normalizeRole(u.role || u.Role, u);
+  const isActivated = u.isActivated ?? u.isActive ?? (u.status !== "غير نشط");
   return {
     id: u.id || u.userId || u.UserId || override.id || Date.now(),
     name: u.fullName || u.name || u.Name || override.name || u.email || "",
     email: u.email || u.Email || override.email || "",
     role: roleDisplay,
-    status: u.isActive !== false && u.status !== "غير نشط" ? "نشط" : "غير نشط",
+    isActivated: isActivated,
+    status: isActivated ? "نشط" : "غير نشط",
     joinedDate: u.createdAt
       ? new Date(u.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
       : override.joinedDate || 'مؤخراً',
@@ -49,7 +49,7 @@ export function formatUserItem(u, override = {}) {
 
 export const usersService = {
   /**
-   * Fetch users directly from Backend API endpoints.
+   * Fetch users directly from Backend API: GET /api/Admin/users
    */
   async getUsers() {
     const backendEndpoints = ['/api/Admin/users', '/api/Account/users', '/api/Users'];
@@ -62,11 +62,10 @@ export const usersService = {
           return list.map((u) => formatUserItem(u));
         }
       } catch {
-        // Backend list endpoint not deployed yet
+        // Continue to next endpoint if failed
       }
     }
 
-    // Fallback: return current authenticated user profile from /api/Account/profile
     try {
       const profile = await apiFetch('/api/Account/profile');
       if (profile && profile.email) {
@@ -80,48 +79,46 @@ export const usersService = {
   },
 
   /**
-   * Create a new user (Teacher, Student/User, or Admin) via Backend API POST /api/Auth/register
-   */
-  async createUser(userData) {
-    const backendRole = userData.role === "أدمن" ? "Admin" : userData.role === "معلم" ? "Teacher" : "User";
-
-    const payload = {
-      name: userData.name,
-      email: userData.email,
-      password: userData.password,
-      confirmPassword: userData.password,
-      role: backendRole,
-    };
-
-    const res = await apiFetch('/api/Auth/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-
-    return formatUserItem(res || {}, {
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      joinedDate: "الآن",
-    });
-  },
-
-  /**
-   * Update an existing user's details via Backend API
+   * Update user details (Role, Status) via PUT /api/Admin/users/{userId}
    */
   async updateUser(userId, userData) {
+    const backendRole = userData.role === "أدمن" ? "Admin" : userData.role === "معلم" ? "Teacher" : "User";
+    const isActivated = userData.status === "نشط" || userData.isActivated === true;
+
+    const payload = {
+      role: backendRole,
+      isActivated: isActivated,
+      isActive: isActivated,
+      status: userData.status,
+    };
+
     return await apiFetch(`/api/Admin/users/${userId}`, {
       method: 'PUT',
-      body: JSON.stringify(userData),
+      body: JSON.stringify(payload),
     });
   },
 
   /**
-   * Delete a user account via Backend API
+   * Toggle Activate / Deactivate user status via PUT /api/Admin/users/{userId}
    */
-  async deleteUser(userId) {
+  async toggleUserStatus(userId, currentIsActivated) {
+    const nextStatus = !currentIsActivated;
     return await apiFetch(`/api/Admin/users/${userId}`, {
-      method: 'DELETE',
+      method: 'PUT',
+      body: JSON.stringify({
+        isActivated: nextStatus,
+        isActive: nextStatus,
+        status: nextStatus ? "نشط" : "غير نشط",
+      }),
+    });
+  },
+
+  /**
+   * Send Password Reset Link to user via POST /api/Admin/users/{userId}/send-password-reset
+   */
+  async sendPasswordReset(userId) {
+    return await apiFetch(`/api/Admin/users/${userId}/send-password-reset`, {
+      method: 'POST',
     });
   },
 };

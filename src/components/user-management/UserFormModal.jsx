@@ -1,65 +1,63 @@
 import React, { useState, useEffect } from "react";
-import { HiOutlineX, HiOutlineUser, HiOutlineMail, HiOutlineLockClosed, HiOutlineUserGroup, HiOutlineBadgeCheck } from "react-icons/hi";
+import { HiOutlineX, HiOutlineUser, HiOutlineMail, HiOutlineLockClosed, HiOutlineUserGroup, HiOutlineBadgeCheck, HiOutlineKey } from "react-icons/hi";
 import { normalizeRole } from "../../services/usersService";
 
 /**
- * UserFormModal - Modal for Adding or Editing User accounts (Teachers, Students, Admins).
+ * UserFormModal - Modal for Editing User Roles, Status (Activated/Deactivated), and sending Password Reset link.
  */
-export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, isSaving, serverError }) {
+export default function UserFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  onSendPasswordReset,
+  initialData,
+  isSaving,
+  serverError,
+}) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     role: "طالب",
     status: "نشط",
   });
 
-  const [errors, setErrors] = useState({});
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetMsg, setResetMsg] = useState(null);
+  const [resetError, setResetError] = useState(null);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         name: initialData.name || "",
         email: initialData.email || "",
-        password: "",
         role: normalizeRole(initialData.role),
-        status: initialData.status || "نشط",
-      });
-    } else {
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: "طالب",
-        status: "نشط",
+        status: initialData.status || (initialData.isActivated !== false ? "نشط" : "غير نشط"),
       });
     }
-    setErrors({});
+    setResetMsg(null);
+    setResetError(null);
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
-  const validate = () => {
-    const errs = {};
-    if (!formData.name.trim()) errs.name = "الاسم مطلوب";
-    if (!formData.email.trim()) {
-      errs.email = "البريد الإلكتروني مطلوب";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errs.email = "بريد إلكتروني غير صحيح";
-    }
-    if (!initialData && !formData.password.trim()) {
-      errs.password = "كلمة المرور مطلوبة للحساب الجديد";
-    } else if (!initialData && formData.password.trim().length < 6) {
-      errs.password = "كلمة المرور يجب أن لا تقل عن 6 أحرف أو أرقام";
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validate()) return;
     onSubmit(formData);
+  };
+
+  const handleResetPassword = async () => {
+    if (!initialData?.id || !onSendPasswordReset) return;
+    setIsSendingReset(true);
+    setResetMsg(null);
+    setResetError(null);
+    try {
+      await onSendPasswordReset(initialData.id);
+      setResetMsg("تم إرسال رابط إعادة ضبط كلمة المرور إلى البريد الإلكتروني بنجاح!");
+    } catch (err) {
+      setResetError(err?.message || "تعذَّر إرسال الرابط حالياً، يرجى التأكد من البيانات والمحاولة لاحقاً.");
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   return (
@@ -68,15 +66,15 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-base-200 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-xl shrink-0">
               <HiOutlineUserGroup />
             </div>
             <div>
               <h3 className="font-1 font-bold text-xl text-base-content">
-                {initialData ? "تعديل حساب المستخدم" : "إضافة مستخدم جديد"}
+                تعديل حساب المستخدم
               </h3>
               <p className="font-2 text-xs text-base-content/60">
-                {initialData ? "قم بتحديث بيانات الحساب أو تغيير الدور والصلاحيات" : "قم بإدخال بيانات المعلم أو الطالب أو الأدمن"}
+                إدارة الصلاحيات (الدور) وتفعيل أو تجميد الحساب
               </p>
             </div>
           </div>
@@ -90,69 +88,53 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
         </div>
 
         {/* Server Error Alert Banner */}
-        {serverError && (
+        {(serverError || resetError) && (
           <div className="alert alert-error text-xs rounded-xl font-2 font-medium flex items-center justify-between py-2.5 px-4">
-            <span>{serverError}</span>
+            <span>{serverError || resetError}</span>
+          </div>
+        )}
+
+        {/* Success Reset Link Banner */}
+        {resetMsg && (
+          <div className="alert alert-success text-xs rounded-xl font-2 font-medium flex items-center justify-between py-2.5 px-4 text-emerald-950 dark:text-emerald-100">
+            <span>{resetMsg}</span>
           </div>
         )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 font-2">
-          {/* Name Field */}
+          {/* Readonly Name Field */}
           <div>
-            <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
-              اسم المستخدم <span className="text-red-500">*</span>
+            <label className="flex items-center justify-between text-xs font-semibold text-base-content/80 mb-1.5">
+              <span>اسم المستخدم</span>
+              <span className="text-[11px] text-base-content/40 font-normal">(للقراءة فقط)</span>
             </label>
             <div className="relative flex items-center">
               <HiOutlineUser className="absolute right-3.5 text-base-content/40 text-lg pointer-events-none" />
               <input
                 type="text"
-                autoComplete="off"
+                disabled
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="مثال: أحمد محمد"
-                className={`input input-bordered w-full pr-10 rounded-xl text-sm ${errors.name ? "input-error" : ""}`}
+                className="input input-bordered w-full pr-10 rounded-xl text-sm bg-base-200/60 opacity-80 cursor-not-allowed font-bold"
               />
             </div>
-            {errors.name && <span className="text-xs text-red-500 mt-1 block">{errors.name}</span>}
           </div>
 
-          {/* Email Field */}
+          {/* Readonly Email Field */}
           <div>
-            <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
-              البريد الإلكتروني <span className="text-red-500">*</span>
+            <label className="flex items-center justify-between text-xs font-semibold text-base-content/80 mb-1.5">
+              <span>البريد الإلكتروني</span>
+              <span className="text-[11px] text-base-content/40 font-normal">(للقراءة فقط)</span>
             </label>
             <div className="relative flex items-center">
               <HiOutlineMail className="absolute right-3.5 text-base-content/40 text-lg pointer-events-none" />
               <input
                 type="email"
-                autoComplete="off"
+                disabled
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="ahmed@example.com"
-                className={`input input-bordered w-full pr-10 rounded-xl text-sm ${errors.email ? "input-error" : ""}`}
+                className="input input-bordered w-full pr-10 rounded-xl text-sm bg-base-200/60 opacity-80 cursor-not-allowed font-bold"
               />
             </div>
-            {errors.email && <span className="text-xs text-red-500 mt-1 block">{errors.email}</span>}
-          </div>
-
-          {/* Password Field (Only mandatory for new user) */}
-          <div>
-            <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
-              كلمة المرور {!initialData && <span className="text-red-500">*</span>}
-            </label>
-            <div className="relative flex items-center">
-              <HiOutlineLockClosed className="absolute right-3.5 text-base-content/40 text-lg pointer-events-none" />
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder={initialData ? "اتركها فارغة إذا لم تكن تريد تغييرها" : "••••••••"}
-                className={`input input-bordered w-full pr-10 rounded-xl text-sm ${errors.password ? "input-error" : ""}`}
-              />
-            </div>
-            {errors.password && <span className="text-xs text-red-500 mt-1 block">{errors.password}</span>}
           </div>
 
           {/* Role & Status Row */}
@@ -160,12 +142,12 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
             {/* Role Select */}
             <div>
               <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
-                دور الحساب (الصلاحية) <span className="text-red-500">*</span>
+                دور الحساب (الصلاحية) <span className="text-cyan-600">*</span>
               </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="select select-bordered w-full rounded-xl text-sm font-2"
+                className="select select-bordered w-full rounded-xl text-sm font-2 font-bold"
               >
                 <option value="معلم">معلم</option>
                 <option value="طالب">طالب</option>
@@ -173,20 +155,42 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
               </select>
             </div>
 
-            {/* Status Select */}
+            {/* Status Select (Activated / Deactivated) */}
             <div>
               <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
-                حالة الحساب <span className="text-red-500">*</span>
+                حالة الحساب <span className="text-cyan-600">*</span>
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="select select-bordered w-full rounded-xl text-sm font-2"
+                className="select select-bordered w-full rounded-xl text-sm font-2 font-bold"
               >
-                <option value="نشط">نشط</option>
-                <option value="غير نشط">غير نشط</option>
+                <option value="نشط">نشط (مُفعّل)</option>
+                <option value="غير نشط">غير نشط (مُجمّد)</option>
               </select>
             </div>
+          </div>
+
+          {/* Password Reset Action Button */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={isSendingReset}
+              className="btn btn-outline border-cyan-700/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-700 hover:text-white w-full rounded-xl text-xs font-2 gap-2"
+            >
+              {isSendingReset ? (
+                <>
+                  <span className="loading loading-spinner loading-xs" />
+                  <span>جاري إرسال الرابط...</span>
+                </>
+              ) : (
+                <>
+                  <HiOutlineKey className="text-base" />
+                  <span>إرسال رابط إعادة ضبط كلمة المرور</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Submit Actions */}
@@ -206,12 +210,12 @@ export default function UserFormModal({ isOpen, onClose, onSubmit, initialData, 
               {isSaving ? (
                 <>
                   <span className="loading loading-spinner loading-xs" />
-                  <span>جاري الحفظ...</span>
+                  <span>جاري التحديث...</span>
                 </>
               ) : (
                 <>
                   <HiOutlineBadgeCheck className="text-lg" />
-                  <span>{initialData ? "تحديث الحساب" : "إنشاء الحساب"}</span>
+                  <span>تحديث الحساب</span>
                 </>
               )}
             </button>

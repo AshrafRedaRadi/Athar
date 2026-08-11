@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { HiPlus, HiOutlinePencilAlt, HiOutlineTrash, HiOutlineUserAdd } from "react-icons/hi";
+import { HiOutlinePencilAlt, HiOutlineKey, HiOutlineBan, HiOutlineCheckCircle } from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 import { IoPeopleOutline } from "react-icons/io5";
 import Navbar from "../../components/shared/Navbar";
 import CategoryFilters from "../../components/shared/CategoryFilters";
 import UserFormModal from "../../components/user-management/UserFormModal";
 import UserCard from "../../components/user-management/UserCard";
-import DeleteUserModal from "../../components/user-management/DeleteUserModal";
 import { usersService } from "../../services/usersService";
 
 export default function UsersManagement() {
@@ -16,13 +15,28 @@ export default function UsersManagement() {
   const [selectedRole, setSelectedRole] = useState("الكل");
   const [selectedStatus, setSelectedStatus] = useState("الكل");
 
-  // Modal States
+  // Modal & Toast States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [toastMsg, setToastMsg] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 8;
+
+  // Auto-hide toast notification after 4 seconds
+  useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
+
+  // Reset to page 1 on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedRole, selectedStatus]);
 
   // Mobile Category Tabs list
   const ROLE_CATEGORIES = [
@@ -64,58 +78,93 @@ export default function UsersManagement() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  // Modal Handlers
-  const handleOpenAddModal = () => {
-    setEditingUser(null);
-    setFormError(null);
-    setIsFormOpen(true);
-  };
+  // Pagination Logic
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length);
 
+  // Open Edit Role / Status Modal
   const handleOpenEditModal = (user) => {
     setEditingUser(user);
     setFormError(null);
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteModal = (user) => {
-    setDeletingUser(user);
-    setIsDeleteOpen(true);
-  };
-
+  // Save User Updates (PUT /api/Admin/users/{id})
   const handleSaveUser = async (formData) => {
+    if (!editingUser) return;
     setIsSubmitting(true);
     setFormError(null);
     try {
-      if (editingUser) {
-        // Edit
-        await usersService.updateUser(editingUser.id, formData);
-        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? { ...u, ...formData } : u)));
-      } else {
-        // Add new
-        const created = await usersService.createUser(formData);
-        setUsers((prev) => [created, ...prev]);
-      }
+      await usersService.updateUser(editingUser.id, formData);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editingUser.id
+            ? {
+                ...u,
+                role: formData.role,
+                status: formData.status,
+                isActivated: formData.status === "نشط",
+              }
+            : u
+        )
+      );
       setIsFormOpen(false);
+      setToastMsg("تم تحديث بيانات وم صلاحيات المستخدم بنجاح.");
     } catch (err) {
-      console.error("Error saving user:", err);
-      setFormError(err?.message || "تعذَّر إنشاء أو تعديل الحساب، يرجى التأكد من البيانات والمحاولة مجدداً.");
+      console.error("Error updating user:", err);
+      setFormError(err?.message || "تعذَّر تحديث الحساب، يرجى المحاولة لاحقاً.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deletingUser) return;
-    setIsSubmitting(true);
+  // Toggle User Activated / Deactivated Status (PUT /api/Admin/users/{id})
+  const handleToggleStatus = async (userItem) => {
+    const currentActive = userItem.status === "نشط" || userItem.isActivated !== false;
+    const nextActive = !currentActive;
+    const nextStatusText = nextActive ? "نشط" : "غير نشط";
+
+    // Optimistic UI update
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userItem.id
+          ? { ...u, status: nextStatusText, isActivated: nextActive }
+          : u
+      )
+    );
+
     try {
-      await usersService.deleteUser(deletingUser.id);
-      setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
-      setIsDeleteOpen(false);
-      setDeletingUser(null);
+      await usersService.toggleUserStatus(userItem.id, currentActive);
+      setToastMsg(
+        nextActive
+          ? `تم تفعيل حساب المستخدم "${userItem.name}" بنجاح.`
+          : `تم تجميد حساب المستخدم "${userItem.name}".`
+      );
     } catch (err) {
-      console.error("Error deleting user:", err);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error toggling user status:", err);
+      // Revert optimism on error
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userItem.id
+            ? { ...u, status: userItem.status, isActivated: currentActive }
+            : u
+        )
+      );
+      setToastMsg("تعذَّر تغيير حالة الحساب، يرجى المحاولة لاحقاً.");
+    }
+  };
+
+  // Send Password Reset Link (POST /api/Admin/users/{id}/send-password-reset)
+  const handleSendPasswordReset = async (userId) => {
+    try {
+      await usersService.sendPasswordReset(userId);
+      setToastMsg("تم إرسال رابط إعادة ضبط كلمة المرور إلى البريد الإلكتروني بنجاح!");
+    } catch (err) {
+      console.error("Error sending reset password link:", err);
+      setToastMsg(err?.message || "تعذَّر إرسال رابط إعادة الضبط، يرجى المحاولة لاحقاً.");
+      throw err;
     }
   };
 
@@ -130,26 +179,23 @@ export default function UsersManagement() {
         showDock={true}
       />
 
-      {/* ── Page Header ── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-base-200">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content flex items-center gap-3">
-            <span>إدارة المستخدمين</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-base-content/60 mt-1">
-            عرض وإدارة حسابات المعلمين، الطلاب، والمشرفين في المنصة.
-          </p>
+      {/* Toast Notification Alert */}
+      {toastMsg && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
+          <div className="alert alert-info shadow-xl border border-cyan-700/30 font-2 text-sm rounded-2xl py-3 px-6 flex items-center gap-3">
+            <span>{toastMsg}</span>
+          </div>
         </div>
+      )}
 
-        {/* Action Button: Add User */}
-        <button
-          type="button"
-          onClick={handleOpenAddModal}
-          className="btn bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl font-bold text-sm px-5 gap-2 shadow-sm self-start sm:self-auto"
-        >
-          <HiOutlineUserAdd className="text-lg" />
-          <span>إضافة مستخدم جديد</span>
-        </button>
+      {/* ── Page Header ── */}
+      <header className="mb-6 pb-4 border-b border-base-200">
+        <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content flex items-center gap-3">
+          <span>إدارة المستخدمين</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-base-content/60 mt-1">
+          عرض وإدارة حسابات المعلمين، الطلاب، والمشرفين (تعديل الصلاحيات، تفعيل/تجميد الحسابات، وإرسال روابط إعادة ضبط كلمة المرور).
+        </p>
       </header>
 
       {/* ── Mobile Category Tabs Filter (Shown on Mobile screens) ── */}
@@ -180,7 +226,7 @@ export default function UsersManagement() {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="select select-bordered rounded-xl text-sm font-2 w-full sm:w-44"
+            className="select select-bordered rounded-xl text-sm font-2 w-full sm:w-44 font-bold"
           >
             <option value="الكل">جميع الأدوار</option>
             <option value="معلم">معلم</option>
@@ -192,7 +238,7 @@ export default function UsersManagement() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="select select-bordered rounded-xl text-sm font-2 w-full sm:w-40"
+            className="select select-bordered rounded-xl text-sm font-2 w-full sm:w-40 font-bold"
           >
             <option value="الكل">جميع الحالات</option>
             <option value="نشط">نشط</option>
@@ -216,17 +262,17 @@ export default function UsersManagement() {
                 <thead className="bg-base-200/50 text-base-content/70 font-2 text-xs border-b border-base-200">
                   <tr>
                     <th className="py-4 px-6">المستخدم</th>
-                    <th className="py-4 px-4 text-center">الدور</th>
+                    <th className="py-4 px-4 text-center">الدور (الصلاحية)</th>
                     <th className="py-4 px-4 text-center">تاريخ الانضمام</th>
                     <th className="py-4 px-4 text-center">الحالة</th>
                     <th className="py-4 px-6 text-center">الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-base-200 font-2">
-                  {filteredUsers.map((userItem) => {
+                  {paginatedUsers.map((userItem) => {
                     const isTeacher = userItem.role === "معلم";
                     const isAdmin = userItem.role === "أدمن";
-                    const isActive = userItem.status === "نشط";
+                    const isActive = userItem.status === "نشط" || userItem.isActivated !== false;
 
                     const badgeClass = isTeacher
                       ? "bg-cyan-600 text-white"
@@ -271,28 +317,22 @@ export default function UsersManagement() {
                         <td className="py-4 px-4 text-center">
                           <span className="inline-flex items-center justify-center gap-1.5 text-xs font-medium">
                             <span className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
-                            <span className={isActive ? "text-emerald-600" : "text-base-content/50"}>{userItem.status}</span>
+                            <span className={isActive ? "text-emerald-600 font-bold" : "text-base-content/50"}>
+                              {isActive ? "نشط" : "غير نشط"}
+                            </span>
                           </span>
                         </td>
 
-                        {/* Actions */}
+                        {/* Actions: Edit Role & Status Modal Trigger */}
                         <td className="py-4 px-6 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center">
                             <button
                               type="button"
                               onClick={() => handleOpenEditModal(userItem)}
                               className="btn btn-ghost btn-xs text-base-content/70 hover:text-cyan-700 rounded-lg p-1.5"
-                              title="تعديل"
+                              title="تعديل الحساب والصلاحيات"
                             >
                               <HiOutlinePencilAlt className="text-lg" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenDeleteModal(userItem)}
-                              className="btn btn-ghost btn-xs text-base-content/70 hover:text-red-600 rounded-lg p-1.5"
-                              title="حذف"
-                            >
-                              <HiOutlineTrash className="text-lg" />
                             </button>
                           </div>
                         </td>
@@ -303,25 +343,60 @@ export default function UsersManagement() {
               </table>
             </div>
 
-            {/* Pagination Footer */}
-            <div className="px-6 py-4 bg-base-200/30 border-t border-base-200 flex items-center justify-between font-2 text-xs text-base-content/60">
-              <span>عرض 1 إلى {filteredUsers.length} من أصل {users.length} مستخدم</span>
-              <div className="join">
-                <button className="join-item btn btn-xs btn-outline rounded-r-lg">«</button>
-                <button className="join-item btn btn-xs btn-active bg-cyan-700 text-white border-transparent">1</button>
-                <button className="join-item btn btn-xs btn-outline rounded-l-lg">»</button>
-              </div>
+            {/* Summary & Functional Pagination Footer */}
+            <div className="px-6 py-3.5 bg-base-200/30 border-t border-base-200 flex flex-col sm:flex-row items-center justify-between gap-3 font-2 text-xs text-base-content/70">
+              <span className="font-bold">
+                عرض {filteredUsers.length > 0 ? startIndex + 1 : 0} إلى {endIndex} من أصل {filteredUsers.length} مستخدم
+              </span>
+
+              {totalPages > 1 && (
+                <div className="join">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    className="join-item btn btn-xs btn-outline rounded-r-lg"
+                  >
+                    «
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                    <button
+                      key={pg}
+                      type="button"
+                      onClick={() => setCurrentPage(pg)}
+                      className={`join-item btn btn-xs ${
+                        currentPage === pg
+                          ? "bg-cyan-700 text-white border-transparent"
+                          : "btn-outline text-base-content/80"
+                      }`}
+                    >
+                      {pg}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="join-item btn btn-xs btn-outline rounded-l-lg"
+                  >
+                    »
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 2. Mobile Cards Grid View (shown on small screens) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4 mb-6">
-            {filteredUsers.map((u) => (
+            {paginatedUsers.map((u) => (
               <UserCard
                 key={u.id}
                 user={u}
                 onEdit={handleOpenEditModal}
-                onDelete={handleOpenDeleteModal}
+                onToggleStatus={handleToggleStatus}
+                onSendPasswordReset={handleSendPasswordReset}
               />
             ))}
           </div>
@@ -343,34 +418,15 @@ export default function UsersManagement() {
         </div>
       )}
 
-      {/* Floating Action Button (+) for Mobile */}
-      <button
-        type="button"
-        onClick={handleOpenAddModal}
-        className="fixed bottom-20 lg:bottom-6 left-6 z-40 w-14 h-14 rounded-2xl bg-cyan-700 hover:bg-cyan-800 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 md:hidden"
-        title="إضافة مستخدم جديد"
-        aria-label="إضافة مستخدم جديد"
-      >
-        <HiPlus className="text-2xl" />
-      </button>
-
-      {/* Form Modal (Add / Edit) */}
+      {/* Edit Form Modal */}
       <UserFormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmit={handleSaveUser}
+        onSendPasswordReset={handleSendPasswordReset}
         initialData={editingUser}
         isSaving={isSubmitting}
         serverError={formError}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteUserModal
-        isOpen={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={handleConfirmDelete}
-        userName={deletingUser?.name || ""}
-        isDeleting={isSubmitting}
       />
     </div>
   );

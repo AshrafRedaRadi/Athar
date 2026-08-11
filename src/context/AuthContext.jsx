@@ -6,15 +6,12 @@ const AuthContext = createContext(null);
 const formatUserData = (profileData) => {
   if (!profileData) return null;
   const userRole = profileData.role || (Array.isArray(profileData.roles) ? profileData.roles[0] : null) || 'User';
-  const userEmail = (profileData.email || '').toLowerCase();
   const roleStr = String(userRole).toLowerCase();
   const isAdmin =
     roleStr.includes('admin') ||
     roleStr.includes('أدمن') ||
     roleStr.includes('مشرف') ||
-    profileData.isAdmin === true ||
-    userEmail.includes('amrkhaled') ||
-    userEmail.includes('ashrafredaradi1');
+    profileData.isAdmin === true;
 
   return { ...profileData, role: userRole, isAdmin };
 };

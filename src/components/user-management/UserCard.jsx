@@ -1,13 +1,12 @@
 import React from "react";
-import { HiOutlineDotsVertical, HiOutlinePencilAlt, HiOutlineTrash } from "react-icons/hi";
-import defaultAvatar from "../../assets/user.png";
+import { HiOutlinePencilAlt, HiOutlineKey, HiOutlineCheckCircle, HiOutlineBan } from "react-icons/hi";
 
 /**
  * UserCard - Mobile/Tablet card representation of a User item.
- * Matches design mockup screenshot 2.
  */
-export default function UserCard({ user, onEdit, onDelete }) {
+export default function UserCard({ user, onEdit, onToggleStatus, onSendPasswordReset }) {
   const { name, email, role = "طالب", status = "نشط", details, avatar } = user;
+  const isStatusActive = status === "نشط" || user.isActivated !== false;
 
   const roleBadgeClass =
     role === "معلم"
@@ -15,8 +14,6 @@ export default function UserCard({ user, onEdit, onDelete }) {
       : role === "أدمن"
       ? "bg-amber-600 text-white"
       : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200";
-
-  const isStatusActive = status === "نشط";
 
   return (
     <div
@@ -58,28 +55,21 @@ export default function UserCard({ user, onEdit, onDelete }) {
       <div className="flex items-center justify-between border-t border-base-200 pt-3 text-xs font-2 text-base-content/60">
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isStatusActive ? "bg-emerald-500" : "bg-gray-400"}`} />
-          <span>{status}</span>
+          <span className={isStatusActive ? "text-emerald-600 font-bold" : "text-base-content/50"}>
+            {isStatusActive ? "نشط" : "غير نشط"}
+          </span>
           {details && <span className="opacity-70">| {details}</span>}
         </div>
 
-        {/* Edit & Delete Action Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Action Button: Edit User */}
+        <div className="flex items-center">
           <button
             type="button"
             onClick={() => onEdit(user)}
             className="p-1.5 rounded-lg bg-base-200 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 text-base-content/70 hover:text-cyan-700 transition-colors"
-            title="تعديل الحساب"
+            title="تعديل الصلاحيات والحالة"
           >
             <HiOutlinePencilAlt className="text-base" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onDelete(user)}
-            className="p-1.5 rounded-lg bg-base-200 hover:bg-red-50 dark:hover:bg-red-950/30 text-base-content/70 hover:text-red-600 transition-colors"
-            title="حذف الحساب"
-          >
-            <HiOutlineTrash className="text-base" />
           </button>
         </div>
       </div>

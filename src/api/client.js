@@ -103,6 +103,12 @@ export async function apiFetch(endpoint, options = {}) {
       throw new Error(translateServerError(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم"));
     }
 
+    // Handle 403 Forbidden (Insufficient Admin Permissions on Backend)
+    if (response.status === 403) {
+      const serverMsg = resData?.msg || resData?.message;
+      throw new Error(translateServerError(serverMsg || "عذراً، هذا الحساب لا يملك صلاحيات المشرف (Admin) على الباكإند لإتمام العملية (HTTP 403 Forbidden)."));
+    }
+
     if (!response.ok) {
       let errorMsg = resData?.msg || resData?.message;
       if (!errorMsg && resData?.errors && typeof resData.errors === "object") {

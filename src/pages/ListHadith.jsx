@@ -195,7 +195,7 @@ export default function ListHadith() {
         const [hadithsData, booksData, progressData] = await Promise.all([
           hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
-          isGuest ? Promise.resolve([]) : hadithsService.getHadithsProgress(bookId).catch(() => []),
+          isGuest ? Promise.resolve([]) : hadithsService.getHadithProgress(bookId).catch(() => []),
         ]);
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
