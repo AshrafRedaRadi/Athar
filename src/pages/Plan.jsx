@@ -13,7 +13,7 @@ export default function Plan() {
         <Navbar activePage="review" />
 
         <header className="text-start space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold font-1 text-cyan-800 dark:text-cyan-800">
+          <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
             إدارة خطة الحفظ والمراجعة
           </h1>
           <p className="text-sm md:text-base text-base-content/60 font-normal">

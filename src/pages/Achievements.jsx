@@ -15,19 +15,19 @@ import { useAuth } from "../context/AuthContext";
 // Otherwise we try a key→component map, falling back to a default trophy.
 // ---------------------------------------------------------------------------
 const ICON_MAP = {
-  fire:        FaFire,
-  flame:       FaFire,
-  book:        FaBookOpen,
+  fire: FaFire,
+  flame: FaFire,
+  book: FaBookOpen,
   "book-open": FaBookOpen,
-  books:       IoBookOutline,
-  mic:         FaMicrophoneAlt,
-  microphone:  FaMicrophoneAlt,
-  medal:       RiMedalLine,
-  badge:       HiCheckBadge,
-  star:        FaStar,
-  trophy:      FaTrophy,
-  graduate:    FaGraduationCap,
-  award:       BsAwardFill,
+  books: IoBookOutline,
+  mic: FaMicrophoneAlt,
+  microphone: FaMicrophoneAlt,
+  medal: RiMedalLine,
+  badge: HiCheckBadge,
+  star: FaStar,
+  trophy: FaTrophy,
+  graduate: FaGraduationCap,
+  award: BsAwardFill,
 };
 
 function BadgeIcon({ iconKey, color, isUnlocked }) {
@@ -64,7 +64,7 @@ function BadgeIcon({ iconKey, color, isUnlocked }) {
   }
 
   // Try the key map, fall back to FaTrophy
-  const key     = (iconKey || "").toLowerCase();
+  const key = (iconKey || "").toLowerCase();
   const IconCmp = ICON_MAP[key] || FaTrophy;
 
   return (
@@ -157,18 +157,18 @@ function BadgeCard({ badge }) {
 function Achievements() {
   const { isAuthenticated, isGuest } = useAuth();
 
-  const [activeDays, setActiveDays]   = useState([]);
+  const [activeDays, setActiveDays] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
-  const [badges, setBadges]             = useState([]);
+  const [badges, setBadges] = useState([]);
   const [badgesLoading, setBadgesLoading] = useState(false);
 
   // Fetch calendar + achievements on mount
   useEffect(() => {
     if (isGuest || !isAuthenticated) return;
 
-    const now   = new Date();
-    const year  = now.getFullYear();
+    const now = new Date();
+    const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
     setCalendarLoading(true);
@@ -185,9 +185,9 @@ function Achievements() {
   }, [isAuthenticated, isGuest]);
 
   // Derived streak metrics
-  const currentStreak  = computeCurrentStreak(activeDays);
-  const now            = new Date();
-  const daysInMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const currentStreak = computeCurrentStreak(activeDays);
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const checkedInCount = activeDays.filter((d) => {
     const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     return d.startsWith(prefix);
@@ -202,7 +202,7 @@ function Achievements() {
       <main className="max-w-7xl mx-auto space-y-8 mt-4">
         {/* Page Header */}
         <header className="text-start space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold font-1 text-cyan-800">
+          <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
             إنجازاتك
           </h1>
           <p className="text-sm md:text-base text-base-content/60 font-normal">

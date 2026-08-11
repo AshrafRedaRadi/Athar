@@ -81,8 +81,8 @@ export default function Library() {
 
   // Client-side filter on books list (only display visible books to public users)
   const filteredBooks = books.filter((book) => {
-    const isVisible       = book.status !== "مخفي";
-    const matchesSearch   = (book.title || "").includes(searchQuery) || (book.author || "").includes(searchQuery);
+    const isVisible = book.status !== "مخفي";
+    const matchesSearch = (book.title || "").includes(searchQuery) || (book.author || "").includes(searchQuery);
     const matchesCategory = activeCategory === "الكل" || book.category === activeCategory;
     return isVisible && matchesSearch && matchesCategory;
   });
@@ -114,7 +114,7 @@ export default function Library() {
         {/* ── Page title ── */}
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <IoBookOutline className="text-3xl text-cyan-600" />
+            <IoBookOutline className="text-3xl text-cyan-700 dark:text-cyan-400" />
             <h1 className="font-1 font-bold text-3xl text-base-content">
               مكتبة المتون
             </h1>
