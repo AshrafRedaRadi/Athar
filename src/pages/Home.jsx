@@ -8,13 +8,15 @@ import Progress from "../components/home/Progress";
 import Tasks from "../components/home/Tasks";
 import { useAuth } from "../context/AuthContext";
 import { dashboardService } from "../services/dashboardService";
+import { activityService, computeCurrentStreak } from "../services/activityService";
 
 function Home() {
   const { isAuthenticated, isGuest, logout } = useAuth();
   const navigate = useNavigate();
 
   const [summaryData, setSummaryData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading]     = useState(false);
+  const [calendarDays, setCalendarDays] = useState([]);
 
   useEffect(() => {
     async function loadDashboardSummary() {
@@ -22,9 +24,19 @@ function Home() {
 
       try {
         setIsLoading(true);
-        const data = await dashboardService.getSummary();
+        const now   = new Date();
+        const year  = now.getFullYear();
+        const month = now.getMonth() + 1; // 1-indexed
+
+        // Fetch dashboard summary and activity calendar in parallel
+        const [data, days] = await Promise.all([
+          dashboardService.getSummary(),
+          activityService.getCalendar(year, month),
+        ]);
+
         console.log("🏠 [Home Component Dashboard Summary Data]:", data);
         setSummaryData(data);
+        setCalendarDays(days);
       } catch (err) {
         console.warn("Could not fetch dashboard summary from API:", err.message);
       } finally {
@@ -103,11 +115,8 @@ function Home() {
     getProp(lastOpenedBook, "inProgressHadithCount", "inProgressCount") ??
     0;
 
-  // Streak & accuracy metrics
-  const daysStreak =
-    getProp(actualData, "dayStreak", "daysStreak", "streakDays", "days", "streak") ??
-    getProp(summaryData, "dayStreak", "daysStreak") ??
-    0;
+  // Streak — computed from real calendar data (longest consecutive run including today)
+  const daysStreak = computeCurrentStreak(calendarDays);
   const accuracyRate =
     getProp(actualData, "accuracyRate", "accuracyPercentage", "accuracy", "rate") ??
     getProp(summaryData, "accuracyRate", "accuracy") ??

@@ -10,101 +10,68 @@ import { IoChevronBack, IoChevronForward } from "react-icons/io5";
  * - Vibrant orange numbers inside the active track
  * - Saturday week start (س) & RTL alignment
  * - Month navigation
+ *
+ * Props:
+ *   activeDays {string[]} - array of "YYYY-MM-DD" strings from the activity calendar API
+ *   isLoading  {boolean}  - show skeleton while data is being fetched
  */
-function StreakCalendar() {
-  const [viewDate, setViewDate] = useState(new Date(2026, 7, 1)); // Default to August 2026
+function StreakCalendar({ activeDays = [], isLoading = false }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
   // Arabic Month Names
   const ARABIC_MONTHS = [
-    "يناير",
-    "فبراير",
-    "مارس",
-    "أبريل",
-    "مايو",
-    "يونيو",
-    "يوليو",
-    "أغسطس",
-    "سبتمبر",
-    "أكتوبر",
-    "نوفمبر",
-    "ديسمبر",
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
   ];
 
   // Abbreviated Day Names starting on Saturday (السبت)
   const DAY_NAMES = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
 
-  // Mock Active Days matching the screenshot streak pattern (Days 2 to 15)
-  const activeDaysSet = new Set([
-    "2026-08-02", // Streak Start (Solid Orange Circle)
-    "2026-08-03",
-    "2026-08-04",
-    "2026-08-05",
-    "2026-08-06",
-    "2026-08-07",
-    "2026-08-08",
-    "2026-08-09",
-    "2026-08-10",
-    "2026-08-11",
-    "2026-08-12", // Today (Cyan Badge)
-    "2026-08-13",
-    "2026-08-14",
-    "2026-08-15", // Streak End (Solid Orange Circle)
-  ]);
-
-  // Special milestone days for distinct styling matching Duolingo screenshot
-  const streakStartStr = "2026-08-02";
-  const streakEndStr = "2026-08-15";
-  const todayStr = "2026-08-12";
-
-  const year = viewDate.getFullYear();
+  const year  = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  // Helper functions for month navigation
-  const handlePrevMonth = () => {
-    setViewDate(new Date(year, month - 1, 1));
-  };
+  // Build a Set for O(1) lookup
+  const activeDaysSet = new Set(activeDays);
 
-  const handleNextMonth = () => {
-    setViewDate(new Date(year, month + 1, 1));
-  };
+  // Find first and last active day in the current month view for milestone styling
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const activeDaysThisMonth = activeDays
+    .filter((d) => d.startsWith(monthPrefix))
+    .sort();
+  const streakStartStr = activeDaysThisMonth[0] || null;
+  const streakEndStr   = activeDaysThisMonth[activeDaysThisMonth.length - 1] || null;
 
-  // Calculate calendar layout
+  // Month navigation
+  const handlePrevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  // Build calendar grid
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const rawFirstDay  = new Date(year, month, 1).getDay();
+  const firstDayOfWeek = (rawFirstDay + 1) % 7; // Saturday-start offset
 
-  // Saturday-based first day offset: JS getDay() returns 0 for Sunday, 6 for Saturday.
-  const rawFirstDay = new Date(year, month, 1).getDay();
-  const firstDayOfWeek = (rawFirstDay + 1) % 7;
-
-  // Build grid days array (length will be multiple of 7)
   const calendarCells = [];
 
-  // Padding cells before day 1
   for (let i = 0; i < firstDayOfWeek; i++) {
     calendarCells.push(null);
   }
 
-  // Days of month
   for (let d = 1; d <= daysInMonth; d++) {
-    const dayFormatted = String(d).padStart(2, "0");
-    const monthFormatted = String(month + 1).padStart(2, "0");
-    const dateStr = `${year}-${monthFormatted}-${dayFormatted}`;
-
-    const isActive = activeDaysSet.has(dateStr);
-    const isToday = dateStr === todayStr;
-    const isStreakStart = dateStr === streakStartStr;
-    const isStreakEnd = dateStr === streakEndStr;
-
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     calendarCells.push({
       dayNumber: d,
       dateStr,
-      isActive,
-      isToday,
-      isStreakStart,
-      isStreakEnd,
+      isActive:      activeDaysSet.has(dateStr),
+      isToday:       dateStr === todayStr,
+      isStreakStart: dateStr === streakStartStr,
+      isStreakEnd:   dateStr === streakEndStr,
     });
   }
 
-  // Pad remaining cells of last row
   while (calendarCells.length % 7 !== 0) {
     calendarCells.push(null);
   }
@@ -153,86 +120,83 @@ function StreakCalendar() {
         {/* Day Name Headers (Saturday to Friday) */}
         <div className="grid grid-cols-7 text-center mb-3">
           {DAY_NAMES.map((name, index) => (
-            <span
-              key={index}
-              className="text-xs font-bold text-base-content/40 py-1"
-            >
+            <span key={index} className="text-xs font-bold text-base-content/40 py-1">
               {name}
             </span>
           ))}
         </div>
 
-        {/* Calendar Days Grid */}
-        <div className="grid grid-cols-7 gap-y-4 gap-x-0">
-          {calendarCells.map((cell, index) => {
-            if (!cell) {
-              return <div key={`empty-${index}`} className="h-10" />;
-            }
-
-            const { dayNumber, isActive, isToday, isStreakStart, isStreakEnd } = cell;
-
-            // Row-level track calculations for continuous Duolingo capsule track
-            const colIndex = index % 7; // 0 (Saturday/Right) to 6 (Friday/Left) in RTL
-            const prevCell = colIndex > 0 ? calendarCells[index - 1] : null;
-            const nextCell = colIndex < 6 ? calendarCells[index + 1] : null;
-
-            const hasPrevActive = prevCell && prevCell.isActive;
-            const hasNextActive = nextCell && nextCell.isActive;
-
-            // Track background rounding logic per cell in RTL layout
-            let trackRounding = "rounded-full";
-            if (isActive) {
-              if (hasPrevActive && hasNextActive) {
-                trackRounding = "rounded-none";
-              } else if (hasPrevActive && !hasNextActive) {
-                trackRounding = "rounded-l-full rounded-r-none";
-              } else if (!hasPrevActive && hasNextActive) {
-                trackRounding = "rounded-r-full rounded-l-none";
+        {/* Loading skeleton */}
+        {isLoading ? (
+          <div className="grid grid-cols-7 gap-y-4 gap-x-0 animate-pulse">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-center h-10">
+                <div className="w-7 h-7 rounded-full bg-base-300/60" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Calendar Days Grid */
+          <div className="grid grid-cols-7 gap-y-4 gap-x-0">
+            {calendarCells.map((cell, index) => {
+              if (!cell) {
+                return <div key={`empty-${index}`} className="h-10" />;
               }
-            }
 
-            return (
-              <div
-                key={cell.dateStr}
-                className="flex items-center justify-center h-10 relative"
-              >
-                {/* Continuous Light Orange Background Track for active streak days */}
-                {isActive && (
-                  <div
-                    className={`absolute inset-y-0 inset-x-0 streak-track-bg ${trackRounding}`}
-                  />
-                )}
+              const { dayNumber, isActive, isToday, isStreakStart, isStreakEnd } = cell;
 
-                {/* Day Content Rendering */}
-                {isToday ? (
-                  /* Today Pin Badge (Cyan Circle with Pin Tail) */
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-9 h-9 rounded-full bg-cyan-500 text-white font-bold flex items-center justify-center shadow-md text-sm">
+              const colIndex     = index % 7;
+              const prevCell     = colIndex > 0 ? calendarCells[index - 1] : null;
+              const nextCell     = colIndex < 6 ? calendarCells[index + 1] : null;
+              const hasPrevActive = prevCell && prevCell.isActive;
+              const hasNextActive = nextCell && nextCell.isActive;
+
+              let trackRounding = "rounded-full";
+              if (isActive) {
+                if (hasPrevActive && hasNextActive)        trackRounding = "rounded-none";
+                else if (hasPrevActive && !hasNextActive)  trackRounding = "rounded-l-full rounded-r-none";
+                else if (!hasPrevActive && hasNextActive)  trackRounding = "rounded-r-full rounded-l-none";
+              }
+
+              return (
+                <div
+                  key={cell.dateStr}
+                  className="flex items-center justify-center h-10 relative"
+                >
+                  {/* Continuous Light Orange Background Track */}
+                  {isActive && (
+                    <div className={`absolute inset-y-0 inset-x-0 streak-track-bg ${trackRounding}`} />
+                  )}
+
+                  {isToday ? (
+                    /* Today Pin Badge */
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="w-9 h-9 rounded-full bg-cyan-500 text-white font-bold flex items-center justify-center shadow-md text-sm">
+                        {dayNumber}
+                      </div>
+                      <div className="absolute -bottom-1 w-2.5 h-2.5 bg-cyan-500 rotate-45 rounded-xs" />
+                    </div>
+                  ) : isStreakStart || isStreakEnd ? (
+                    /* Solid Orange Circle for Streak Milestones */
+                    <div className="relative z-10 w-9 h-9 rounded-full bg-orange-500 text-white font-bold flex items-center justify-center shadow-sm text-sm">
                       {dayNumber}
                     </div>
-                    {/* Pin tail */}
-                    <div className="absolute -bottom-1 w-2.5 h-2.5 bg-cyan-500 rotate-45 rounded-xs" />
-                  </div>
-                ) : isStreakStart || isStreakEnd ? (
-                  /* Solid Orange Circle for Streak Milestones (Start / End) */
-                  <div className="relative z-10 w-9 h-9 rounded-full bg-orange-500 text-white font-bold flex items-center justify-center shadow-sm text-sm">
-                    {dayNumber}
-                  </div>
-                ) : isActive ? (
-                  /* Intermediate Active Track Day (Vibrant Orange Bold Text inside track) */
-                  <span className="relative z-10 text-orange-500 font-bold text-sm sm:text-base">
-                    {dayNumber}
-                  </span>
-                ) : (
-                  /* Inactive Day outside streak (Grey Number) */
-                  <span className="relative z-10 text-base-content/40 font-bold text-sm sm:text-base hover:bg-base-200/50 w-9 h-9 rounded-full flex items-center justify-center transition-colors">
-                    {dayNumber}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  ) : isActive ? (
+                    /* Active Track Day */
+                    <span className="relative z-10 text-orange-500 font-bold text-sm sm:text-base">
+                      {dayNumber}
+                    </span>
+                  ) : (
+                    /* Inactive Day */
+                    <span className="relative z-10 text-base-content/40 font-bold text-sm sm:text-base hover:bg-base-200/50 w-9 h-9 rounded-full flex items-center justify-center transition-colors">
+                      {dayNumber}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Bottom Legend */}

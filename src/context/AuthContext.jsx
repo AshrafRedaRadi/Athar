@@ -41,6 +41,15 @@ export function AuthProvider({ children }) {
           const formatted = formatUserData(profileData);
           setUser(formatted);
           localStorage.setItem('user', JSON.stringify(formatted));
+
+          // Daily check-in for returning users (fire-and-forget)
+          const today = new Date().toISOString().slice(0, 10);
+          const lastCheckIn = localStorage.getItem('athar_last_checkin');
+          if (lastCheckIn !== today) {
+            apiFetch('/api/activity/check-in', { method: 'POST' })
+              .then(() => localStorage.setItem('athar_last_checkin', today))
+              .catch(() => {}); // silently ignore errors
+          }
         } catch {
           logout();
         }
@@ -63,6 +72,22 @@ export function AuthProvider({ children }) {
 
     initAuth();
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // Daily check-in helper — fire-and-forget, never blocks login
+  // ---------------------------------------------------------------------------
+  const performDailyCheckIn = async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const lastCheckIn = localStorage.getItem('athar_last_checkin');
+      if (lastCheckIn === today) return; // already checked in today
+
+      await apiFetch('/api/activity/check-in', { method: 'POST' });
+      localStorage.setItem('athar_last_checkin', today);
+    } catch {
+      // Silently ignore — check-in failure must never block the user
+    }
+  };
 
   const login = async (email, password) => {
     const responseData = await apiFetch('/api/Auth/login', {
@@ -87,6 +112,9 @@ export function AuthProvider({ children }) {
       } catch {
         setUser({ isGuest: false });
       }
+
+      // Daily check-in (fire-and-forget)
+      performDailyCheckIn();
     }
     return responseData;
   };
@@ -122,6 +150,9 @@ export function AuthProvider({ children }) {
       } catch {
         setUser({ isGuest: false });
       }
+
+      // Daily check-in (fire-and-forget)
+      performDailyCheckIn();
     }
     return responseData;
   };
