@@ -9,9 +9,9 @@ import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 /* ── Shared styling helpers ── */
 const inputClass =
-  'w-full bg-black/15 border border-white/10 text-white rounded-full h-8 min-h-8 px-3.5 text-[0.78rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
+  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
 
-const labelClass = 'block text-[0.72rem] mb-0.5 text-white/90 font-2';
+const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
 
 /* ── Password strength helpers ── */
 function checkReqs(pass) {
@@ -112,11 +112,11 @@ export default function Signup() {
     <AuthLayout>
       <AuthCard>
         {/* ── Tab bar ── */}
-        <div className="flex bg-white/15 p-1 rounded-xl mb-2 gap-1 shrink-0">
+        <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
           {/* Login tab — inactive → navigate to /login */}
           <Link
             to="/login"
-            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
+            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
           >
             تسجيل الدخول
           </Link>
@@ -124,7 +124,7 @@ export default function Signup() {
           {/* Signup tab — active */}
           <button
             type="button"
-            className="flex-1 py-1 px-2 rounded-lg text-[0.8rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
+            className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
           >
             إنشاء حساب
           </button>
@@ -143,14 +143,14 @@ export default function Signup() {
         )}
 
         {/* ── Form content container (No scrollbar, compact layout) ── */}
-        <div className="flex-1 flex flex-col justify-start overflow-y-auto py-1">
-          <h2 className="font-1 text-[1.2rem] font-bold mb-1.5 mt-0 shrink-0 text-center">
+        <div className="h-auto md:h-full md:flex-1 flex flex-col justify-start overflow-y-visible md:overflow-y-auto py-1">
+          <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 shrink-0 text-center">
             إنشاء حساب
           </h2>
 
           {/* ═══════════════════════════════════════ SIGNUP FORM ═══════════════════════════════════════ */}
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-start gap-1.5 animate-[fadeIn_0.3s_ease]">
-            <div className="space-y-1">
+          <form onSubmit={handleSubmit} className="h-auto md:h-full flex-1 flex flex-col justify-start gap-1.5 animate-[fadeIn_0.3s_ease]">
+            <div className="flex flex-col gap-1.5">
               {/* Full Name */}
               <div className="flex flex-col gap-0.5">
                 <label className={labelClass}>الاسم الكامل</label>
@@ -211,11 +211,11 @@ export default function Signup() {
 
                 // Dynamic hint: pick the first failing requirement
                 const hints = [
-                  { key: 'length',    text: 'يجب أن تكون 8 أحرف على الأقل' },
+                  { key: 'length', text: 'يجب أن تكون 8 أحرف على الأقل' },
                   { key: 'uppercase', text: 'أضف حرفاً كبيراً (A-Z)' },
                   { key: 'lowercase', text: 'أضف حرفاً صغيراً (a-z)' },
-                  { key: 'number',    text: 'أضف رقماً (0-9)' },
-                  { key: 'special',   text: 'أضف رمزاً خاصاً (@$!%*?&)' },
+                  { key: 'number', text: 'أضف رقماً (0-9)' },
+                  { key: 'special', text: 'أضف رمزاً خاصاً (@$!%*?&)' },
                 ];
                 const firstMissing = hints.find((h) => !reqs[h.key]);
 
@@ -224,9 +224,8 @@ export default function Signup() {
                     {/* Password match message */}
                     {confirmPassword.length > 0 && (
                       <small
-                        className={`block text-[0.68rem] font-semibold ${
-                          isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                        }`}
+                        className={`block text-[0.68rem] font-semibold ${isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
+                          }`}
                       >
                         {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
                       </small>
@@ -272,25 +271,25 @@ export default function Signup() {
             </div>
 
             {/* Step 1 Actions & Footer */}
-            <div className="space-y-1 pt-1">
+            <div className="flex flex-col gap-1.5 pt-1">
               {/* Submit button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-8.5 min-h-8.5 font-semibold text-[0.82rem] font-2 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-2 transition-colors cursor-pointer"
               >
                 {isSubmitting ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
               </button>
 
               {/* Divider */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center my-1.5 gap-2.5">
                 <hr className="flex-1 border-white/20" />
-                <span className="text-white/60 text-[0.68rem] font-2">أو</span>
+                <span className="text-white/60 text-[0.7rem] font-2">أو</span>
                 <hr className="flex-1 border-white/20" />
               </div>
 
               {/* Google register */}
-              <div className="w-full flex justify-center my-1 overflow-hidden rounded-full font-2">
+              <div className="w-full flex justify-center my-1.5 overflow-hidden rounded-full font-2">
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -306,7 +305,7 @@ export default function Signup() {
               </div>
 
               {/* Switch to login */}
-              <div className="text-center text-[0.72rem] text-white/80 font-2">
+              <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2">
                 لديك حساب بالفعل؟{' '}
                 <Link
                   to="/login"
@@ -317,7 +316,7 @@ export default function Signup() {
               </div>
 
               {/* Footer */}
-              <div className="text-center text-[0.62rem] font-2">
+              <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-3 pb-1">
                 <p className="text-white/50 leading-tight">
                   هل تواجه مشكلة؟ تواصل معنا عبر{' '}
                   <span className="text-white/70">Athar@gmail.com</span>

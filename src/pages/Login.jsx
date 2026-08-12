@@ -86,8 +86,7 @@ export default function Login() {
         </div>
 
         <div
-          className="overflow-y-auto pr-[3px] h-full flex-1 flex flex-col justify-start"
-          style={{ maxHeight: 'calc(100% - 80px)' }}
+          className="overflow-y-visible md:overflow-y-auto pr-0 md:pr-[3px] h-auto md:h-full md:flex-1 flex flex-col justify-start max-h-none md:max-h-[calc(100%-80px)]"
         >
           <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 text-center">
             تسجيل الدخول
@@ -172,7 +171,7 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2">
+          <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2 pt-3 ">
             ليس لديك حساب؟{' '}
             <Link
               to="/signup"
@@ -180,13 +179,13 @@ export default function Login() {
             >
               سجل الآن
             </Link>
-          </div>
 
-          <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-2 pb-1">
+          <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-3 pb-1">
             <p className="text-white/50 leading-tight">
               هل تواجه مشكلة؟ تواصل معنا عبر{' '}
               <span className="text-white/70">Athar@gmail.com</span>
             </p>
+          </div>
           </div>
         </div>
       </AuthCard>
