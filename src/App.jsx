@@ -25,6 +25,7 @@ import AiAssistantManagement from './pages/admin/AiAssistantManagement';
 import Error_page from './pages/Error_page';
 
 import SettingPage from './pages/SettingPage';
+import HelpCenter from './pages/HelpCenter';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/plan" element={<Plan />} />
             <Route path="/settings" element={<SettingPage />} />
+            <Route path="/help" element={<HelpCenter />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:bookId/sections" element={<ListSection />} />
             <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />

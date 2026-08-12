@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ChangeImage from "./ChangeImage";
 import DeleteAccountSection from "./DeleteAccountSection";
 import ThemeSwitcher from "./ThemeSwitcher";
-import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser } from "react-icons/hi2";
+import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
 function SettingsContent() {
+  const navigate = useNavigate();
   const { user, updateUser } = useAuth();
 
   // Name and Email from auth context / backend user data
@@ -76,9 +78,20 @@ function SettingsContent() {
   return (
     <div className="settingPage font-2" dir="rtl">
       <header className="text-start space-y-1 mb-6">
-        <h1 className="text-3xl font-bold font-1 text-base-content">
-          إعدادات الملف الشخصي
-        </h1>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
+            title="الرجوع للصفحة السابقة"
+            aria-label="الرجوع للصفحة السابقة"
+          >
+            <HiChevronRight className="text-xl" />
+          </button>
+          <h1 className="text-3xl font-bold font-1 text-base-content">
+            إعدادات الملف الشخصي
+          </h1>
+        </div>
         <p className="text-sm md:text-base text-base-content/60 font-normal mt-2">
           قم بتحديث معلوماتك الشخصية وكيفية ظهورك في المنصة
         </p>
@@ -191,6 +204,30 @@ function SettingsContent() {
 
       {/* Account & Security Zone (Compact Delete Account + Logout Side-by-Side) */}
       <DeleteAccountSection />
+
+      {/* Centered Help Center (مركز المساعدة) Button at the Bottom */}
+      <div className="flex justify-center mt-8 sm:mt-10 mb-6">
+        <button
+          type="button"
+          onClick={() => navigate('/help')}
+          className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300/80 dark:border-slate-800 text-base-content/85 hover:text-cyan-700 dark:hover:text-cyan-400 hover:border-cyan-600/50 hover:shadow-md transition-all font-2 text-sm sm:text-base font-bold cursor-pointer"
+        >
+          <span>مركز المساعدة</span>
+          <svg
+            className="w-5 h-5 shrink-0 text-current"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </button>
+      </div>
 
       {/* Password Reset Confirmation Modal */}
       {isResetModalOpen && (
