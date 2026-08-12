@@ -52,78 +52,68 @@ export default function Progress(props) {
 
   return (
     <div dir="rtl" className="mt-6">
-      <div className="bg-base-200 rounded-2xl shadow-sm border border-base-200 p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div className="bg-base-200 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6">
+        <p className="text-sm text-cyan-700 font-bold">
+          أكمل من حيث توقفت
+        </p>
 
-          {/* Right Side */}
-          <div className="flex-1 w-full">
-            <p className="text-sm text-cyan-700 font-bold">
-              أكمل من حيث توقفت
-            </p>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mt-1 text-base-content">
+          {props.title || "لا يوجد كتاب مفتوح حالياً"}
+        </h2>
 
-            <h2 className="text-2xl sm:text-3xl font-bold mt-2 text-base-content">
-              {props.title || "لا يوجد كتاب مفتوح حالياً"}
-            </h2>
-
-            <div className="mt-6 space-y-4">
-              {/* Primary Progress Bar (التقدم) */}
-              <div>
-                <div className="flex justify-between text-sm text-gray-500 mb-2 font-2">
-                  <span>التقدم</span>
-                  <span className="font-bold text-cyan-700">{progressPercent}%</span>
-                </div>
-
-                <progress
-                  className="progress [&::-webkit-progress-value]:bg-cyan-500 w-full h-3"
-                  value={memorizedCount > 0 ? memorizedCount : progressPercent}
-                  max={memorizedCount > 0 ? maxHadithCount : 100}
-                ></progress>
+        <div className="mt-6 space-y-6">
+          {/* Row 1: Primary Progress Bar (التقدم) + "متابعة الحفظ" Button */}
+          <div className="flex items-end gap-3 sm:gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between text-xs sm:text-sm text-base-content/70 mb-1.5 font-2">
+                <span>التقدم</span>
+                <span className="font-bold text-cyan-700">{progressPercent}%</span>
               </div>
-
-              {/* In-Progress Hadith Count Bar (الأحاديث قيد الحفظ) */}
-              <div>
-                <div className="flex justify-between text-sm text-gray-500 mb-2 font-2">
-                  <span>الأحاديث قيد الحفظ</span>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">
-                    {inProgressCount} حديث
-                  </span>
-                </div>
-
-                <progress
-                  className="progress [&::-webkit-progress-value]:bg-amber-500 w-full h-3"
-                  value={inProgressCount}
-                  max={maxHadithCount}
-                ></progress>
-              </div>
+              <progress
+                className="progress [&::-webkit-progress-value]:bg-cyan-500 w-full h-3"
+                value={memorizedCount > 0 ? memorizedCount : progressPercent}
+                max={memorizedCount > 0 ? maxHadithCount : 100}
+              ></progress>
             </div>
-          </div>
 
-          {/* Left Side */}
-          <div className="shrink-0 w-full sm:w-auto flex flex-col gap-2.5">
             <button
               onClick={handleContinue}
               disabled={isNavigating}
-              className="btn bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl px-8 w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+              className="btn bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl px-4 sm:px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 font-2 text-xs sm:text-sm h-10 min-h-0"
             >
               {isNavigating ? (
                 <span className="loading loading-spinner loading-xs"></span>
               ) : (
-                <GoPlay className="text-lg" />
+                <GoPlay className="text-base sm:text-lg" />
               )}
               <span>متابعة الحفظ</span>
             </button>
-
-            {props.resumeHadithId && (
-              <button
-                onClick={handleResumeHadith}
-                className="btn btn-outline border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white dark:border-amber-500 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white rounded-xl px-8 w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
-              >
-                <IoBookmarkOutline className="text-lg" />
-                <span>آخر حديث</span>
-              </button>
-            )}
           </div>
 
+          {/* Row 2: In-Progress Hadith Count Bar + "آخر حديث" Button */}
+          <div className="flex items-end gap-3 sm:gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between text-xs sm:text-sm text-base-content/70 mb-1.5 font-2">
+                <span>الأحاديث قيد الحفظ</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  {inProgressCount} حديث
+                </span>
+              </div>
+              <progress
+                className="progress [&::-webkit-progress-value]:bg-amber-500 w-full h-3"
+                value={inProgressCount}
+                max={maxHadithCount}
+              ></progress>
+            </div>
+
+            <button
+              onClick={handleResumeHadith}
+              className="btn btn-outline border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white dark:border-amber-500 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white rounded-xl px-4 sm:px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs font-2 text-xs sm:text-sm h-10 min-h-0"
+            >
+              <IoBookmarkOutline className="text-base sm:text-lg" />
+              <span>آخر حديث</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

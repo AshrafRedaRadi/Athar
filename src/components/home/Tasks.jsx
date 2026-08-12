@@ -38,7 +38,7 @@ export default function DashboardTasks() {
           </div>
 
 
-          <button className="btn hover:bg-cyan-300 bg-cyan-100 text-cyan-700 px-4 py-2 rounded-lg text-sm">
+          <button className="btn hover:bg-cyan-800 hover:text-white bg-cyan-600  px-4 py-2 rounded-lg text-sm">
             ابدأ المراجعة
           </button>
 
@@ -69,22 +69,22 @@ export default function DashboardTasks() {
 
           <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <input type="checkbox" className="checkbox rounded-md" />
+              {/* <input type="checkbox" className="checkbox rounded-md" /> */}
               <span>حفظ حديث جديد</span>
             </div>
 
-            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs">
+            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs hover:bg-cyan-800">
               <FaPlay />
             </button>
           </div>
 
           <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <input type="checkbox" className="checkbox rounded-md" />
+              {/* <input type="checkbox" className="checkbox rounded-md" /> */}
               <span>مراجعة 5 أحاديث</span>
             </div>
 
-            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs">
+            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs hover:bg-cyan-800">
               <FaPlay />
             </button>
           </div>

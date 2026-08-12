@@ -12,5 +12,5 @@ export const MAIN_NAV_ITEMS = [
   { id: "library",      label: "المكتبة",        dockLabel: "المكتبة",    icon: <BsBook className="text-xl" />,             href: "/library" },
   { id: "review",       label: "التحكم في الخطة", dockLabel: "الخطة",     icon: <BsClipboard2Check className="text-xl" />,  href: "/plan" },
   { id: "achievements", label: "الإنجازات",      dockLabel: "الإنجازات",  icon: <RiAwardLine className="text-xl" />,        href: "/achievements" },
-  { id: "settings",     label: "الإعدادات",      dockLabel: "الإعدادات",  icon: <IoSettingsOutline className="text-xl" />,  href: "#", isSidebarOnly: true },
+  // { id: "settings",     label: "الإعدادات",      dockLabel: "الإعدادات",  icon: <IoSettingsOutline className="text-xl" />,  href: "/settings" },
 ];

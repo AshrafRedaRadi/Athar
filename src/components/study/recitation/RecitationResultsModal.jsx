@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { IoClose } from "react-icons/io5";
-import { FiCheckCircle, FiAlertTriangle, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiAlertTriangle, FiXCircle, FiStar, FiAward } from "react-icons/fi";
+import { hadithsService } from "../../../services/hadithsService";
 
 /**
  * RecitationResultsModal — Displays recitation performance results:
@@ -9,10 +10,14 @@ import { FiCheckCircle, FiAlertTriangle, FiXCircle } from "react-icons/fi";
  * - Recitation errors list with side-by-side format: الخطأ ➔ الصحيح
  * - Extra / Out-of-context words list at the bottom
  * - Smooth entrance and exit animations (animate-modalIn / animate-modalOut)
+ * - Auto-marks hadith as memorized (status 2) when accuracy >= 80%
  */
-export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [] }) {
+export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [], hadithId = null }) {
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
+  const [memorizedStatus, setMemorizedStatus] = useState(null); // null | "pending" | "success" | "error"
+  const [showCongrats, setShowCongrats] = useState(false);
+  const memorizedCalledRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,6 +32,50 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  // Auto-mark as memorized (status 2) when accuracy >= 80%
+  useEffect(() => {
+    if (!isOpen || !summary || !hadithId || memorizedCalledRef.current) return;
+
+    // Compute accuracy inline to avoid dependency on variables declared later
+    const extractVal = (obj, ...keys) => {
+      for (const key of keys) {
+        if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
+        if (obj?.metrics && obj.metrics[key] !== undefined && obj.metrics[key] !== null) return obj.metrics[key];
+        if (obj?.Metrics && obj.Metrics[key] !== undefined && obj.Metrics[key] !== null) return obj.Metrics[key];
+      }
+      return undefined;
+    };
+    let rawAcc = extractVal(summary, "accuracy", "Accuracy", "accuracyPercentage", "AccuracyPercentage", "accuracyPercent", "AccuracyPercent", "score", "Score") ?? 0;
+    if (typeof rawAcc === "number" && rawAcc > 0 && rawAcc <= 1) rawAcc = rawAcc * 100;
+    const accuracyValue = Number(rawAcc) || 0;
+
+    if (accuracyValue >= 80) {
+      memorizedCalledRef.current = true;
+      setMemorizedStatus("pending");
+      setShowCongrats(true);
+      hadithsService.updateHadithProgress(hadithId, 2)
+        .then(() => setMemorizedStatus("success"))
+        .catch((err) => {
+          console.warn("Could not mark hadith as memorized:", err?.message);
+          setMemorizedStatus("error");
+        });
+    }
+  }, [isOpen, summary, hadithId]);
+
+  // Reset on each new session (new hadithId or new summary)
+  useEffect(() => {
+    memorizedCalledRef.current = false;
+    setMemorizedStatus(null);
+    setShowCongrats(false);
+  }, [hadithId, summary]);
+
+  // Auto-dismiss congratulation banner after 4 seconds
+  useEffect(() => {
+    if (!showCongrats) return;
+    const timer = setTimeout(() => setShowCongrats(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showCongrats]);
 
   const handleClose = useCallback(() => {
     if (isClosing) return;
@@ -247,6 +296,23 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       onClick={handleClose}
       dir="rtl"
     >
+      {/* Congratulation Toast Banner */}
+      {showCongrats && (
+        <div
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-60 animate-cardIn pointer-events-none"
+          style={{ minWidth: "18rem", maxWidth: "90vw" }}
+        >
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-emerald-400/40">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <FiAward className="text-white text-xl" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="font-1 font-bold text-base leading-tight">أحسنت! 🎉</span>
+              <span className="font-2 text-sm text-white/90 leading-relaxed">لقد قمت بحفظ الحديث بنجاح</span>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className={`bg-base-100 rounded-3xl shadow-2xl border border-base-300 w-full max-w-sm overflow-hidden ${
           isClosing ? "animate-modalOut" : "animate-modalIn"
@@ -426,6 +492,27 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
               </span>
             )}
           </div>
+
+          {/* Memorized Status Indicator */}
+          {memorizedStatus === "pending" && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="loading loading-spinner loading-xs text-emerald-500" />
+              <span className="font-2 text-xs text-base-content/60">جاري تحديث حالة الحفظ...</span>
+            </div>
+          )}
+          {memorizedStatus === "success" && (
+            <div className="flex items-center justify-center gap-2 pt-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl px-4 py-2.5 border border-emerald-200/60 dark:border-emerald-900/40">
+              <FiStar className="text-emerald-500 text-sm shrink-0" />
+              <span className="font-2 text-xs text-emerald-700 dark:text-emerald-400 font-bold">
+                تم تحديث الحديث إلى "تم الحفظ" ✓
+              </span>
+            </div>
+          )}
+          {memorizedStatus === "error" && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="font-2 text-xs text-red-500/70">تعذر تحديث حالة الحفظ، تحقق من الاتصال</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

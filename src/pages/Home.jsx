@@ -8,6 +8,7 @@ import Progress from "../components/home/Progress";
 import Tasks from "../components/home/Tasks";
 import { useAuth } from "../context/AuthContext";
 import { dashboardService } from "../services/dashboardService";
+import { hadithsService } from "../services/hadithsService";
 import { activityService, computeCurrentStreak } from "../services/activityService";
 
 function Home() {
@@ -17,6 +18,7 @@ function Home() {
   const [summaryData, setSummaryData] = useState(null);
   const [isLoading, setIsLoading]     = useState(false);
   const [calendarDays, setCalendarDays] = useState([]);
+  const [realMemorizedCount, setRealMemorizedCount] = useState(null);
 
   useEffect(() => {
     async function loadDashboardSummary() {
@@ -46,6 +48,30 @@ function Home() {
 
     loadDashboardSummary();
   }, [isAuthenticated, isGuest]);
+
+  // Fetch real status-2 (fully memorized) hadith count once the last book is known
+  useEffect(() => {
+    if (isGuest || !summaryData) return;
+    // Derive bookId from summaryData inline to avoid rules-of-hooks violation
+    const unwrap = (d) =>
+      d?.data && typeof d.data === "object" && !Array.isArray(d.data) ? d.data : d;
+    const sd = unwrap(summaryData);
+    const book = sd?.lastOpenedBook || sd?.lastBook || sd?.book ||
+      summaryData?.lastOpenedBook || summaryData?.lastBook || null;
+    const bookId = book?.id ?? book?.bookId ?? sd?.currentBookId ?? sd?.bookId ?? null;
+    if (!bookId) return;
+    hadithsService.getHadithProgress(bookId)
+      .then((progressList) => {
+        if (!Array.isArray(progressList)) return;
+        const count = progressList.filter(
+          (p) => (p.status ?? p.Status ?? p.progressStatus ?? p.ProgressStatus) === 2
+        ).length;
+        setRealMemorizedCount(count);
+      })
+      .catch((err) => {
+        console.warn("Could not fetch hadith progress list:", err.message);
+      });
+  }, [summaryData, isGuest]);
 
   const handleLoginRedirect = () => {
     logout();
@@ -133,7 +159,6 @@ function Home() {
     getProp(lastOpenedBook, "id", "bookId") ??
     getProp(actualData, "currentBookId", "bookId", "id") ??
     null;
-
   const resumeHadithId =
     getProp(lastOpenedBook, "resumeHadithId", "lastHadithId", "lastOpenedHadithId", "hadithId") ??
     getProp(actualData, "resumeHadithId", "lastHadithId", "lastOpenedHadithId") ??
@@ -226,7 +251,7 @@ function Home() {
           <>
             {isLoading ? (
               <div className="space-y-6 mt-8 animate-pulse">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
                   <div className="h-24 bg-base-100 rounded-2xl" />
                   <div className="h-24 bg-base-100 rounded-2xl" />
                   <div className="h-24 bg-base-100 rounded-2xl" />
@@ -238,7 +263,7 @@ function Home() {
               <>
                 <Stat
                   days={daysStreak}
-                  hadith={memorizedHadithCount}
+                  hadith={realMemorizedCount ?? memorizedHadithCount}
                   inProgressHadithCount={inProgressHadithCount}
                   accuracy={accuracyRate}
                 />
@@ -247,7 +272,7 @@ function Home() {
                   progress={progressPercentage}
                   bookId={currentBookId}
                   inProgressHadithCount={inProgressHadithCount}
-                  memorizedHadithCount={memorizedHadithCount}
+                  memorizedHadithCount={realMemorizedCount ?? memorizedHadithCount}
                   totalHadiths={totalHadiths}
                   resumeHadithId={resumeHadithId}
                   resumeSectionId={resumeSectionId}

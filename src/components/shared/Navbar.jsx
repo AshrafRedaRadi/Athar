@@ -31,10 +31,12 @@ export default function Navbar({
   const userName = user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
 
-  const handleMobileAvatarClick = () => {
+  const handleAvatarClick = () => {
     if (isGuest) {
       logout();
       navigate('/login');
+    } else {
+      navigate('/settings');
     }
   };
 
@@ -109,17 +111,18 @@ export default function Navbar({
 
           {/* Desktop Profile avatar (lg+) */}
           <div
-            className="shrink-0 hidden lg:block cursor-pointer"
-            title={`أهلاً بك، ${userName}`}
+            onClick={handleAvatarClick}
+            className="shrink-0 hidden lg:block cursor-pointer transition-transform hover:scale-105"
+            title={isGuest ? "تسجيل الدخول" : "الإعدادات"}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>
 
           {/* Mobile / Tablet Profile avatar (<lg) */}
           <div
-            onClick={handleMobileAvatarClick}
+            onClick={handleAvatarClick}
             className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
-            title={isGuest ? "تسجيل الدخول" : `أهلاً بك، ${userName}`}
+            title={isGuest ? "تسجيل الدخول" : "الإعدادات"}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>

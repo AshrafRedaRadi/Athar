@@ -24,6 +24,8 @@ import UsersManagement from './pages/admin/UsersManagement';
 import AiAssistantManagement from './pages/admin/AiAssistantManagement';
 import Error_page from './pages/Error_page';
 
+import SettingPage from './pages/SettingPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -51,6 +53,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/plan" element={<Plan />} />
+            <Route path="/settings" element={<SettingPage />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/:bookId/sections" element={<ListSection />} />
             <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />

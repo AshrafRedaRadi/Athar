@@ -339,6 +339,7 @@ export default function Study() {
         onClose={() => setIsResultsOpen(false)}
         summary={completedSummary}
         extras={extras}
+        hadithId={currentHadith?.id}
       />
     </div>
   );
