@@ -191,7 +191,7 @@ export default function UsersManagement() {
 
       {/* ── Page Header ── */}
       <header className="mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
-        <h1 className="text-3xl font-bold font-1 text-base-content flex items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content flex items-center gap-3">
           <span>إدارة المستخدمين</span>
         </h1>
         <p className="text-xs sm:text-sm text-base-content/60 mt-1">

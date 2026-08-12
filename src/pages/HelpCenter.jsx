@@ -168,7 +168,7 @@ export default function HelpCenter() {
               >
                 <HiChevronRight className="text-xl" />
               </button>
-              <h1 className="text-3xl font-bold font-1 text-base-content">
+              <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
                 مركز المساعدة
               </h1>
             </div>

@@ -282,7 +282,7 @@ export default function ListHadith() {
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <IoListOutline className="text-3xl text-cyan-600" />
-            <h1 className="font-1 font-bold text-3xl text-base-content">
+            <h1 className="font-1 font-bold text-2xl sm:text-3xl text-base-content">
               فهرس {bookTitle}
             </h1>
           </div>

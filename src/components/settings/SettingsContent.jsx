@@ -88,7 +88,7 @@ function SettingsContent() {
           >
             <HiChevronRight className="text-xl" />
           </button>
-          <h1 className="text-3xl font-bold font-1 text-base-content">
+          <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
             إعدادات الملف الشخصي
           </h1>
         </div>

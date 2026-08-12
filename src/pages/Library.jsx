@@ -115,7 +115,7 @@ export default function Library() {
         <header className="text-center mb-8 mt-4 sm:mt-6">
           <div className="flex items-center justify-center gap-3 mb-2">
             <IoBookOutline className="text-3xl text-cyan-700 dark:text-cyan-400" />
-            <h1 className="font-1 font-bold text-3xl text-base-content">
+            <h1 className="font-1 font-bold text-2xl sm:text-3xl text-base-content">
               مكتبة المتون
             </h1>
           </div>

@@ -107,7 +107,7 @@ function ControlPanel() {
 
       {/* Top Bar / Header below Navbar */}
       <header className="flex items-center justify-between mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
-        <h1 className="text-3xl font-bold font-1 text-base-content">
+        <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
           نظرة عامة
         </h1>
 

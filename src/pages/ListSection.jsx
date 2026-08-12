@@ -96,7 +96,7 @@ export default function ListSection() {
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <IoLayersOutline className="text-3xl text-cyan-600" />
-            <h1 className="font-1 font-bold text-3xl text-base-content">أقسام الكتاب</h1>
+            <h1 className="font-1 font-bold text-2xl sm:text-3xl text-base-content">أقسام الكتاب</h1>
           </div>
           {bookTitle && (
             <p className="font-2 text-base-content/60 text-sm">{bookTitle}</p>
