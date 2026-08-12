@@ -4,7 +4,7 @@ import { FaFire, FaPencilAlt } from "react-icons/fa";
 
 export default function Stat(props) {
   return (
-    <div dir="rtl" className="mt-4 sm:mt-8 md:mt-16">
+    <div dir="rtl" className="mt-4 sm:mt-6">
       <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
 
         {/* Days */}
