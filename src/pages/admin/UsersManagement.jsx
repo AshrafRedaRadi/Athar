@@ -169,7 +169,8 @@ export default function UsersManagement() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-base-100 text-base-content px-3 sm:px-8 py-8 pt-3 font-2 relative pb-32 lg:pb-16">
+    <div dir="rtl" className="min-h-screen bg-base-200 text-base-content font-2 relative">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
       {/* Top Navbar with Admin Dock for Mobile/Tablet */}
       <Navbar
         drawerId="admin-sidebar-drawer"
@@ -428,6 +429,7 @@ export default function UsersManagement() {
         isSaving={isSubmitting}
         serverError={formError}
       />
+      </main>
     </div>
   );
 }

@@ -194,14 +194,14 @@ function Achievements() {
   }).length;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-base-100 text-base-content p-4 md:p-8 font-2 pb-24 lg:pb-8">
-      {/* Top Navbar */}
-      <Navbar activePage="achievements" />
+    <div dir="rtl" className="min-h-screen bg-base-200 text-base-content font-2">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
+        {/* Top Navbar */}
+        <Navbar activePage="achievements" />
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto space-y-8 mt-4">
         {/* Page Header */}
-        <header className="text-start space-y-1">
+        <div className="space-y-8 mt-4">
+          <header className="text-start space-y-1">
           <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
             إنجازاتك
           </h1>
@@ -304,6 +304,7 @@ function Achievements() {
             </div>
           )}
         </section>
+        </div>
       </main>
     </div>
   );

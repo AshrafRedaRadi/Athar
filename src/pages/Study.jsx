@@ -313,7 +313,7 @@ export default function Study() {
       <div className="flex-1 flex flex-col h-full relative">
 
         {/* Scrollable Page Content */}
-        <div className="flex-1 overflow-y-auto pb-20 lg:pb-12 px-4 sm:px-8 py-6" dir="rtl">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8 w-full" dir="rtl">
           <Navbar activePage="library" />
 
           <div className="max-w-4xl mx-auto min-h-full flex flex-col">

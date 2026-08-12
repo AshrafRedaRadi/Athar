@@ -51,9 +51,9 @@ export default function Progress(props) {
       : calculatedPercent;
 
   return (
-    <div dir="rtl" className="mt-6">
-      <div className="bg-base-200 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6">
-        <p className="text-sm text-cyan-700 font-bold">
+    <div dir="rtl" className="mt-5 sm:mt-6">
+      <div className="bg-base-100 dark:bg-slate-900 rounded-2xl border border-base-300/70 shadow-[0_-6px_20px_rgba(0,0,0,0.07),0_6px_24px_rgba(0,0,0,0.08)] p-5 sm:p-7">
+        <p className="text-xs sm:text-sm text-cyan-700 dark:text-cyan-400 font-bold">
           أكمل من حيث توقفت
         </p>
 
@@ -61,7 +61,7 @@ export default function Progress(props) {
           {props.title || "لا يوجد كتاب مفتوح حالياً"}
         </h2>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-4">
           {/* Row 1: Primary Progress Bar (التقدم) + "متابعة الحفظ" Button */}
           <div className="flex items-end gap-3 sm:gap-6">
             <div className="flex-1 min-w-0">
@@ -79,7 +79,7 @@ export default function Progress(props) {
             <button
               onClick={handleContinue}
               disabled={isNavigating}
-              className="btn bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl px-4 sm:px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 font-2 text-xs sm:text-sm h-10 min-h-0"
+              className="h-10 w-[135px] sm:w-[150px] bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl shrink-0 flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 font-2 font-medium text-xs sm:text-sm transition-all"
             >
               {isNavigating ? (
                 <span className="loading loading-spinner loading-xs"></span>
@@ -108,7 +108,7 @@ export default function Progress(props) {
 
             <button
               onClick={handleResumeHadith}
-              className="btn btn-outline border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white dark:border-amber-500 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white rounded-xl px-4 sm:px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs font-2 text-xs sm:text-sm h-10 min-h-0"
+              className="h-10 w-[135px] sm:w-[150px] bg-transparent border border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white dark:border-amber-500 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white rounded-xl shrink-0 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs font-2 font-medium text-xs sm:text-sm"
             >
               <IoBookmarkOutline className="text-base sm:text-lg" />
               <span>آخر حديث</span>

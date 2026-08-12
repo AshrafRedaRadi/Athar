@@ -179,7 +179,7 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8 max-w-7xl mx-auto" dir="rtl">
+      <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
         {/* Unified Navbar */}
         <Navbar activePage="home" />
 
@@ -282,9 +282,6 @@ function Home() {
             )}
           </>
         )}
-
-        <br className="block md:hidden" />
-        <br className="block md:hidden" />
       </main>
     </div>
   );

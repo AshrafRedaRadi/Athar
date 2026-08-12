@@ -5,7 +5,7 @@ import { FaPlay } from "react-icons/fa";
 
 export default function DashboardTasks() {
   return (
-    <div dir="rtl" className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+    <div dir="rtl" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-5 sm:mt-6">
 
       {/* مراجعات مستحقة */}
       <div className="bg-base-100 rounded-2xl border border-base-200 shadow-sm p-6">
@@ -67,24 +67,24 @@ export default function DashboardTasks() {
         {/* Tasks list */}
         <div className="space-y-[14px]">
 
-          <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-base-200 rounded-xl p-2.5 sm:p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* <input type="checkbox" className="checkbox rounded-md" /> */}
-              <span>حفظ حديث جديد</span>
+              <span className="text-sm font-medium">حفظ حديث جديد</span>
             </div>
 
-            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs hover:bg-cyan-800">
+            <button className="w-7 h-7 rounded-full bg-cyan-700 text-white flex items-center justify-center text-[10px] hover:bg-cyan-800 transition-all">
               <FaPlay />
             </button>
           </div>
 
-          <div className="bg-base-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-base-200 rounded-xl p-2.5 sm:p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* <input type="checkbox" className="checkbox rounded-md" /> */}
-              <span>مراجعة 5 أحاديث</span>
+              <span className="text-sm font-medium">مراجعة 5 أحاديث</span>
             </div>
 
-            <button className="w-8 h-8 rounded-full bg-cyan-700 text-white flex items-center justify-center text-xs hover:bg-cyan-800">
+            <button className="w-7 h-7 rounded-full bg-cyan-700 text-white flex items-center justify-center text-[10px] hover:bg-cyan-800 transition-all">
               <FaPlay />
             </button>
           </div>
