@@ -12,7 +12,7 @@ import { hadithsService } from "../../../services/hadithsService";
  * - Smooth entrance and exit animations (animate-modalIn / animate-modalOut)
  * - Auto-marks hadith as memorized (status 2) when accuracy >= 80%
  */
-export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [], hadithId = null }) {
+export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [], hadithId = null, wasHidden = false }) {
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [memorizedStatus, setMemorizedStatus] = useState(null); // null | "pending" | "success" | "error"
@@ -33,11 +33,11 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
     }
   }, [isOpen]);
 
-  // Auto-mark as memorized (status 2) when accuracy >= 80%
+  // Auto-mark as memorized (status 2) when accuracy >= 80%, coverage >= 90%, and text was hidden
   useEffect(() => {
     if (!isOpen || !summary || !hadithId || memorizedCalledRef.current) return;
 
-    // Compute accuracy inline to avoid dependency on variables declared later
+    // Compute accuracy and coverage inline
     const extractVal = (obj, ...keys) => {
       for (const key of keys) {
         if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
@@ -46,11 +46,18 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       }
       return undefined;
     };
+
     let rawAcc = extractVal(summary, "accuracy", "Accuracy", "accuracyPercentage", "AccuracyPercentage", "accuracyPercent", "AccuracyPercent", "score", "Score") ?? 0;
     if (typeof rawAcc === "number" && rawAcc > 0 && rawAcc <= 1) rawAcc = rawAcc * 100;
     const accuracyValue = Number(rawAcc) || 0;
 
-    if (accuracyValue >= 80) {
+    let rawCov = extractVal(summary, "coverage", "Coverage", "coveragePercentage", "CoveragePercentage", "coveragePercent", "CoveragePercent") ?? 0;
+    if (typeof rawCov === "number" && rawCov > 0 && rawCov <= 1) rawCov = rawCov * 100;
+    const coverageValue = Number(rawCov) || 0;
+
+    const meetsConditions = wasHidden && accuracyValue >= 80 && coverageValue >= 90;
+
+    if (meetsConditions) {
       memorizedCalledRef.current = true;
       setMemorizedStatus("pending");
       setShowCongrats(true);
@@ -61,7 +68,7 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
           setMemorizedStatus("error");
         });
     }
-  }, [isOpen, summary, hadithId]);
+  }, [isOpen, summary, hadithId, wasHidden]);
 
   // Reset on each new session (new hadithId or new summary)
   useEffect(() => {

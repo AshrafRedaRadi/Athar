@@ -38,6 +38,7 @@ export default function Study() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const audioControlRef = useRef(null);
+  const wasHiddenWhenStartedRef = useRef(false); // tracks if text was hidden when recitation began
 
   const handleAudioToggle = () => {
     if (audioControlRef.current && audioControlRef.current.togglePlay) {
@@ -152,6 +153,7 @@ export default function Study() {
     if (isListening) {
       stopListening();
     } else {
+      wasHiddenWhenStartedRef.current = isHidden; // capture hide state at recitation start
       startListening(currentHadith?.id);
     }
   };
@@ -340,6 +342,7 @@ export default function Study() {
         summary={completedSummary}
         extras={extras}
         hadithId={currentHadith?.id}
+        wasHidden={wasHiddenWhenStartedRef.current}
       />
     </div>
   );
