@@ -4,8 +4,7 @@ import SelectBookModal from './SelectBookModal';
 
 const SelectedTrack = (props) => {
   const defaultTracks = props.tracks || [
-    { id: 1, title: 'الأربعون النووية', count: 42, countUnit: 'حديثاً', level: 'مستوى مبتدئ' },
-    { id: 2, title: 'رياض الصالحين', count: 1896, countUnit: 'حديثاً', level: 'مستوى متقدم' },
+    { id: 1, title: 'الأربعون النووية', count: 42, countUnit: 'حديثاً', level: 'مستوى مبتدئ' }
   ];
 
   const [tracksList, setTracksList] = useState(defaultTracks);
