@@ -130,23 +130,23 @@ export default function Signup() {
           </button>
         </div>
 
-        {(googleError || errorMsg) && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
-            {googleError || errorMsg}
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
-            {successMsg}
-          </div>
-        )}
-
         {/* ── Form content container (No scrollbar, compact layout) ── */}
-        <div className="h-auto md:h-full md:flex-1 flex flex-col justify-start overflow-y-visible md:overflow-y-auto py-1">
-          <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 shrink-0 text-center">
+        <div className="overflow-y-visible md:overflow-y-auto pr-0 md:pr-[3px] h-auto md:h-full md:flex-1 flex flex-col justify-start max-h-none md:max-h-[calc(100%-80px)]">
+          <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 text-center">
             إنشاء حساب
           </h2>
+
+          {(googleError || errorMsg) && (
+            <div className="bg-red-500/20 border border-red-500/50 text-red-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
+              {googleError || errorMsg}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-[0.75rem] p-2 rounded-lg mb-2 text-center font-2">
+              {successMsg}
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════ SIGNUP FORM ═══════════════════════════════════════ */}
           <form onSubmit={handleSubmit} className="h-auto md:h-full flex-1 flex flex-col justify-start gap-1.5 animate-[fadeIn_0.3s_ease]">
