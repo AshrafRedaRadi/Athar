@@ -39,6 +39,7 @@ export default function Study() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
+  const [progressMap, setProgressMap] = useState({});
   const audioControlRef = useRef(null);
   const wasHiddenWhenStartedRef = useRef(false); // tracks if text was hidden when recitation began
   const memorizeCalledRef = useRef(false); // prevents duplicate API calls per session
@@ -58,13 +59,26 @@ export default function Study() {
       }
       try {
         setIsLoading(true);
-        const [hadithsData, booksData] = await Promise.all([
+        const [hadithsData, booksData, progressData] = await Promise.all([
           hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
+          isGuest ? Promise.resolve([]) : hadithsService.getHadithProgress(bookId).catch(() => []),
         ]);
 
         const targetBook = booksData.find((b) => String(b.id) === String(bookId));
         const bookName = targetBook?.title || "";
+
+        const pMap = {};
+        if (Array.isArray(progressData)) {
+          progressData.forEach((item) => {
+            const hId = item.hadithId ?? item.id;
+            const st = item.status ?? item.progressStatus ?? item.Status ?? 0;
+            if (hId != null) {
+              pMap[hId] = Number(st);
+            }
+          });
+        }
+        setProgressMap(pMap);
 
         if (hadithsData && hadithsData.length > 0) {
           const formatted = hadithsData.map((h) => ({
@@ -94,7 +108,7 @@ export default function Study() {
       }
     }
     loadHadiths();
-  }, [bookId]);
+  }, [bookId, isGuest]);
 
   const currentHadith = hadithsList[currentHadithIndex] || null;
 
@@ -108,9 +122,15 @@ export default function Study() {
       hadithsService.updateLastOpenedHadith(currentHadith.id).catch((err) => {
         console.warn("Auto update last opened hadith error:", err.message);
       });
-      hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
-        console.warn("Auto update hadith progress error:", err.message);
-      });
+
+      // Only update to status 1 ("جاري الحفظ") if current status is NOT already 2 ("تم الحفظ")
+      const currentStatus = progressMap[currentHadith.id];
+      if (currentStatus !== 2) {
+        hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
+          console.warn("Auto update hadith progress error:", err.message);
+        });
+        setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 1 }));
+      }
     }
 
     if (currentHadith?.id) {
@@ -173,6 +193,7 @@ export default function Study() {
     if (meetsConditions && currentHadith?.id) {
       memorizeCalledRef.current = true;
       setShowCongrats(true);
+      setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 2 }));
       hadithsService.updateHadithProgress(currentHadith.id, 2).catch((err) => {
         console.warn("Could not mark hadith as memorized:", err?.message);
       });
