@@ -202,7 +202,7 @@ function Achievements() {
         {/* Page Header */}
         <div className="space-y-8 mt-4 sm:mt-6">
           <header className="text-start space-y-1">
-          <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
+          <h1 className="text-3xl font-bold font-1 text-base-content">
             إنجازاتك
           </h1>
           <p className="text-sm md:text-base text-base-content/60 font-normal">

@@ -162,12 +162,20 @@ export function AuthProvider({ children }) {
   };
 
 
-    const logout = () => {
+  const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiration');
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+  };
+
+  const updateUser = (newData) => {
+    setUser((prev) => {
+      const updated = formatUserData({ ...prev, ...newData });
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const value = {
@@ -182,6 +190,7 @@ export function AuthProvider({ children }) {
     loginGoogle,
     loginGuest,
     logout,
+    updateUser,
   };
 
   return (

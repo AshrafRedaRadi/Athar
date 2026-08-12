@@ -348,7 +348,7 @@ export default function ContentManagement() {
 
       {/* Page Title & Breadcrumb below Navbar */}
       <header className="mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
-        <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content">
+        <h1 className="text-3xl font-bold font-1 text-base-content">
           إدارة المحتوى
         </h1>
         <p className="text-xs md:text-sm text-base-content/60 mt-1 font-2">
