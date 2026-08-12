@@ -177,15 +177,15 @@ export default function Login() {
               to="/signup"
               className="text-white font-bold no-underline hover:underline font-2"
             >
-              سجل الآن
+               انشاء حساب 
             </Link>
+          </div>
 
           <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-3 pb-1">
             <p className="text-white/50 leading-tight">
               هل تواجه مشكلة؟ تواصل معنا عبر{' '}
               <span className="text-white/70">Athar@gmail.com</span>
             </p>
-          </div>
           </div>
         </div>
       </AuthCard>

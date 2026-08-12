@@ -39,7 +39,7 @@ export default function AuthLayout({ children }) {
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >
-            <path d="M70,0 C95,30 55,70 100,100 L100,100 L100,0 Z" fill="#337FA1" />
+            <path d="M88,0 C92,15 92,35 88,50 C84,65 84,85 100,100 L100,100 L100,0 Z" fill="#337FA1" />
           </svg>
         </div>
 
