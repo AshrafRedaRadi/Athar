@@ -24,6 +24,7 @@ import GuestLoginModal from "../components/auth/GuestLoginModal";
 // ─────────────────────────────────────────────
 export default function Study() {
   const { bookId, sectionId, hadithId } = useParams();
+  const { isGuest } = useAuth();
 
   // sectionId "0" means the book has no sections → omit &sectionId from API call
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
@@ -112,7 +113,6 @@ export default function Study() {
 
   const currentHadith = hadithsList[currentHadithIndex] || null;
 
-  const { isGuest } = useAuth();
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [backendExplanations, setBackendExplanations] = useState(null);
 
