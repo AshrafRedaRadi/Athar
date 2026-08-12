@@ -342,54 +342,10 @@ export default function UsersManagement() {
                 </tbody>
               </table>
             </div>
-
-            {/* Summary & Functional Pagination Footer */}
-            <div className="px-6 py-3.5 bg-base-200/30 border-t border-base-200 flex flex-col sm:flex-row items-center justify-between gap-3 font-2 text-xs text-base-content/70">
-              <span className="font-bold">
-                عرض {filteredUsers.length > 0 ? startIndex + 1 : 0} إلى {endIndex} من أصل {filteredUsers.length} مستخدم
-              </span>
-
-              {totalPages > 1 && (
-                <div className="join">
-                  <button
-                    type="button"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    className="join-item btn btn-xs btn-outline rounded-r-lg"
-                  >
-                    «
-                  </button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
-                    <button
-                      key={pg}
-                      type="button"
-                      onClick={() => setCurrentPage(pg)}
-                      className={`join-item btn btn-xs ${
-                        currentPage === pg
-                          ? "bg-cyan-700 text-white border-transparent"
-                          : "btn-outline text-base-content/80"
-                      }`}
-                    >
-                      {pg}
-                    </button>
-                  ))}
-
-                  <button
-                    type="button"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    className="join-item btn btn-xs btn-outline rounded-l-lg"
-                  >
-                    »
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* 2. Mobile Cards Grid View (shown on small screens) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-4 mb-4">
             {paginatedUsers.map((u) => (
               <UserCard
                 key={u.id}
@@ -399,6 +355,50 @@ export default function UsersManagement() {
                 onSendPasswordReset={handleSendPasswordReset}
               />
             ))}
+          </div>
+
+          {/* 3. Responsive Pagination & Count Footer (Visible on Mobile & Desktop) */}
+          <div className="bg-base-100 border border-base-200 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 font-2 text-xs sm:text-sm text-base-content/70 mb-10 sm:mb-6">
+            <span className="font-bold text-center sm:text-right">
+              عرض {filteredUsers.length > 0 ? startIndex + 1 : 0} إلى {endIndex} من أصل {filteredUsers.length} مستخدم
+            </span>
+
+            {totalPages > 1 && (
+              <div className="join flex items-center justify-center">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="join-item btn btn-xs sm:btn-sm btn-outline rounded-r-lg"
+                >
+                  «
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                  <button
+                    key={pg}
+                    type="button"
+                    onClick={() => setCurrentPage(pg)}
+                    className={`join-item btn btn-xs sm:btn-sm ${
+                      currentPage === pg
+                        ? "bg-cyan-700 text-white border-transparent font-bold"
+                        : "btn-outline text-base-content/80"
+                    }`}
+                  >
+                    {pg}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="join-item btn btn-xs sm:btn-sm btn-outline rounded-l-lg"
+                >
+                  »
+                </button>
+              </div>
+            )}
           </div>
         </>
       ) : (
