@@ -27,10 +27,9 @@ export default function RecitationWord({
   }
 
   // Visibility logic:
-  // - During recitation: spoken words are always visible (override isHidden)
-  // - After recitation: isHidden controls everything (button works normally)
-  // - Active word or step-by-step revealed word is always visible
-  const isVisible = !isHidden || isRevealed || isActive || (isReciting && isRecited);
+  // - Evaluated words (Correct / Incorrect) or active / revealed words stay visible
+  const isEvaluated = state !== "Pending";
+  const isVisible = !isHidden || isRevealed || isActive || (isReciting && isRecited) || isEvaluated;
 
   // Base: always include border-b-2 for consistent layout
   let className = "inline-block mx-0.5 border-b-2 transition-colors duration-300";

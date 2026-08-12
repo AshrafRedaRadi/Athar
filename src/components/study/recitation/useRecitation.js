@@ -45,6 +45,7 @@ export function useRecitation() {
   const highlightQueueRef = useRef([]);
   const highlightTimerRef = useRef(null);
   const lastHighlightedIdxRef = useRef(-1);
+  const lastUpdateNumberRef = useRef(-1);
 
   /**
    * Normalize server word state to a consistent string format
@@ -106,9 +107,20 @@ export function useRecitation() {
 
   /**
    * Handle real-time RecitationUpdated event from SignalR Hub.
+   * Process RecitationUpdated messages in updateNumber order and apply
+   * complete words snapshot received from server without calculating word positions in frontend.
    */
   const handleRecitationUpdate = useCallback((snapshot) => {
     if (!snapshot) return;
+
+    // Enforce message processing in strict updateNumber order
+    const updateNum = snapshot.updateNumber ?? snapshot.UpdateNumber ?? null;
+    if (typeof updateNum === "number") {
+      if (updateNum <= lastUpdateNumberRef.current) {
+        return;
+      }
+      lastUpdateNumberRef.current = updateNum;
+    }
 
     const transcriptVal = snapshot.transcript || snapshot.Transcript || "";
     if (transcriptVal) {
@@ -167,14 +179,14 @@ export function useRecitation() {
         const wordIndex = typeof w.index === "number" ? w.index : typeof w.Index === "number" ? w.Index : idx;
         const stateVal = w.state !== undefined ? w.state : w.State;
         const stateStr = mapWordState(stateVal);
+        const isTurnFinal = Boolean(w.isTurnFinal ?? w.IsTurnFinal ?? false);
 
-        const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
         const wordText = w.displayText || w.DisplayText || w.word || w.Word || w.text || w.Text || "";
         const recognized = w.recognizedText || w.RecognizedText || null;
 
-        if (stateStr === "Pending" && !isBeforeStart) {
+        if (stateStr === "Pending") {
           allCompleted = false;
-        } else if (!isBeforeStart) {
+        } else {
           maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex) && wordIndex > lastHighlightedIdxRef.current) {
             highlightQueueRef.current.push(wordIndex);
@@ -182,7 +194,7 @@ export function useRecitation() {
         }
 
         const isAct = Boolean(w.isCurrentActive || w.IsCurrentActive || w.isCurrent || w.IsCurrent || w.isActive || w.IsActive);
-        if (isAct && !isBeforeStart) {
+        if (isAct) {
           maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex)) {
             highlightQueueRef.current.push(wordIndex);
@@ -191,8 +203,9 @@ export function useRecitation() {
 
         formattedWords[wordIndex] = {
           word: wordText,
-          state: isBeforeStart ? "Revealed" : stateStr,
-          isCurrentActive: isAct && !isBeforeStart,
+          state: stateStr,
+          isTurnFinal: isTurnFinal,
+          isCurrentActive: isAct,
           recognizedText: recognized,
           index: wordIndex,
         };
@@ -384,6 +397,7 @@ export function useRecitation() {
       setRecitationStopped(false);
       setActiveWordIndex(-1);
       lastHighlightedIdxRef.current = -1;
+      lastUpdateNumberRef.current = -1;
       highlightQueueRef.current = [];
       if (highlightTimerRef.current) {
         clearTimeout(highlightTimerRef.current);
@@ -626,6 +640,7 @@ export function useRecitation() {
     setRecitationStopped(false);
     setActiveWordIndex(-1);
     lastHighlightedIdxRef.current = -1;
+    lastUpdateNumberRef.current = -1;
     highlightQueueRef.current = [];
     if (highlightTimerRef.current) {
       clearTimeout(highlightTimerRef.current);
