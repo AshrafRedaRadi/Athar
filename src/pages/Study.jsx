@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import { FiBarChart2 } from "react-icons/fi";
+import { FiBarChart2, FiAward } from "react-icons/fi";
 import Navbar from "../components/shared/Navbar";
 import StudyToolbar from "../components/study/StudyToolbar";
 import HadithCard from "../components/study/HadithCard";
@@ -37,8 +37,10 @@ export default function Study() {
   const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
   const audioControlRef = useRef(null);
   const wasHiddenWhenStartedRef = useRef(false); // tracks if text was hidden when recitation began
+  const memorizeCalledRef = useRef(false); // prevents duplicate API calls per session
 
   const handleAudioToggle = () => {
     if (audioControlRef.current && audioControlRef.current.togglePlay) {
@@ -144,6 +146,51 @@ export default function Study() {
     }
   }, [completedSummary, recitationStopped, spokenWords.length]);
 
+  // Check conditions and show congratulations toast when recitation finishes
+  useEffect(() => {
+    if (!completedSummary || memorizeCalledRef.current || isGuest) return;
+
+    // Extract accuracy and coverage from summary
+    const extractVal = (obj, ...keys) => {
+      for (const key of keys) {
+        if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
+        if (obj?.metrics && obj.metrics[key] !== undefined && obj.metrics[key] !== null) return obj.metrics[key];
+        if (obj?.Metrics && obj.Metrics[key] !== undefined && obj.Metrics[key] !== null) return obj.Metrics[key];
+      }
+      return undefined;
+    };
+    let rawAcc = extractVal(completedSummary, "accuracy", "Accuracy", "accuracyPercentage", "AccuracyPercentage", "accuracyPercent", "AccuracyPercent", "score", "Score") ?? 0;
+    if (typeof rawAcc === "number" && rawAcc > 0 && rawAcc <= 1) rawAcc = rawAcc * 100;
+    const accuracyValue = Number(rawAcc) || 0;
+
+    let rawCov = extractVal(completedSummary, "coverage", "Coverage", "coveragePercentage", "CoveragePercentage", "coveragePercent", "CoveragePercent") ?? 0;
+    if (typeof rawCov === "number" && rawCov > 0 && rawCov <= 1) rawCov = rawCov * 100;
+    const coverageValue = Number(rawCov) || 0;
+
+    const meetsConditions = wasHiddenWhenStartedRef.current && accuracyValue >= 80 && coverageValue >= 90;
+
+    if (meetsConditions && currentHadith?.id) {
+      memorizeCalledRef.current = true;
+      setShowCongrats(true);
+      hadithsService.updateHadithProgress(currentHadith.id, 2).catch((err) => {
+        console.warn("Could not mark hadith as memorized:", err?.message);
+      });
+    }
+  }, [completedSummary, isGuest, currentHadith?.id]);
+
+  // Auto-dismiss congratulations toast after 5 seconds
+  useEffect(() => {
+    if (!showCongrats) return;
+    const timer = setTimeout(() => setShowCongrats(false), 5000);
+    return () => clearTimeout(timer);
+  }, [showCongrats]);
+
+  // Reset memorize guard when navigating to a new hadith
+  useEffect(() => {
+    memorizeCalledRef.current = false;
+    setShowCongrats(false);
+  }, [currentHadith?.id]);
+
   // Toggle recording
   const handleRecordToggle = () => {
     if (isGuest) {
@@ -175,6 +222,25 @@ export default function Study() {
 
   return (
     <div className="h-screen bg-base-200 overflow-hidden flex">
+
+      {/* ── Congratulations Toast Banner ── */}
+      {showCongrats && (
+        <div
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-cardIn pointer-events-none"
+          style={{ minWidth: "20rem", maxWidth: "90vw" }}
+          dir="rtl"
+        >
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-emerald-400/40">
+            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <FiAward className="text-white text-2xl" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="font-1 font-bold text-base leading-tight">أحسنت! 🎉</span>
+              <span className="font-2 text-sm text-white/90 leading-relaxed">لقد قمت بحفظ الحديث بنجاح</span>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col h-full relative">
 
