@@ -40,6 +40,7 @@ export function useRecitation() {
   const silenceTimerRef = useRef(null);
   const extrasTimerRef = useRef(null);
   const completionTimerRef = useRef(null);
+  const stopListeningRef = useRef(null);
 
   // Word-by-word active blue highlight animation queue refs
   const highlightQueueRef = useRef([]);
@@ -82,15 +83,15 @@ export function useRecitation() {
 
   /**
    * Reset silence timer for automatic mic shutdown
-   * @param {number} durationMs - timeout duration in milliseconds
+   * @param {number} durationMs - timeout duration in milliseconds (default 5000ms = 5s)
    */
-  const resetSilenceTimer = useCallback((durationMs = 8000) => {
+  const resetSilenceTimer = useCallback((durationMs = 5000) => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
     }
     silenceTimerRef.current = setTimeout(() => {
       console.log(`Recitation auto-stopped after ${durationMs / 1000}s silence.`);
-      stopListening();
+      stopListeningRef.current?.();
     }, durationMs);
   }, []);
 
@@ -103,6 +104,48 @@ export function useRecitation() {
       setExtras([]);
       extrasTimerRef.current = null;
     }, 5000);
+  }, []);
+
+  /**
+   * Clean up Web Audio API, Microphone tracks, and active timers
+   */
+  const cleanupAudioResources = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (completionTimerRef.current) {
+      clearTimeout(completionTimerRef.current);
+      completionTimerRef.current = null;
+    }
+    if (activeWordTimeoutRef.current) {
+      clearTimeout(activeWordTimeoutRef.current);
+      activeWordTimeoutRef.current = null;
+    }
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = null;
+    }
+    highlightQueueRef.current = [];
+    setActiveWordIndex(-1);
+
+    try {
+      if (workletNodeRef.current) {
+        workletNodeRef.current.port.onmessage = null;
+        workletNodeRef.current.disconnect();
+        workletNodeRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    } catch (e) {
+      console.warn("Audio cleanup exception:", e);
+    }
   }, []);
 
   /**
@@ -180,13 +223,14 @@ export function useRecitation() {
         const stateVal = w.state !== undefined ? w.state : w.State;
         const stateStr = mapWordState(stateVal);
         const isTurnFinal = Boolean(w.isTurnFinal ?? w.IsTurnFinal ?? false);
+        const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
 
         const wordText = w.displayText || w.DisplayText || w.word || w.Word || w.text || w.Text || "";
         const recognized = w.recognizedText || w.RecognizedText || null;
 
-        if (stateStr === "Pending") {
+        if (stateStr === "Pending" && !isBeforeStart) {
           allCompleted = false;
-        } else {
+        } else if (!isBeforeStart) {
           maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex) && wordIndex > lastHighlightedIdxRef.current) {
             highlightQueueRef.current.push(wordIndex);
@@ -194,7 +238,7 @@ export function useRecitation() {
         }
 
         const isAct = Boolean(w.isCurrentActive || w.IsCurrentActive || w.isCurrent || w.IsCurrent || w.isActive || w.IsActive);
-        if (isAct) {
+        if (isAct && !isBeforeStart) {
           maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex)) {
             highlightQueueRef.current.push(wordIndex);
@@ -203,9 +247,9 @@ export function useRecitation() {
 
         formattedWords[wordIndex] = {
           word: wordText,
-          state: stateStr,
+          state: isBeforeStart ? "Revealed" : stateStr,
           isTurnFinal: isTurnFinal,
-          isCurrentActive: isAct,
+          isCurrentActive: isAct && !isBeforeStart,
           recognizedText: recognized,
           index: wordIndex,
         };
@@ -225,16 +269,16 @@ export function useRecitation() {
       }
 
       // Auto-stop gracefully 1.3s after Hadith is 100% completed so blue pulse animation finishes
-      if (allCompleted) {
+      if (allCompleted && maxEvaluatedIdx !== -1) {
         if (!isStoppingRef.current && !completionTimerRef.current) {
           console.log("Hadith recitation fully completed. Graceful mic stop in 1300ms.");
           completionTimerRef.current = setTimeout(() => {
             completionTimerRef.current = null;
-            stopListening();
+            stopListeningRef.current?.();
           }, 1300);
         }
       } else if (maxEvaluatedIdx !== -1) {
-        resetSilenceTimer(8000);
+        resetSilenceTimer(5000);
       }
     }
   }, [processHighlightQueue, resetSilenceTimer]);
@@ -255,6 +299,9 @@ export function useRecitation() {
         ? result.DetectedStartWordIndex
         : null;
 
+    playMicOffSound();
+    cleanupAudioResources();
+
     setCompletedSummary({
       ...result,
       detectedStartWordIndex: detectedStartIdx,
@@ -267,7 +314,7 @@ export function useRecitation() {
     highlightQueueRef.current = [];
     setActiveWordIndex(-1);
     scheduleExtrasHide();
-  }, [scheduleExtrasHide]);
+  }, [cleanupAudioResources, scheduleExtrasHide]);
 
   /**
    * Translate raw server error to user-friendly Arabic message
@@ -334,49 +381,7 @@ export function useRecitation() {
     setIsListening(false);
     setIsConnecting(false);
     setRecitationStopped(true);
-  }, []);
-
-  /**
-   * Clean up Web Audio API, Microphone tracks, and active timers
-   */
-  const cleanupAudioResources = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    if (completionTimerRef.current) {
-      clearTimeout(completionTimerRef.current);
-      completionTimerRef.current = null;
-    }
-    if (activeWordTimeoutRef.current) {
-      clearTimeout(activeWordTimeoutRef.current);
-      activeWordTimeoutRef.current = null;
-    }
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = null;
-    }
-    highlightQueueRef.current = [];
-    setActiveWordIndex(-1);
-
-    try {
-      if (workletNodeRef.current) {
-        workletNodeRef.current.port.onmessage = null;
-        workletNodeRef.current.disconnect();
-        workletNodeRef.current = null;
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-        mediaStreamRef.current = null;
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-    } catch (e) {
-      console.warn("Audio cleanup exception:", e);
-    }
-  }, []);
+  }, [translateRecitationError]);
 
   /**
    * Start recitation session
@@ -511,7 +516,7 @@ export function useRecitation() {
       isConnectingRef.current = false;
       setIsConnecting(false);
       setIsListening(true);
-      resetSilenceTimer(12000); // Initial 12-second silence window
+      resetSilenceTimer(6000); // Initial 6-second silence window
       playMicOnSound();
     } catch (err) {
       console.error("Failed to start recitation:", err);
@@ -545,6 +550,14 @@ export function useRecitation() {
     const streamPromise = streamingPromiseRef.current;
 
     playMicOffSound();
+
+    // Immediately stop local microphone hardware tracks & AudioContext
+    cleanupAudioResources();
+    setIsListening(false);
+    setIsConnecting(false);
+    setRecitationStopped(true);
+    scheduleExtrasHide();
+
     try {
       if (workletNodeRef.current) {
         workletNodeRef.current.port.postMessage("FLUSH");
@@ -569,12 +582,9 @@ export function useRecitation() {
     } catch (err) {
       console.warn("Error stopping recitation session:", err);
     } finally {
-      cleanupAudioResources();
-
       // Only close the connection we captured, not a potentially new one
       if (conn) {
         await recitationService.stopConnection(conn).catch(() => {});
-        // Only null the ref if it still points to the same connection
         if (connectionRef.current === conn) {
           connectionRef.current = null;
         }
@@ -583,12 +593,13 @@ export function useRecitation() {
         sessionIdRef.current = null;
       }
       localStorage.removeItem("recitation_session_id");
-      setIsListening(false);
-      setIsConnecting(false);
-      setRecitationStopped(true);
-      scheduleExtrasHide();
     }
   }, [cleanupAudioResources, scheduleExtrasHide]);
+
+  // Keep stopListeningRef updated safely without render-phase ref mutation
+  useEffect(() => {
+    stopListeningRef.current = stopListening;
+  }, [stopListening]);
 
   /**
    * Cancel recitation session without saving

@@ -1,4 +1,7 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
+
+// Track last scrolled line's offsetTop globally across words to guarantee 1 smooth scroll per line
+let lastScrolledLineOffsetTop = -1;
 
 /**
  * RecitationWord — renders a single word with CSS-only visibility control.
@@ -6,6 +9,7 @@ import React from "react";
  * ALWAYS renders the real word. Controls visibility via CSS color + border.
  * border-b-2 is always present (transparent when visible) to guarantee
  * identical layout dimensions in both hidden and visible states.
+ * Includes line-throttled GPU-accelerated smooth auto-scrolling when active word moves past bounds.
  */
 export default function RecitationWord({
   word,
@@ -17,10 +21,42 @@ export default function RecitationWord({
   isRecited = false,
   recognizedText = null,
 }) {
+  const elementRef = useRef(null);
+
+  // Line-throttled GPU-accelerated smooth scrolling
+  useEffect(() => {
+    if (isActive && elementRef.current) {
+      const el = elementRef.current;
+      const currentOffsetTop = el.offsetTop;
+
+      // Only check scroll if active word is on a NEW line (offsetTop differs by > 12px)
+      if (Math.abs(currentOffsetTop - lastScrolledLineOffsetTop) > 12) {
+        const rect = el.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        // Safe bounds accounting for top Navbar (~90px) and bottom floating player/toolbar (~150px)
+        const topMargin = 100;
+        const bottomMargin = viewportHeight - 150;
+
+        if (rect.bottom > bottomMargin || rect.top < topMargin) {
+          lastScrolledLineOffsetTop = currentOffsetTop;
+          el.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+      }
+    }
+  }, [isActive]);
+
   // Special: ﷺ symbol is always visible
   if (word === "ﷺ") {
     return (
-      <span className="text-base-content font-4 mx-0.5 border-b-2 border-transparent">
+      <span
+        ref={isActive ? elementRef : null}
+        className="text-base-content font-4 mx-0.5 border-b-2 border-transparent"
+      >
         {word}{" "}
       </span>
     );
@@ -54,6 +90,7 @@ export default function RecitationWord({
 
   return (
     <span
+      ref={elementRef}
       className={className}
       title={recognizedText ? `المقروء: ${recognizedText}` : undefined}
     >
