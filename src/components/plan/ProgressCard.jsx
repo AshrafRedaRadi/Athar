@@ -42,8 +42,8 @@ const ProgressCard = (props) => {
           
           <div className="flex flex-col text-xs sm:text-sm text-base-content text-right">
             <span>{streakTitle}</span>
-            <span className="font-semibold text-sm sm:text-base">
-              {streakDaysCount} {streakDaysText}
+            <span className="font-semibold text-sm sm:text-base" dir='rtl' >
+              {streakDaysCount} {streakDaysText} 
             </span>
           </div>
         </div>
