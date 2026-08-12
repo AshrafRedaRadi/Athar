@@ -75,7 +75,7 @@ export default function AiAssistantManagement() {
       />
 
       {/* ── Page Header ── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-base-200">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-1 text-base-content flex items-center gap-3">
             <span className="w-10 h-10 rounded-2xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-2xl">

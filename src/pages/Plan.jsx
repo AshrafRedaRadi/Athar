@@ -29,7 +29,7 @@ export default function Plan() {
       <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
         <Navbar activePage="review" />
 
-        <header className="text-start space-y-1">
+        <header className="text-start space-y-1 mt-4 sm:mt-6">
           <h1 className="text-3xl md:text-4xl font-bold font-1 text-base-content">
             إدارة خطة الحفظ والمراجعة
           </h1>
