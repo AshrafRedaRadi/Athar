@@ -84,13 +84,13 @@ export const hadithsService = {
     if (!hadithId) return null;
     try {
       return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
-        method: "POST",
+        method: "PUT",
         body: JSON.stringify({ status }),
       });
     } catch {
       try {
         return await apiFetch(`/api/hadiths/${hadithId}/progress`, {
-          method: "PUT",
+          method: "POST",
           body: JSON.stringify({ status }),
         });
       } catch (err) {

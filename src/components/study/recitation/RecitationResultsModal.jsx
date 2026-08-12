@@ -303,23 +303,7 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       onClick={handleClose}
       dir="rtl"
     >
-      {/* Congratulation Toast Banner */}
-      {showCongrats && (
-        <div
-          className="absolute top-6 left-1/2 -translate-x-1/2 z-60 animate-cardIn pointer-events-none"
-          style={{ minWidth: "18rem", maxWidth: "90vw" }}
-        >
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-emerald-400/40">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <FiAward className="text-white text-xl" />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="font-1 font-bold text-base leading-tight">أحسنت! 🎉</span>
-              <span className="font-2 text-sm text-white/90 leading-relaxed">لقد قمت بحفظ الحديث بنجاح</span>
-            </div>
-          </div>
-        </div>
-      )}
+
       <div
         className={`bg-base-100 rounded-3xl shadow-2xl border border-base-300 w-full max-w-sm overflow-hidden ${
           isClosing ? "animate-modalOut" : "animate-modalIn"

@@ -226,17 +226,16 @@ export default function Study() {
       {/* ── Congratulations Toast Banner ── */}
       {showCongrats && (
         <div
-          className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-cardIn pointer-events-none"
-          style={{ minWidth: "20rem", maxWidth: "90vw" }}
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] animate-cardIn pointer-events-none w-11/12 max-w-sm"
           dir="rtl"
         >
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border border-emerald-400/40">
-            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <FiAward className="text-white text-2xl" />
+          <div className="bg-cyan-950/95 dark:bg-cyan-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-cyan-500/50 px-4 py-3.5 flex items-center justify-center gap-3.5 text-right">
+            <div className="w-10 h-10 rounded-xl bg-cyan-700/60 border border-cyan-400/40 flex items-center justify-center shrink-0 shadow-inner">
+              <FiAward className="text-cyan-200 text-2xl" />
             </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="font-1 font-bold text-base leading-tight">أحسنت! 🎉</span>
-              <span className="font-2 text-sm text-white/90 leading-relaxed">لقد قمت بحفظ الحديث بنجاح</span>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="font-1 font-bold text-sm text-cyan-100 leading-tight">أحسنت! 🎉</span>
+              <span className="font-2 text-xs text-cyan-200/90 leading-normal whitespace-nowrap">لقد قمت بحفظ الحديث بنجاح</span>
             </div>
           </div>
         </div>
