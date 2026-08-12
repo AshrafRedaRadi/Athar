@@ -6,11 +6,11 @@ import React from "react";
 
 /** Turquoise badge class for quoted hadith/Quran text */
 const QUOTE_BADGE_CLASS =
-  "inline-flex items-center px-2 py-0.5 rounded-lg bg-cyan-700/15 dark:bg-cyan-900/40 text-cyan-900 dark:text-cyan-200 font-bold font-3 text-[13px] sm:text-base border border-cyan-700/25 shadow-xs mx-0.5 my-0.5 align-baseline";
+  "inline-flex items-center px-3 py-1 rounded-xl bg-cyan-700/15 dark:bg-cyan-950/95 text-cyan-950 dark:text-cyan-100 font-bold font-3 text-[14px] sm:text-base border border-cyan-700/30 dark:border-cyan-400/60 shadow-sm mx-0.5 my-1 align-baseline leading-relaxed";
 
 /** Subtle citation badge class for verse references */
 const CITATION_BADGE_CLASS =
-  "inline-flex items-center px-2 py-0.5 rounded-md bg-base-200 text-cyan-800 dark:text-cyan-300 font-semibold font-2 text-[12px] sm:text-sm border border-base-300 mx-1 align-baseline";
+  "inline-flex items-center px-2 py-0.5 rounded-md bg-base-200 text-cyan-800 dark:text-cyan-200 font-semibold font-2 text-[12px] sm:text-sm border border-base-300 mx-1 align-baseline";
 
 /** Regex matching Arabic diacritical marks (tashkeel) */
 const TASHKEEL_RE = /[\u064B-\u065F\u0670\u0610-\u061A]/g;

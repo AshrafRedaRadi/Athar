@@ -69,7 +69,7 @@ function getInitialTheme() {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  if (theme === 'dark') {
+  if (DARK_THEMES.has(theme)) {
     document.documentElement.classList.add('dark');
   } else {
     document.documentElement.classList.remove('dark');

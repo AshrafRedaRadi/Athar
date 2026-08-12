@@ -1,6 +1,8 @@
-/* Fonts */
+/* Fonts & Tailwind v4 Config */
 @import "tailwindcss";
 @plugin "daisyui";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *, [data-theme="night"], [data-theme="night"] *, [data-theme="dim"], [data-theme="dim"] *, [data-theme="black"], [data-theme="black"] *, [data-theme="abyss"], [data-theme="abyss"] *, [data-theme="sunset"], [data-theme="sunset"] *));
 
 /* Default typography rules */
 h1,
