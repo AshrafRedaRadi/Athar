@@ -1,51 +1,55 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const DAISYUI_THEMES = [
+  // ── High Impact / Rich Color Palette & Vibrant Overhaul Themes ──
   'light',
   'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
+  'luxury',
   'synthwave',
-  'retro',
   'cyberpunk',
+  'retro',
+  'dracula',
+  'cupcake',
+  'aqua',
+  'emerald',
+  'forest',
+  'sunset',
   'valentine',
   'halloween',
+  'night',
+  'coffee',
+
+  // ── Medium Impact Themes ──
+  'bumblebee',
+  'corporate',
   'garden',
-  'forest',
-  'aqua',
-  'lofi',
   'pastel',
   'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
   'autumn',
   'business',
   'acid',
   'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
   'caramellatte',
   'abyss',
+
+  // ── Minimalist & Background-only Subtle Themes (Bottom) ──
+  'lofi',
+  'wireframe',
+  'dim',
+  'nord',
   'silk',
+  'cmyk',
+  'black',
 ];
 
 const DARK_THEMES = new Set([
   'dark',
+  'luxury',
   'synthwave',
   'halloween',
   'forest',
   'aqua',
   'black',
-  'luxury',
   'dracula',
   'business',
   'night',
@@ -63,7 +67,7 @@ function getInitialTheme() {
     // localStorage can be unavailable in restricted browser modes.
   }
 
-  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'luxury';
   return 'light';
 }
 
@@ -80,7 +84,11 @@ export const ThemeContext = createContext({
   theme: 'light',
   isDark: false,
   themes: DAISYUI_THEMES,
+  defaultLightTheme: 'light',
+  defaultDarkTheme: 'luxury',
   setTheme: () => { },
+  setDefaultLightTheme: () => { },
+  setDefaultDarkTheme: () => { },
   toggleTheme: () => { },
 });
 
@@ -89,6 +97,22 @@ export function ThemeProvider({ children }) {
     const initial = getInitialTheme();
     applyTheme(initial);
     return initial;
+  });
+
+  const [defaultLightTheme, setDefaultLightThemeState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('default_light_theme');
+      if (saved && DAISYUI_THEMES.includes(saved)) return saved;
+    } catch {}
+    return 'light';
+  });
+
+  const [defaultDarkTheme, setDefaultDarkThemeState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('default_dark_theme');
+      if (saved && DAISYUI_THEMES.includes(saved)) return saved;
+    } catch {}
+    return 'luxury';
   });
 
   useEffect(() => {
@@ -100,7 +124,25 @@ export function ThemeProvider({ children }) {
     }
   }, [theme]);
 
-  const toggleTheme = () => setTheme((prev) => (DARK_THEMES.has(prev) ? 'light' : 'dark'));
+  const setDefaultLightTheme = (newTheme) => {
+    setDefaultLightThemeState(newTheme);
+    try {
+      localStorage.setItem('default_light_theme', newTheme);
+    } catch {}
+    setTheme(newTheme);
+  };
+
+  const setDefaultDarkTheme = (newTheme) => {
+    setDefaultDarkThemeState(newTheme);
+    try {
+      localStorage.setItem('default_dark_theme', newTheme);
+    } catch {}
+    setTheme(newTheme);
+  };
+
+  const toggleTheme = () => {
+    setTheme((prev) => (DARK_THEMES.has(prev) ? defaultLightTheme : defaultDarkTheme));
+  };
 
   return (
     <ThemeContext.Provider
@@ -108,7 +150,13 @@ export function ThemeProvider({ children }) {
         theme,
         isDark: DARK_THEMES.has(theme),
         themes: DAISYUI_THEMES,
+        defaultLightTheme,
+        defaultDarkTheme,
+        darkThemesList: Array.from(DARK_THEMES),
+        lightThemesList: DAISYUI_THEMES.filter((t) => !DARK_THEMES.has(t)),
         setTheme,
+        setDefaultLightTheme,
+        setDefaultDarkTheme,
         toggleTheme,
       }}
     >
