@@ -20,6 +20,7 @@ export default function HadithCard({
   recitationStopped = false,
   completedSummary = null,
   isHidden: externalIsHidden,
+  revealedCount = 0,
   mode = "reading",
 }) {
   const isHidden = externalIsHidden !== undefined ? externalIsHidden : true;
@@ -33,12 +34,14 @@ export default function HadithCard({
       const state = spoken?.state || "Pending";
       const isRecited = spoken != null && state !== "Pending";
       const isActive = isReciting && (i === activeWordIndex || spoken?.isCurrentActive === true);
+      const isRevealed = i < revealedCount;
 
       return (
         <RecitationWord
           key={i}
           word={word}
           isHidden={isHidden}
+          isRevealed={isRevealed}
           isActive={isActive}
           state={state}
           isReciting={isReciting}

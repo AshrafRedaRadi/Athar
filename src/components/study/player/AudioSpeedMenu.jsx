@@ -24,7 +24,7 @@ export default function AudioSpeedMenu({
           setPlaybackSpeed(nextSpeed);
         }}
         disabled={disabled}
-        className="btn btn-ghost btn-xs rounded-lg text-xs font-bold text-cyan-700 bg-cyan-700/10 border border-cyan-700/20 px-1.5"
+        className="btn btn-ghost btn-xs rounded-lg text-xs font-bold text-cyan-700 bg-cyan-700/10 border border-cyan-700/20 w-[46px] min-w-[46px] shrink-0 justify-center text-center p-0"
         title="تغيير السرعة"
         aria-label="تغيير السرعة"
       >

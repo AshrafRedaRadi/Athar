@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import { FiBarChart2, FiAward } from "react-icons/fi";
+import { FiBarChart2, FiAward, FiChevronLeft, FiChevronsLeft } from "react-icons/fi";
 import Navbar from "../components/shared/Navbar";
 import StudyToolbar from "../components/study/StudyToolbar";
 import HadithCard from "../components/study/HadithCard";
@@ -33,6 +33,7 @@ export default function Study() {
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("text"); // "text" | "video"
   const [isHidden, setIsHidden] = useState(false);
+  const [revealedCount, setRevealedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -191,6 +192,53 @@ export default function Study() {
     setShowCongrats(false);
   }, [currentHadith?.id]);
 
+  // Reset step-by-step revealed words count when hadith changes or when isHidden is turned off
+  useEffect(() => {
+    setRevealedCount(0);
+  }, [currentHadith?.id, isHidden]);
+
+  // Reveal next single word hint (<)
+  const handleRevealNextWord = () => {
+    if (!currentHadith?.text) return;
+    const words = currentHadith.text.trim().split(/\s+/);
+    setRevealedCount((prev) => Math.min(prev + 1, words.length));
+  };
+
+  // Reveal next sentence / phrase hint (<<) (stopping at punctuation or next 5 words)
+  const handleRevealNextSentence = () => {
+    if (!currentHadith?.text) return;
+    const words = currentHadith.text.trim().split(/\s+/);
+    let nextEnd = revealedCount + 1;
+    while (nextEnd < words.length) {
+      const w = words[nextEnd - 1];
+      if (/[،,.:؛!؟]/.test(w) || nextEnd - revealedCount >= 5) break;
+      nextEnd++;
+    }
+    setRevealedCount(Math.min(nextEnd, words.length));
+  };
+
+  // Render reusable hint pill container with circular arrow buttons
+  const renderHintPill = () => (
+    <div className="flex items-center gap-1 bg-base-100/95 backdrop-blur-md border border-base-300 rounded-full p-1 shadow-md">
+      <button
+        onClick={handleRevealNextWord}
+        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs"
+        title="كشف الكلمة التالية"
+        aria-label="كشف الكلمة التالية"
+      >
+        <FiChevronLeft className="text-base" />
+      </button>
+      <button
+        onClick={handleRevealNextSentence}
+        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs"
+        title="كشف الجملة التالية"
+        aria-label="كشف الجملة التالية"
+      >
+        <FiChevronsLeft className="text-base" />
+      </button>
+    </div>
+  );
+
   // Toggle recording
   const handleRecordToggle = () => {
     if (isGuest) {
@@ -249,9 +297,9 @@ export default function Study() {
 
           <div className="max-w-4xl mx-auto min-h-full flex flex-col">
             {isLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                <span className="loading loading-spinner loading-lg text-cyan-600 mb-4"></span>
-                <p className="font-2 text-base-content/70">جاري استحضار الأحاديث الشريفة...</p>
+              <div className="flex-1 flex flex-col items-center justify-center py-20">
+                <div className="w-12 h-12 border-4 border-cyan-600/20 border-t-cyan-600 rounded-full animate-spin mb-4" />
+                <p className="font-2 text-base text-base-content/70">جاري استحضار أحاديث الكتاب...</p>
               </div>
             ) : currentHadith ? (
               <>
@@ -285,6 +333,7 @@ export default function Study() {
                     spokenWords={spokenWords}
                     activeWordIndex={activeWordIndex}
                     isHidden={isHidden}
+                    revealedCount={revealedCount}
                     onToggleHide={() => setIsHidden(!isHidden)}
                   />
                 </div>
@@ -314,20 +363,46 @@ export default function Study() {
                   onAudioToggle={handleAudioToggle}
                 />
 
-                {/* Bottom Action Bar: 3 icon buttons beside AudioPlayer (desktop) / floating above dock (mobile) */}
+                {/* Bottom Action Bar: icon buttons beside AudioPlayer (desktop) / floating above dock (mobile) */}
                 <div className="fixed z-45 transition-all duration-300 flex items-center gap-1.5 sm:gap-2.5 bottom-[72px] left-2 lg:bottom-5 lg:right-[calc(50%+227px)] lg:left-auto" dir="rtl">
-                  {/* 1. Hide / Reveal Text Button */}
-                  <button
-                    onClick={() => setIsHidden(!isHidden)}
-                    className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100 shadow-sm flex items-center justify-center"
-                    aria-label={isHidden ? "إظهار النص" : "إخفاء النص"}
-                  >
-                    {isHidden ? (
-                      <IoEyeOutline className="text-lg" />
-                    ) : (
-                      <IoEyeOffOutline className="text-lg" />
-                    )}
-                  </button>
+
+                  {/* 1. Hide / Reveal Text Standalone Button & Animated Hint Controls */}
+                  <div className="relative flex items-center gap-1.5">
+
+                    {/* ── DESKTOP ONLY (≥ lg): Floating Pill Container ABOVE Eye Button ── */}
+                    <div
+                      className={`hidden lg:flex items-center absolute -top-12 right-0 transition-all duration-300 ease-out ${isHidden
+                          ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                        }`}
+                    >
+                      {renderHintPill()}
+                    </div>
+
+                    {/* ── MOBILE ONLY (< lg): Expanding Hint Arrows Drawer Pill on the RIGHT of Eye Button ── */}
+                    <div
+                      className={`lg:hidden flex items-center transition-all duration-300 ease-out overflow-hidden ${isHidden
+                          ? "max-w-[130px] opacity-100 scale-100"
+                          : "max-w-0 opacity-0 scale-90 pointer-events-none"
+                        }`}
+                    >
+                      {renderHintPill()}
+                    </div>
+
+                    {/* ── Standalone Circular Eye Button (Fixed Anchor for Desktop & Mobile) ── */}
+                    <button
+                      onClick={() => setIsHidden(!isHidden)}
+                      className="btn btn-circle w-10 h-10 min-h-0 btn-ghost text-base-content/80 hover:text-cyan-700 border border-base-300 bg-base-100/95 backdrop-blur-md shadow-sm flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95"
+                      aria-label={isHidden ? "إظهار النص" : "إخفاء النص"}
+                      title={isHidden ? "إظهار النص" : "إخفاء النص"}
+                    >
+                      {isHidden ? (
+                        <IoEyeOffOutline className="text-lg text-cyan-700" />
+                      ) : (
+                        <IoEyeOutline className="text-lg" />
+                      )}
+                    </button>
+                  </div>
 
                   {/* 2. Explanation Info Button */}
                   <button
@@ -343,8 +418,8 @@ export default function Study() {
                     onClick={() => setIsResultsOpen(true)}
                     disabled={!completedSummary}
                     className={`btn btn-circle w-10 h-10 min-h-0 flex items-center justify-center transition-all duration-300 ${completedSummary
-                        ? "bg-cyan-700 hover:bg-cyan-800 text-white shadow-md shadow-cyan-700/30 border-none scale-105"
-                        : "bg-base-100 border border-base-300 text-base-content/40 shadow-sm cursor-not-allowed"
+                      ? "bg-cyan-700 hover:bg-cyan-800 text-white shadow-md shadow-cyan-700/30 border-none scale-105"
+                      : "bg-base-100 border border-base-300 text-base-content/40 shadow-sm cursor-not-allowed"
                       }`}
                     aria-label="نتيجة التسميع"
                     title={completedSummary ? "عرض نتيجة التسميع" : "لا توجد نتيجة بعد"}

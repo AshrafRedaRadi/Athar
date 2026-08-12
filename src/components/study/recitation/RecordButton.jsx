@@ -6,8 +6,8 @@ import { HiOutlineSpeakerWave } from "react-icons/hi2";
 /**
  * RecordButton — glowing gradient action button for Study mode.
  */
-export default function RecordButton({ 
-  isRecording = false, 
+export default function RecordButton({
+  isRecording = false,
   isConnecting = false,
   onToggle,
   onListen,
@@ -91,20 +91,20 @@ export default function RecordButton({
   return (
     <>
       {showOptions && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setShowOptions(false)}
         />
       )}
 
-      <div 
+      <div
         className="fixed z-45 transition-all duration-300
                    bottom-[72px] right-2
-                   lg:bottom-3 lg:left-[calc(50%+303px)] lg:right-auto lg:translate-x-0"
+                   lg:bottom-3 lg:left-[calc(50%+323px)] lg:right-auto lg:translate-x-0"
         dir="rtl"
       >
         {showOptions && (
-          <div 
+          <div
             className="lg:hidden absolute bottom-20 right-0 z-50
                        bg-base-100 border border-base-300 shadow-xl rounded-2xl p-2
                        flex flex-col gap-1 w-36 animate-slideUp"
@@ -147,8 +147,8 @@ export default function RecordButton({
             ${isConnecting
               ? "bg-cyan-700 opacity-90 shadow-md cursor-wait animate-pulse"
               : isRecording
-              ? "bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 shadow-[0_0_30px_rgba(239,68,68,0.7)] animate-pulse"
-              : "bg-gradient-to-tr from-cyan-600 via-cyan-400 to-sky-300 shadow-[0_0_28px_rgba(6,182,212,0.65)] hover:shadow-[0_0_36px_rgba(6,182,212,0.85)]"}
+                ? "bg-gradient-to-tr from-red-600 via-red-500 to-rose-400 shadow-[0_0_30px_rgba(239,68,68,0.7)] animate-pulse"
+                : "bg-gradient-to-tr from-cyan-600 via-cyan-400 to-sky-300 shadow-[0_0_28px_rgba(6,182,212,0.65)] hover:shadow-[0_0_36px_rgba(6,182,212,0.85)]"}
           `}
           aria-label={isConnecting ? "جاري الاتصال..." : isRecording ? "إيقاف التسميع" : "بدء التسميع"}
           title={isConnecting ? "جاري الاتصال..." : isRecording ? "إيقاف التسميع" : "بدء التسميع"}

@@ -20,10 +20,10 @@ const SAMPLE_FALLBACK_AUDIO = "https://server8.mp3quran.net/afs/001.mp3";
  * AudioPlayer — Central orchestrator managing audio state and HTML5 audio element,
  * rendering DesktopAudioPlayer & MobileAudioPlayer modular subcomponents.
  */
-export default function AudioPlayer({ 
-  hadith, 
-  hadithLabel, 
-  reader = "القارئ: أحمد النفيس", 
+export default function AudioPlayer({
+  hadith,
+  hadithLabel,
+  reader = "القارئ: أحمد النفيس",
   onClose,
   onPlaybackChange,
   audioControlRef,
@@ -184,8 +184,8 @@ export default function AudioPlayer({
       {/* Outer Responsive Wrapper Container */}
       <div
         className="fixed z-45 transition-all duration-300
-                   bottom-[72px] right-[56px] left-[138px] flex justify-center items-center pointer-events-none lg:pointer-events-auto lg:block
-                   lg:bottom-1.5 lg:left-[calc(50%+38px)] lg:right-auto lg:-translate-x-1/2
+                   bottom-[72px] right-[84px] sm:right-[90px] flex justify-center items-center pointer-events-none lg:pointer-events-auto lg:block
+                   lg:bottom-1.5 lg:left-[calc(50%+48px)] lg:right-auto lg:-translate-x-1/2
                    w-auto lg:w-[95%] lg:max-w-lg"
         dir="rtl"
       >

@@ -84,20 +84,20 @@ export default function MobileAudioPlayer({
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="lg:hidden pointer-events-auto fixed bottom-[122px] left-1/2 -translate-x-1/2 max-w-[290px] w-[90%] z-50 
+            className="lg:hidden pointer-events-auto fixed bottom-[122px] left-1/2 -translate-x-1/2 max-w-[245px] w-[85%] z-50 
                        bg-base-100/98 dark:bg-slate-900/98 backdrop-blur-xl border border-cyan-700/25 
-                       rounded-2xl shadow-[0_6px_24px_rgba(0,0,0,0.22)] p-2.5 flex flex-col gap-1.5"
+                       rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.22)] px-1.5 py-1.5 flex flex-col gap-0.5"
             dir="rtl"
           >
             {/* Card Header: Reciter Name Centered & Close Down Arrow */}
-            <div className="relative flex items-center justify-center border-b border-base-200 dark:border-slate-800 pb-1 px-5">
+            <div className="relative flex items-center justify-center border-b border-base-200 dark:border-slate-800 pb-0.5 px-1.5">
               <p className="font-2 text-[10.5px] font-bold text-cyan-700 dark:text-cyan-400 truncate text-center">
                 {reader}
               </p>
               <button
                 type="button"
                 onClick={() => setIsMobileExpanded(false)}
-                className="absolute left-1 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-xs text-base-content/60 hover:text-cyan-700"
+                className="absolute left-0 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-xs text-base-content/60 hover:text-cyan-700"
                 title="إغلاق النافذة"
                 aria-label="إغلاق النافذة"
               >

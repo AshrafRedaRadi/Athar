@@ -10,6 +10,7 @@ import React from "react";
 export default function RecitationWord({
   word,
   isHidden = false,
+  isRevealed = false,
   isActive = false,
   state = "Pending",
   isReciting = false,
@@ -28,8 +29,8 @@ export default function RecitationWord({
   // Visibility logic:
   // - During recitation: spoken words are always visible (override isHidden)
   // - After recitation: isHidden controls everything (button works normally)
-  // - Active word is always visible
-  const isVisible = !isHidden || isActive || (isReciting && isRecited);
+  // - Active word or step-by-step revealed word is always visible
+  const isVisible = !isHidden || isRevealed || isActive || (isReciting && isRecited);
 
   // Base: always include border-b-2 for consistent layout
   let className = "inline-block mx-0.5 border-b-2 transition-colors duration-300";
