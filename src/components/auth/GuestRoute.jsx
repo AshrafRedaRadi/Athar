@@ -21,7 +21,13 @@ export default function GuestRoute({ children, fallback = '/home' }) {
   }
 
   if (isAuthenticated) {
-    const defaultTarget = user?.isAdmin ? '/admin/users' : fallback;
+    let defaultTarget = fallback;
+    if (user?.isAdmin || user?.role === 'admin') {
+      defaultTarget = '/admin/controlpanel';
+    } else if (user?.isGuest) {
+      defaultTarget = '/home';
+    }
+    
     const destination = location.state?.from?.pathname || defaultTarget;
     return <Navigate to={destination} replace />;
   }

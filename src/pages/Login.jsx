@@ -30,6 +30,7 @@ export default function Login() {
     loginGuest();
     const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
     if (hasSeenOnboarding) {
+      // On successful guest login, redirect to home to see the guest dashboard
       navigate('/home', { replace: true });
     } else {
       navigate('/onboarding/1', { state: { from: 'guest' } });
@@ -52,10 +53,10 @@ export default function Login() {
 
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true });
-      } else if (savedUser?.isAdmin) {
-        navigate('/admin/users', { replace: true });
+      } else if (savedUser?.isAdmin || savedUser?.role === 'admin') {
+        navigate('/admin/controlpanel', { replace: true });
       } else {
-        navigate('/home', { replace: true });
+        navigate('/library', { replace: true });
       }
     } catch (err) {
       setErrorMsg(err.message || 'فشل تسجيل الدخول، يُرجى التحقق من البيانات.');

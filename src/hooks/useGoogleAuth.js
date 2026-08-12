@@ -19,7 +19,7 @@ export function useGoogleAuth() {
     setGoogleLoading(true);
     try {
       await loginGoogle(idToken);
-      const from = location.state?.from?.pathname || '/home';
+      const from = location.state?.from?.pathname || '/library';
       navigate(from, { replace: true });
     } catch (err) {
       setGoogleError(err.message || 'فشل تسجيل الدخول باستخدام حساب Google.');

@@ -55,7 +55,7 @@ export default function Onboarding() {
     const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
     if (hasSeenOnboarding && !location.state?.from) {
       if (token) {
-        navigate('/home', { replace: true });
+        navigate('/library', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }
@@ -87,7 +87,7 @@ export default function Onboarding() {
       loginGuest();
       navigate('/home', { replace: true });
     } else if (entrySource === 'confirm-email') {
-      navigate('/home', { replace: true });
+      navigate('/library', { replace: true });
     } else {
       navigate('/login', { replace: true });
     }

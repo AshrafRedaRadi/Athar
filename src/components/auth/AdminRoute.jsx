@@ -38,5 +38,12 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/home" replace />;
   }
 
+  // Save the last visited admin route so Navbar can return the user here
+  React.useEffect(() => {
+    if (location.pathname.startsWith('/admin')) {
+      localStorage.setItem('lastAdminRoute', location.pathname);
+    }
+  }, [location.pathname]);
+
   return children ? children : <Outlet />;
 }

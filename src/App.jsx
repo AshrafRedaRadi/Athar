@@ -42,7 +42,7 @@ function App() {
             <Route path='/admin/ai-assistant' element={<AiAssistantManagement />} />
           </Route>
           {/* Guest-only routes: opening / opens Login page first */}
-          <Route element={<GuestRoute fallback="/home" />}>
+          <Route element={<GuestRoute fallback="/library" />}>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />

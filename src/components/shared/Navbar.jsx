@@ -97,7 +97,7 @@ export default function Navbar({
             ) : (
               <button
                 type="button"
-                onClick={() => navigate('/admin/users')}
+                onClick={() => navigate(localStorage.getItem('lastAdminRoute') || '/admin/controlpanel')}
                 className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl gap-1.5 font-bold font-2 text-xs transition-all shadow-xs"
                 title="الذهاب إلى لوحة تحكم الأدمن"
               >
