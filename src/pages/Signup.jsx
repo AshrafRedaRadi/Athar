@@ -20,7 +20,7 @@ function checkReqs(pass) {
     uppercase: /[A-Z]/.test(pass),
     lowercase: /[a-z]/.test(pass),
     number: /[0-9]/.test(pass),
-    special: /[@$!%*?&]/.test(pass),
+    special: /[@$!%*?&#]/.test(pass),
   };
 }
 
@@ -49,6 +49,10 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordTouched, setIsPasswordTouched] = useState(false);
 
+  // 👁️ حالات إظهار/إخفاء كلمات المرور
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // API submission states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -60,10 +64,6 @@ export default function Signup() {
   const passedCount = Object.values(reqs).filter(Boolean).length;
   const isMatch =
     password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
-
-  const handleGoogleAuth = () => {
-    triggerGoogleAuth();
-  };
 
   const handleProceedAfterSignup = () => {
     setShowSuccessModal(false);
@@ -113,7 +113,6 @@ export default function Signup() {
       <AuthCard>
         {/* ── Tab bar ── */}
         <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
-          {/* Login tab — inactive → navigate to /login */}
           <Link
             to="/login"
             className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 text-white/70 hover:text-white text-center"
@@ -121,7 +120,6 @@ export default function Signup() {
             تسجيل الدخول
           </Link>
 
-          {/* Signup tab — active */}
           <button
             type="button"
             className="flex-1 py-1.5 px-2.5 rounded-lg text-[0.85rem] font-semibold font-2 transition-all duration-300 cursor-pointer bg-[#f7f9fc] text-[#23566e] shadow-md"
@@ -130,7 +128,7 @@ export default function Signup() {
           </button>
         </div>
 
-        {/* ── Form content container (No scrollbar, compact layout) ── */}
+        {/* ── Form content container ── */}
         <div className="overflow-y-visible md:overflow-y-auto pr-0 md:pr-[3px] h-auto md:h-full md:flex-1 flex flex-col justify-start max-h-none md:max-h-[calc(100%-80px)]">
           <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 text-center">
             إنشاء حساب
@@ -180,42 +178,83 @@ export default function Signup() {
               {/* Password */}
               <div className="flex flex-col gap-0.5">
                 <label className={labelClass}>كلمة المرور</label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  placeholder="كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => setIsPasswordTouched(true)}
-                  required
-                  minLength={8}
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className={`${inputClass} ${password ? 'pl-10' : ''}`}
+                    placeholder="كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setIsPasswordTouched(true)}
+                    required
+                    minLength={8}
+                  />
+                  {password.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 text-white/60 hover:text-white transition-colors cursor-pointer focus:outline-none"
+                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12c1.074-4.65 5.062-8 10.033-8 4.97 0 8.959 3.35 10.033 8-1.074 4.65-5.062 8-10.033 8-4.97 0-8.959-3.35-10.033-8z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Confirm Password */}
               <div className="flex flex-col gap-0.5">
                 <label className={labelClass}>تأكيد كلمة المرور</label>
-                <input
-                  type="password"
-                  className={inputClass}
-                  placeholder="أعد إدخال كلمة المرور"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    className={`${inputClass} ${confirmPassword ? 'pl-10' : ''}`}
+                    placeholder="أعد إدخال كلمة المرور"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  {confirmPassword.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute left-3 text-white/60 hover:text-white transition-colors cursor-pointer focus:outline-none"
+                      aria-label={showConfirmPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showConfirmPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12c1.074-4.65 5.062-8 10.033-8 4.97 0 8.959 3.35 10.033 8-1.074 4.65-5.062 8-10.033 8-4.97 0-8.959-3.35-10.033-8z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Password strength indicator & match message (shown when typing password) */}
+              {/* Password strength indicator & match message */}
               {password.length > 0 && (() => {
                 const strength = getStrengthInfo(passedCount);
 
-                // Dynamic hint: pick the first failing requirement
                 const hints = [
                   { key: 'length', text: 'يجب أن تكون 8 أحرف على الأقل' },
                   { key: 'uppercase', text: 'أضف حرفاً كبيراً (A-Z)' },
                   { key: 'lowercase', text: 'أضف حرفاً صغيراً (a-z)' },
                   { key: 'number', text: 'أضف رقماً (0-9)' },
-                  { key: 'special', text: 'أضف رمزاً خاصاً (@$!%*?&)' },
+                  { key: 'special', text: 'أضف رمزاً خاصاً (@$!%*?&#)' },
                 ];
                 const firstMissing = hints.find((h) => !reqs[h.key]);
 
@@ -224,8 +263,7 @@ export default function Signup() {
                     {/* Password match message */}
                     {confirmPassword.length > 0 && (
                       <small
-                        className={`block text-[0.68rem] font-semibold ${isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'
-                          }`}
+                        className={`block text-[0.68rem] font-semibold ${isMatch ? 'text-[#2ecc71]' : 'text-[#ff7675]'}`}
                       >
                         {isMatch ? 'كلمتا المرور متطابقتان' : 'كلمتا المرور غير متطابقتين'}
                       </small>
@@ -256,7 +294,7 @@ export default function Signup() {
                       </div>
                     </div>
 
-                    {/* Dynamic hint: shows the most important missing requirement */}
+                    {/* Dynamic hint */}
                     {firstMissing && (
                       <p
                         className="text-[0.62rem] transition-colors duration-300 m-0"
@@ -270,7 +308,7 @@ export default function Signup() {
               })()}
             </div>
 
-            {/* Step 1 Actions & Footer */}
+            {/* Actions & Footer */}
             <div className="flex flex-col gap-1.5 pt-1">
               {/* Submit button */}
               <button
@@ -314,20 +352,20 @@ export default function Signup() {
                   سجل الدخول
                 </Link>
               </div>
+            </div>
 
-              </div>
-              {/* Footer */}
-              <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-3 pb-1">
-                <p className="text-white/50 leading-tight">
-                  هل تواجه مشكلة؟ تواصل معنا عبر{' '}
-                  <span className="text-white/70">Athar@gmail.com</span>
-                </p>
+            {/* Footer */}
+            <div className="text-center text-[0.65rem] font-[Tajawal,sans-serif] mt-auto pt-3 pb-1">
+              <p className="text-white/50 leading-tight">
+                هل تواجه مشكلة؟ تواصل معنا عبر{' '}
+                <span className="text-white/70">Athar@gmail.com</span>
+              </p>
             </div>
           </form>
         </div>
       </AuthCard>
 
-      {/* Animated SweetAlert Modal for Email Confirmation */}
+      {/* Confirm Email Modal */}
       <ConfirmEmailAlertModal
         isOpen={showSuccessModal}
         onClose={handleProceedAfterSignup}
