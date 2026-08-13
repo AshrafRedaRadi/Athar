@@ -81,10 +81,10 @@ function SettingsContent() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
-            title="الرجوع للصفحة السابقة"
-            aria-label="الرجوع للصفحة السابقة"
+            title="الرجوع للصفحة الرئيسية"
+            aria-label="الرجوع للصفحة الرئيسية"
           >
             <HiChevronRight className="text-xl" />
           </button>

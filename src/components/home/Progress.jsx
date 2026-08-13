@@ -52,7 +52,7 @@ export default function Progress(props) {
 
   return (
     <div dir="rtl" className="mt-5 sm:mt-6">
-      <div className="bg-base-100 dark:bg-slate-900 rounded-2xl border border-base-300/70 shadow-[0_-6px_20px_rgba(0,0,0,0.07),0_6px_24px_rgba(0,0,0,0.08)] p-5 sm:p-7">
+      <div className="bg-base-100 dark:bg-base-100 rounded-2xl border border-base-300/70 shadow-[0_-6px_20px_rgba(0,0,0,0.07),0_6px_24px_rgba(0,0,0,0.08)] p-5 sm:p-7">
         <p className="text-xs sm:text-sm text-cyan-700 dark:text-cyan-400 font-bold">
           أكمل من حيث توقفت
         </p>
