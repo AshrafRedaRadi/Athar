@@ -19,7 +19,10 @@ export function useGoogleAuth() {
     setGoogleLoading(true);
     try {
       await loginGoogle(idToken);
-      const from = location.state?.from?.pathname || '/library';
+      const hasLoggedInBefore = localStorage.getItem('athar_has_logged_in_before') === 'true';
+      const defaultTarget = hasLoggedInBefore ? '/home' : '/library';
+      localStorage.setItem('athar_has_logged_in_before', 'true');
+      const from = location.state?.from?.pathname || defaultTarget;
       navigate(from, { replace: true });
     } catch (err) {
       setGoogleError(err.message || 'فشل تسجيل الدخول باستخدام حساب Google.');

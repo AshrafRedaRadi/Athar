@@ -55,7 +55,8 @@ export default function Onboarding() {
     const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
     if (hasSeenOnboarding && !location.state?.from) {
       if (token) {
-        navigate('/library', { replace: true });
+        const hasLoggedInBefore = localStorage.getItem('athar_has_logged_in_before') === 'true';
+        navigate(hasLoggedInBefore ? '/home' : '/library', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }
@@ -77,19 +78,35 @@ export default function Onboarding() {
 
   /**
    * Navigate to the final destination based on entry source:
-   *  - 'confirm-email' → /home
+   *  - 'confirm-email' or 'signup' → /library (first time) or /home (returning)
    *  - 'guest' → /home (with guest session)
-   *  - default → /login
+   *  - default → /login or /library
    */
   const handleExitOnboarding = () => {
     localStorage.setItem('athar_onboarding_seen', 'true');
+    const hasLoggedInBefore = localStorage.getItem('athar_has_logged_in_before') === 'true';
+
     if (entrySource === 'guest') {
       loginGuest();
       navigate('/home', { replace: true });
-    } else if (entrySource === 'confirm-email') {
-      navigate('/library', { replace: true });
+    } else if (entrySource === 'confirm-email' || entrySource === 'signup') {
+      if (!hasLoggedInBefore) {
+        localStorage.setItem('athar_has_logged_in_before', 'true');
+        navigate('/library', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
     } else {
-      navigate('/login', { replace: true });
+      if (token) {
+        if (!hasLoggedInBefore) {
+          localStorage.setItem('athar_has_logged_in_before', 'true');
+          navigate('/library', { replace: true });
+        } else {
+          navigate('/home', { replace: true });
+        }
+      } else {
+        navigate('/login', { replace: true });
+      }
     }
   };
 
