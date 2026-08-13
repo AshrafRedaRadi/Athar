@@ -38,7 +38,6 @@ export default function Plan() {
           </p>
         </header>
 
-        {/* القسم الأول: المتابعة والإجراءات */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 bg-base-100 p-3 sm:p-5 rounded-3xl shadow-sm border border-base-300">
           <div className="col-span-1 lg:col-span-2 w-full">
             <ProgressCard />

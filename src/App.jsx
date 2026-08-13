@@ -23,6 +23,7 @@ import ContentManagement from './pages/admin/ContentManagement';
 import UsersManagement from './pages/admin/UsersManagement';
 import AiAssistantManagement from './pages/admin/AiAssistantManagement';
 import Error_page from './pages/Error_page';
+import LandingPage from './pages/LandingPage';
 
 import SettingPage from './pages/SettingPage';
 import HelpCenter from './pages/HelpCenter';
@@ -32,7 +33,6 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path='/plan' element={<Plan />} />
 
           {/* Admin routes protected by AdminRoute */}
           <Route element={<AdminRoute />}>
@@ -41,9 +41,11 @@ function App() {
             <Route path='/admin/users' element={<UsersManagement />} />
             <Route path='/admin/ai-assistant' element={<AiAssistantManagement />} />
           </Route>
-          {/* Guest-only routes: opening / opens Login page first */}
+          {/* Public landing page — accessible to everyone */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Guest-only routes */}
           <Route element={<GuestRoute fallback="/library" />}>
-            <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/confirm-email" element={<ConfirmEmail />} />
@@ -67,7 +69,7 @@ function App() {
           <Route path="/onboarding/:stepId" element={<Onboarding />} />
 
           {/* 404 */}
-          { <Route path="*" element={<Error_page />} /> }
+          {<Route path="*" element={<Error_page />} />}
         </Routes>
       </BrowserRouter>
     </AuthProvider>
