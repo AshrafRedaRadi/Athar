@@ -218,20 +218,37 @@ export function useRecitation() {
       let allCompleted = true;
       const formattedWords = [];
 
+      // First pass: find highest index of evaluated words
       rawWords.forEach((w, idx) => {
         const wordIndex = typeof w.index === "number" ? w.index : typeof w.Index === "number" ? w.Index : idx;
         const stateVal = w.state !== undefined ? w.state : w.State;
         const stateStr = mapWordState(stateVal);
+        const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
+
+        if (stateStr !== "Pending" && !isBeforeStart) {
+          maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
+        }
+      });
+
+      // Second pass: format words and mark skipped words (Pending before maxEvaluatedIdx) as Incorrect
+      rawWords.forEach((w, idx) => {
+        const wordIndex = typeof w.index === "number" ? w.index : typeof w.Index === "number" ? w.Index : idx;
+        const stateVal = w.state !== undefined ? w.state : w.State;
+        let stateStr = mapWordState(stateVal);
         const isTurnFinal = Boolean(w.isTurnFinal ?? w.IsTurnFinal ?? false);
         const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
 
         const wordText = w.displayText || w.DisplayText || w.word || w.Word || w.text || w.Text || "";
         const recognized = w.recognizedText || w.RecognizedText || null;
 
+        // If this word is after start point, before maxEvaluatedIdx, but still Pending -> user SKIPPED it (Incorrect)
+        if (stateStr === "Pending" && !isBeforeStart && maxEvaluatedIdx !== -1 && wordIndex < maxEvaluatedIdx) {
+          stateStr = "Incorrect";
+        }
+
         if (stateStr === "Pending" && !isBeforeStart) {
           allCompleted = false;
         } else if (!isBeforeStart) {
-          maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex) && wordIndex > lastHighlightedIdxRef.current) {
             highlightQueueRef.current.push(wordIndex);
           }
@@ -239,7 +256,6 @@ export function useRecitation() {
 
         const isAct = Boolean(w.isCurrentActive || w.IsCurrentActive || w.isCurrent || w.IsCurrent || w.isActive || w.IsActive);
         if (isAct && !isBeforeStart) {
-          maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
           if (!highlightQueueRef.current.includes(wordIndex)) {
             highlightQueueRef.current.push(wordIndex);
           }
@@ -278,7 +294,7 @@ export function useRecitation() {
           }, 1300);
         }
       } else if (maxEvaluatedIdx !== -1) {
-        resetSilenceTimer(5000);
+        resetSilenceTimer(3500);
       }
     }
   }, [processHighlightQueue, resetSilenceTimer]);
@@ -299,7 +315,9 @@ export function useRecitation() {
         ? result.DetectedStartWordIndex
         : null;
 
-    playMicOffSound();
+    if (!isStoppingRef.current) {
+      playMicOffSound();
+    }
     cleanupAudioResources();
 
     setCompletedSummary({
@@ -501,8 +519,12 @@ export function useRecitation() {
       workletNodeRef.current = workletNode;
 
       workletNode.port.onmessage = (event) => {
-        if (event.data && audioSubjectRef.current) {
-          audioSubjectRef.current.next(event.data);
+        const data = event.data;
+        if (!data) return;
+        const chunk = data.chunk || (data instanceof Uint8Array ? data : null);
+
+        if (chunk && audioSubjectRef.current) {
+          audioSubjectRef.current.next(chunk);
         }
       };
 

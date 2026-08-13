@@ -67,11 +67,15 @@ export default function RecitationWord({
   const isEvaluated = state !== "Pending";
   const isVisible = !isHidden || isRevealed || isActive || (isReciting && isRecited) || isEvaluated;
 
+  // Active blue pulse highlight is ONLY shown when Hadith is REVEALED (!isHidden).
+  // When Hadith is HIDDEN (isHidden = true), words appear directly in their evaluated state color (no blue pulse).
+  const showActiveHighlight = isActive && !isHidden;
+
   // Base: always include border-b-2 for consistent layout
   let className = "inline-block mx-0.5 border-b-2 transition-colors duration-300";
 
-  if (isActive) {
-    // Active word: royal blue, bold, scaled up
+  if (showActiveHighlight) {
+    // Active word during revealed mode: royal blue, bold, scaled up
     className = "inline-block mx-0.5 border-b-2 border-transparent text-sky-500 dark:text-sky-400 font-extrabold scale-110 transition-all duration-150 drop-shadow-md";
   } else if (isVisible) {
     // Visible word: border transparent + state coloring

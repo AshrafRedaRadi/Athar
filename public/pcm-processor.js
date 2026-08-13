@@ -1,7 +1,8 @@
 /**
  * AudioWorklet Processor for Athar Real-time Speech Recitation
  * Downmixes input audio to mono, resamples to 16kHz PCM16 Little-Endian,
- * and emits exact 1,600-byte (800 Int16 samples / 50ms) chunks to the main thread.
+ * calculates real-time RMS volume, and emits exact 1,600-byte (800 Int16 samples / 50ms) chunks
+ * along with RMS audio level to the main thread.
  */
 
 class PCMProcessor extends AudioWorkletProcessor {
@@ -29,15 +30,19 @@ class PCMProcessor extends AudioWorkletProcessor {
     const sampleLength = input[0].length;
     if (sampleLength === 0) return true;
 
-    // 1. Downmix to mono float32
+    // 1. Downmix to mono float32 & calculate RMS audio volume
+    let sumSq = 0;
     const monoSamples = new Float32Array(sampleLength);
     for (let i = 0; i < sampleLength; i++) {
       let sum = 0;
       for (let ch = 0; ch < channelCount; ch++) {
         sum += input[ch][i];
       }
-      monoSamples[i] = sum / channelCount;
+      const val = sum / channelCount;
+      monoSamples[i] = val;
+      sumSq += val * val;
     }
+    const rms = Math.sqrt(sumSq / sampleLength);
 
     // 2. Linear resampling to 16kHz
     while (this.resamplePos < sampleLength) {
@@ -55,9 +60,9 @@ class PCMProcessor extends AudioWorkletProcessor {
 
       this.buffer[this.bufferIndex++] = pcm16;
 
-      // When 800 samples (1600 bytes) gathered, emit chunk
+      // When 800 samples (1600 bytes) gathered, emit chunk with RMS
       if (this.bufferIndex === 800) {
-        this.emitChunk(this.buffer);
+        this.emitChunk(this.buffer, rms);
         this.buffer = new Int16Array(800);
         this.bufferIndex = 0;
       }
@@ -69,10 +74,10 @@ class PCMProcessor extends AudioWorkletProcessor {
     return true;
   }
 
-  emitChunk(int16Array) {
+  emitChunk(int16Array, rms = 0) {
     // Convert Int16Array (800 samples) to Uint8Array (1600 bytes) Little-Endian
     const uint8Array = new Uint8Array(int16Array.buffer);
-    this.port.postMessage(uint8Array, [uint8Array.buffer]);
+    this.port.postMessage({ chunk: uint8Array, rms: rms }, [uint8Array.buffer]);
   }
 
   flushPaddedChunk() {
@@ -81,7 +86,7 @@ class PCMProcessor extends AudioWorkletProcessor {
       for (let i = this.bufferIndex; i < 800; i++) {
         this.buffer[i] = 0;
       }
-      this.emitChunk(this.buffer);
+      this.emitChunk(this.buffer, 0);
       this.buffer = new Int16Array(800);
       this.bufferIndex = 0;
     }

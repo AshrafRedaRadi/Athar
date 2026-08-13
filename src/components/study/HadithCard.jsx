@@ -31,7 +31,13 @@ export default function HadithCard({
 
     return words.map((word, i) => {
       const spoken = spokenWords[i];
-      const state = spoken?.state || "Pending";
+      let state = spoken?.state || "Pending";
+
+      // When recitation stops or completes, any unspoken (Pending) word is marked as Incorrect (RED)
+      if ((recitationStopped || completedSummary != null) && state === "Pending") {
+        state = "Incorrect";
+      }
+
       const isRecited = spoken != null && state !== "Pending";
       const isActive = isReciting && (i === activeWordIndex || spoken?.isCurrentActive === true);
       const isRevealed = i < revealedCount;
