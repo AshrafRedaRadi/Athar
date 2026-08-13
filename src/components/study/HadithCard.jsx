@@ -67,14 +67,14 @@ export default function HadithCard({
 
         {/* ── Hadith title ── */}
         {title && (
-          <h2 className="font-1 font-bold text-xl sm:text-2xl text-center text-[#2d3748] dark:text-[#f1f5f9] my-3 leading-relaxed">
+          <h2 className="font-1 font-bold text-xl sm:text-2xl text-center text-black dark:text-white my-3 leading-relaxed">
             "{title}"
           </h2>
         )}
 
         {/* ── Hadith text ── */}
         <div className="min-h-[200px] flex items-center justify-center">
-          <p className="font-4 font-normal text-xl sm:text-3xl leading-[2.6] text-center text-[#1a202c] dark:text-[#f8fafc] whitespace-pre-wrap">
+          <p className="font-4 font-normal text-xl sm:text-3xl leading-[2.6] text-center text-black dark:text-white whitespace-pre-wrap">
             {renderText()}
           </p>
         </div>

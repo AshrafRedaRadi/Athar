@@ -85,11 +85,11 @@ export default function RecitationWord({
     } else if (state === "Uncertain") {
       className += " text-amber-500 dark:text-amber-400 font-semibold";
     } else {
-      className += " text-base-content font-normal";
+      className += " text-black dark:text-white font-normal";
     }
   } else {
     // Hidden word: transparent text + visible border (the "dash")
-    className += " border-base-content/40 text-transparent select-none";
+    className += " border-black/40 dark:border-white/40 text-transparent select-none";
   }
 
   return (
