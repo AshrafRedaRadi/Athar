@@ -293,7 +293,7 @@ export function useRecitation() {
             stopListeningRef.current?.();
           }, 1300);
         }
-      } else if (maxEvaluatedIdx !== -1) {
+      } else {
         resetSilenceTimer(3500);
       }
     }
@@ -561,6 +561,7 @@ export function useRecitation() {
    * Captures local refs at start to prevent race conditions with rapid stop+start.
    */
   const stopListening = useCallback(async () => {
+    stopListeningRef.current = stopListening;
     if (isStoppingRef.current) return;
     isStoppingRef.current = true;
 
