@@ -1,26 +1,27 @@
 import React from "react";
 
 // ─────────────────────────────────────────────
-//  Constants
+//  Constants & Style Tokens
 // ─────────────────────────────────────────────
 
-/** Turquoise badge class for quoted hadith/Quran text */
+/** Turquoise badge class for quoted Hadith / Quran text */
 const QUOTE_BADGE_CLASS =
-  "inline-flex items-center px-3 py-1 rounded-xl bg-cyan-700/15 dark:bg-cyan-950/95 text-cyan-950 dark:text-cyan-100 font-bold font-3 text-[14px] sm:text-base border border-cyan-700/30 dark:border-cyan-400/60 shadow-sm mx-0.5 my-1 align-baseline leading-relaxed";
+  "inline-flex items-center px-2.5 py-0.5 rounded-xl bg-cyan-700/15 dark:bg-cyan-950/90 text-cyan-950 dark:text-cyan-100 font-bold font-3 text-[1em] border border-cyan-700/30 dark:border-cyan-400/60 shadow-2xs mx-1 my-0.5 align-baseline leading-relaxed";
 
-/** Subtle citation badge class for verse references */
+/** Subtle citation badge class for verse references like (البقرة: من الآية ٢٧٢) */
 const CITATION_BADGE_CLASS =
-  "inline-flex items-center px-2 py-0.5 rounded-md bg-base-200 text-cyan-800 dark:text-cyan-200 font-semibold font-2 text-[12px] sm:text-sm border border-base-300 mx-1 align-baseline";
+  "inline-flex items-center px-2 py-0.5 rounded-md bg-base-200/90 dark:bg-base-300/80 text-cyan-800 dark:text-cyan-300 font-semibold font-2 text-[0.85em] border border-base-300 mx-1 align-baseline";
 
-/** Regex matching Arabic diacritical marks (tashkeel) */
-const TASHKEEL_RE = /[\u064B-\u065F\u0670\u0610-\u061A]/g;
+/** Section key label highlight class (e.g. مسألة: / الجواب: / أولاً:) */
+const KEY_LABEL_CLASS =
+  "font-bold font-3 text-cyan-800 dark:text-cyan-300 text-[1.02em]";
 
 // ─────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────
 
 /**
- * Strip common leading labels like "الشرح" / "الشرح:" from explanation text.
+ * Strip leading labels like "## الشرح" / "الشرح:" / "# الشرح"
  */
 function stripLeadingLabel(text) {
   if (!text) return text;
@@ -28,203 +29,287 @@ function stripLeadingLabel(text) {
 }
 
 /**
- * Normalize explicit quote patterns into «...» guillemets.
- * Converts ﴿...﴾ Quranic brackets and "..." double quotes.
- * Preserves normal scholar commentary in (...) parentheses without converting to guillemets.
+ * Pre-process text to normalize structural patterns and remove formatting artifacts:
+ * 1. Surah citations: (البقرة: من الآية ٢٧٢) → ⦅البقرة: من الآية ٢٧٢⦆
+ * 2. Explicit quotes: ﴿...﴾ → «...»
+ * 3. Matn quotes after "قوله: (متن)" or "وقوله: **متن**" → قوله: «متن»
+ * 4. Remove dangling parentheses around quotes: («...») → «...»
  */
-function normalizeQuotes(text) {
-  if (!text) return text;
-  let result = text;
+function normalizeStructure(rawText) {
+  if (!rawText) return "";
+  let text = stripLeadingLabel(rawText);
 
-  // Convert Quranic brackets ﴿...﴾ → «...»
-  result = result.replace(/﴿([^﴾]+)﴾/g, (_, inner) => `«${inner.trim()}»`);
+  // 1. Normalize Quranic brackets ﴿...﴾ → «...»
+  text = text.replace(/﴿([^﴾]+)﴾/g, (_, inner) => `«${inner.trim()}»`);
 
-  // Convert double quotes "..." / “...” / „...“ → «...»
-  result = result.replace(/[""„“]([^""„“]+)[""„“]/g, (match, inner) => {
+  // 2. Normalize double quotes "..." / “...” / „...“ → «...»
+  text = text.replace(/[""„“]([^""„“]+)[""„“]/g, (match, inner) => {
     if (/[\u0621-\u064A]/.test(inner)) return `«${inner.trim()}»`;
     return match;
   });
 
-  return result;
+  // 3. Normalize Surah Citations: (سورة: آية) or (سورة: من الآية ٢٧٢) → ⦅سورة: من الآية ٢٧٢⦆
+  text = text.replace(
+    /\(([\u0600-\u06FF\s]+[:؛]\s*(?:من\s+الآية\s+)?[\d\u0660-\u0669]+[^\)]*)\)/gu,
+    (_, inner) => `⦅${inner.trim()}⦆`
+  );
+
+  // 4. Normalize Parenthesized Ayah preceding a Citation: (آية) ⦅سورة⦆ or **(آية)** ⦅سورة⦆ → «آية» ⦅سورة⦆
+  text = text.replace(
+    /(?:\*\*)?\(([\u0600-\u06FF\s\u064B-\u065F\u0670\u0610-\u061A\u06D6-\u06ED]+)\)(?:\*\*)?\s*(⦅[^⦆]+⦆)/gu,
+    (_, ayah, citation) => `«${ayah.trim()}» ${citation}`
+  );
+
+  // 5. Normalize Matn quotes introduced by (قوله: / وقوله: / فقوله: / بقوله: / لقوله: / وفي قوله)
+  text = text.replace(
+    /((?:و?في\s+)?(?:و?قوله|بقوله|لقوله|كقوله)\s*[:：]?\s*)(?:\(([^\)\n]+)\)|\*\*([^*\n]+)\*\*)/gu,
+    (match, intro, inParen, inBold) => {
+      const content = (inParen || inBold || "").trim();
+      if (content && !/^(الجواب|الأول|الثاني|الثالث|مسألة)$/.test(content)) {
+        return `${intro}«${content}»`;
+      }
+      return match;
+    }
+  );
+
+  // 6. Clean dangling parentheses wrapping quotes: («...») or ( «...» ) → «...»
+  text = text.replace(/\(\s*«([^»]+)»\s*\)/gu, "«$1»");
+
+  // 7. Clean outer parentheses when an inner quote exists: (ثم قال لي: «يا عمر..») → ثم قال لي: «يا عمر..»
+  text = text.replace(/\(([^()\n]*«[^»\n]+»[^()\n]*)\)/gu, "$1");
+
+  // 8. Clean bold wrapping quotes: **«...»** → «...»
+  text = text.replace(/\*\*\s*«([^»]+)»\s*\*\*/gu, "«$1»");
+
+  // 9. Clean quotes wrapping bold: «**...**» → «...»
+  text = text.replace(/«\s*\*\*([^*]+)\*\*\s*»/gu, "«$1»");
+
+  // 10. Clean bold inside parentheses: (**...**) → **...**
+  text = text.replace(/\(\s*\*\*([^*]+)\*\*\s*\)/gu, "**$1**");
+
+  return text;
 }
 
 // ─────────────────────────────────────────────
-//  Inline Formatter
+//  Inline Token Parser
 // ─────────────────────────────────────────────
 
 /**
- * Parse inline formatting: **bold** and «guillemets».
- * Preserves plain text strings intact with exact spaces.
+ * Parses inline string into React nodes:
+ * - «Hadith/Ayah Quote» → Turquoise highlight badge
+ * - ⦅Citation⦆ → Subtle citation pill
+ * - **Bold Key Label** → Styled key label (e.g. مسألة: / الجواب:)
+ * - Plain text → Clean typography with no leftover asterisks or stray brackets
  */
-function formatInline(str, keyRef) {
+function parseInlineContent(str, keyRef) {
   if (!str) return str;
 
   const result = [];
-  let i = 0;
-  let buffer = "";
+  // Tokenize by «...», ⦅...⦆, and **...**
+  const regex = /(«[^»]+»|⦅[^⦆]+⦆|\*\*[\s\S]+?\*\*)/g;
+  let lastIdx = 0;
+  let match;
 
-  const flushBuffer = () => {
-    if (buffer) {
-      result.push(buffer);
-      buffer = "";
-    }
-  };
-
-  while (i < str.length) {
-    // Bold **...**
-    if (str[i] === "*" && str[i + 1] === "*") {
-      const endBold = str.indexOf("**", i + 2);
-      if (endBold !== -1) {
-        flushBuffer();
-        const boldContent = str.slice(i + 2, endBold);
-        const tashkeelCount = (boldContent.match(TASHKEEL_RE) || []).length;
-
-        // If bold content has 3+ diacritics (hadith quote inside **...**)
-        if (tashkeelCount >= 3) {
-          result.push(
-            <span key={`b${keyRef.k++}`} className={QUOTE_BADGE_CLASS}>
-              «{boldContent}»
-            </span>
-          );
-        } else {
-          result.push(
-            <strong
-              key={`b${keyRef.k++}`}
-              className="font-bold text-cyan-900 dark:text-cyan-200 font-3 text-[13px] sm:text-base inline"
-            >
-              {boldContent}
-            </strong>
-          );
-        }
-        i = endBold + 2;
-        continue;
-      }
+  while ((match = regex.exec(str)) !== null) {
+    // Plain text before token
+    if (match.index > lastIdx) {
+      const plain = str.slice(lastIdx, match.index).replace(/\*\*/g, "");
+      if (plain) result.push(plain);
     }
 
-    // Explicit Guillemets «...»
-    if (str[i] === "«") {
-      const endQuote = str.indexOf("»", i + 1);
-      if (endQuote !== -1) {
-        flushBuffer();
-        const rawQuote = str
-          .slice(i + 1, endQuote)
-          .trim()
-          .replace(/\*\*/g, "");
-        result.push(
-          <span key={`q${keyRef.k++}`} className={QUOTE_BADGE_CLASS}>
-            «{rawQuote}»
-          </span>
-        );
-        i = endQuote + 1;
-        continue;
-      }
+    const token = match[0];
+    const k = keyRef.k++;
+
+    if (token.startsWith("«") && token.endsWith("»")) {
+      const inner = token.slice(1, -1).trim().replace(/\*\*/g, "");
+      result.push(
+        <span key={`q_${k}`} className={QUOTE_BADGE_CLASS}>
+          «{inner}»
+        </span>
+      );
+    } else if (token.startsWith("⦅") && token.endsWith("⦆")) {
+      const inner = token.slice(1, -1).trim();
+      result.push(
+        <span key={`c_${k}`} className={CITATION_BADGE_CLASS}>
+          ({inner})
+        </span>
+      );
+    } else if (token.startsWith("**") && token.endsWith("**")) {
+      const inner = token.slice(2, -2).trim().replace(/\*\*/g, "");
+      // Check if it's a key label (like مسألة: / الجواب: / أولاً:)
+      const isKeyLabel = /^(مسألة|الجواب|تنبيه|فائدة|أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الأول|الثاني|الثالث)[:：]?$/.test(
+        inner
+      );
+
+      result.push(
+        <strong
+          key={`b_${k}`}
+          className={
+            isKeyLabel
+              ? KEY_LABEL_CLASS
+              : "font-bold text-cyan-900 dark:text-cyan-200"
+          }
+        >
+          {inner}
+        </strong>
+      );
     }
 
-    buffer += str[i];
-    i++;
+    lastIdx = regex.lastIndex;
   }
 
-  flushBuffer();
-  return result.length === 1 && typeof result[0] === "string"
-    ? result[0]
-    : result;
+  // Remaining trailing text
+  if (lastIdx < str.length) {
+    const trailing = str.slice(lastIdx).replace(/\*\*/g, "");
+    if (trailing) result.push(trailing);
+  }
+
+  return result.length > 0 ? result : str;
 }
 
 // ─────────────────────────────────────────────
-//  Main Renderer
+//  Main Markdown Renderer
 // ─────────────────────────────────────────────
 
+/**
+ * Transforms raw markdown explanation string into a beautifully structured,
+ * authentic Islamic scholarly presentation.
+ */
 export default function renderMarkdownText(rawText) {
   if (!rawText) return null;
 
-  const text = stripLeadingLabel(rawText);
-  if (!text) return null;
+  const normalized = normalizeStructure(rawText);
+  if (!normalized) return null;
 
-  const normalized = normalizeQuotes(text);
-  const lines = normalized.split("\n");
-
+  const lines = normalized.split(/\r?\n/);
   const keyRef = { k: 0 };
+  const blocks = [];
 
-  return lines.map((line, idx) => {
-    const trimmed = line.trim();
-    if (!trimmed) return null;
+  let i = 0;
+  while (i < lines.length) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
 
-    // Blockquote (> ...)
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // 1. Heading (# / ## / ###)
+    if (trimmed.startsWith("#")) {
+      const headingText = trimmed.replace(/^#+\s*/, "").trim();
+      if (headingText && !/^الشرح\s*[:：]?\s*$/.test(headingText)) {
+        blocks.push(
+          <h4
+            key={`h_${keyRef.k++}`}
+            className="font-3 font-bold text-[1.18em] text-cyan-800 dark:text-cyan-300 mt-4 mb-2 border-r-3 border-cyan-700 pr-2.5"
+          >
+            {headingText}
+          </h4>
+        );
+      }
+      i++;
+      continue;
+    }
+
+    // 2. Blockquote (> ...)
     if (trimmed.startsWith(">")) {
       const clean = trimmed
         .replace(/^>\s*/, "")
         .replace(/^«/, "")
         .replace(/»$/, "")
-        .replace(/\*\*/g, "")
+        .replace(/^\((.+)\)$/, "$1")
         .trim();
-      return (
-        <p
-          key={idx}
-          className="font-2 text-sm sm:text-base leading-relaxed text-base-content/90 my-2"
-        >
+
+      blocks.push(
+        <div key={`bq_${keyRef.k++}`} className="my-2.5">
           <span className={QUOTE_BADGE_CLASS}>«{clean}»</span>
-        </p>
+        </div>
       );
+      i++;
+      continue;
     }
 
-    // Heading (# ...)
-    if (trimmed.startsWith("#")) {
-      const headingText = trimmed.replace(/^#+\s*/, "");
-      if (/^الشرح\s*[:：]?\s*$/.test(headingText)) return null;
-      return (
-        <h4
-          key={idx}
-          className="font-3 font-bold text-base sm:text-lg text-cyan-800 dark:text-cyan-300 mt-5 mb-2"
+    // 3. Numbered List Item (e.g. 1. المرتبة الأولى: ...)
+    if (/^\d+[\.\-\)]\s+/.test(trimmed)) {
+      const listItems = [];
+      while (i < lines.length && /^\d+[\.\-\)]\s+/.test(lines[i].trim())) {
+        const itemText = lines[i].trim().replace(/^\d+[\.\-\)]\s+/, "");
+        listItems.push(itemText);
+        i++;
+      }
+
+      blocks.push(
+        <ol
+          key={`ol_${keyRef.k++}`}
+          className="space-y-2 my-3 ms-4 list-decimal font-2 text-[1em] text-base-content/90 leading-relaxed"
         >
-          {headingText}
-        </h4>
+          {listItems.map((it, idx) => (
+            <li key={idx} className="ps-1">
+              {parseInlineContent(it, keyRef)}
+            </li>
+          ))}
+        </ol>
       );
+      continue;
     }
 
-    // Full-line bold (**...**)
+    // 4. Bullet List Item (e.g. - الجملة الأولى... / * ...)
+    if (/^[*\-•]\s+/.test(trimmed)) {
+      const listItems = [];
+      while (i < lines.length && /^[*\-•]\s+/.test(lines[i].trim())) {
+        const itemText = lines[i].trim().replace(/^[*\-•]\s+/, "");
+        listItems.push(itemText);
+        i++;
+      }
+
+      blocks.push(
+        <ul
+          key={`ul_${keyRef.k++}`}
+          className="space-y-2 my-3 ms-4 list-disc font-2 text-[1em] text-base-content/90 leading-relaxed"
+        >
+          {listItems.map((it, idx) => (
+            <li key={idx} className="ps-1">
+              {parseInlineContent(it, keyRef)}
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // 5. Full-Line Bold Heading (e.g. **مسألة:** ...)
     if (
       trimmed.startsWith("**") &&
       trimmed.endsWith("**") &&
       !trimmed.slice(2, -2).includes("**")
     ) {
-      const boldContent = trimmed.slice(2, -2);
-      if (/^الشرح\s*[:：]?\s*$/.test(boldContent)) return null;
-      return (
-        <h4
-          key={idx}
-          className="font-3 font-bold text-base sm:text-lg text-cyan-800 dark:text-cyan-300 mt-5 mb-2 border-r-2 border-cyan-700 pr-2"
+      const inner = trimmed.slice(2, -2).trim();
+      blocks.push(
+        <h5
+          key={`fh_${keyRef.k++}`}
+          className="font-3 font-bold text-[1.1em] text-cyan-800 dark:text-cyan-300 mt-4 mb-1.5"
         >
-          {boldContent}
-        </h4>
+          {inner}
+        </h5>
       );
+      i++;
+      continue;
     }
 
-    // List item (* ..., - ..., • ...)
-    if (
-      trimmed.startsWith("* ") ||
-      trimmed.startsWith("- ") ||
-      trimmed.startsWith("• ")
-    ) {
-      return (
-        <li
-          key={idx}
-          className="font-2 text-sm sm:text-base leading-relaxed text-base-content/90 ms-4 list-disc mb-1.5"
-        >
-          {formatInline(trimmed.replace(/^[*\-•]\s*/, ""), keyRef)}
-        </li>
-      );
-    }
-
-    // Plain paragraph
-    return (
+    // 6. Regular Paragraph
+    blocks.push(
       <p
-        key={idx}
-        className="font-2 text-sm sm:text-base leading-relaxed text-base-content/90 mb-2.5"
+        key={`p_${keyRef.k++}`}
+        className="font-2 text-[1em] leading-relaxed text-base-content/90 mb-3"
       >
-        {formatInline(trimmed, keyRef)}
+        {parseInlineContent(trimmed, keyRef)}
       </p>
     );
-  });
+    i++;
+  }
+
+  return blocks;
 }
 
 export { QUOTE_BADGE_CLASS, CITATION_BADGE_CLASS };

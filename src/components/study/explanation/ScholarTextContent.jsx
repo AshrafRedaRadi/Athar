@@ -60,7 +60,7 @@ function parseScholarItem(item) {
  * @param {Object|string|null} item - Scholar explanation data from the backend
  * @param {string} emptyMsg - Fallback message when no content is available
  */
-export default function ScholarTextContent({ item, emptyMsg }) {
+export default function ScholarTextContent({ item, emptyMsg, fontSize = 16 }) {
   if (!item) return <EmptyState message={emptyMsg} />;
 
   const { rawText, summary, sections, keyPoints } = parseScholarItem(item);
@@ -75,10 +75,13 @@ export default function ScholarTextContent({ item, emptyMsg }) {
   if (!hasContent) return <EmptyState message={emptyMsg} />;
 
   return (
-    <div className="space-y-3 bg-base-100 p-2 rounded-xl">
+    <div
+      className="space-y-3 bg-base-100 p-2 rounded-xl transition-all duration-150"
+      style={{ fontSize: `${fontSize}px`, lineHeight: 1.85 }}
+    >
       {/* Summary Card */}
       {summary && (
-        <div className="p-3 bg-cyan-700/10 border border-cyan-700/20 rounded-xl text-sm font-2 leading-relaxed text-base-content">
+        <div className="p-3 bg-cyan-700/10 border border-cyan-700/20 rounded-xl text-[0.9em] font-2 leading-relaxed text-base-content">
           <span className="font-bold text-cyan-800 dark:text-cyan-300 block mb-1">
             الخلاصة:
           </span>
