@@ -3,9 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { IoLayersOutline, IoLibraryOutline } from "react-icons/io5";
 import { IoChevronBack } from "react-icons/io5";
 import Navbar from "../components/shared/Navbar";
-import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
-import { useAuth } from "../context/AuthContext";
 
 // ─────────────────────────────────────────────
 //  ListSection Page
@@ -14,13 +12,11 @@ import { useAuth } from "../context/AuthContext";
 export default function ListSection() {
   const { bookId } = useParams();
   const navigate = useNavigate();
-  const { isGuest } = useAuth();
 
   const [sections, setSections] = useState([]);
   const [bookTitle, setBookTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -54,10 +50,6 @@ export default function ListSection() {
   }, [bookId, navigate]);
 
   const handleSectionClick = (section) => {
-    if (isGuest) {
-      setIsGuestModalOpen(true);
-      return;
-    }
     navigate(`/library/${bookId}/${section.id}`);
   };
 
@@ -162,15 +154,6 @@ export default function ListSection() {
             ))}
           </div>
         )}
-
-        {/* ── Guest Login Modal ── */}
-        <GuestLoginModal
-          isOpen={isGuestModalOpen}
-          onClose={() => setIsGuestModalOpen(false)}
-          title="تسجيل الدخول لتصفح الأقسام"
-          message="تصفح وحفظ أحاديث هذا القسم يتطلب تسجيل الدخول إلى حسابك."
-        />
-
       </main>
     </div>
   );

@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
-      if (storedToken && storedToken !== 'guest-session-token') {
+      if (storedToken) {
         try {
           const profileData = await apiFetch('/api/Account/profile');
           const formatted = formatUserData(profileData);
@@ -49,17 +49,6 @@ export function AuthProvider({ children }) {
           }
         } catch {
           logout();
-        }
-      } else if (storedToken === 'guest-session-token') {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          try {
-            setUser(JSON.parse(savedUser));
-          } catch {
-            setUser({ name: 'ضيف أثر', isGuest: true });
-          }
-        } else {
-          setUser({ name: 'ضيف أثر', isGuest: true });
         }
       } else {
         setUser(null);
@@ -107,7 +96,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('user', JSON.stringify(formatted));
         setUser(formatted);
       } catch {
-        setUser({ isGuest: false });
+        setUser(null);
       }
 
       // Daily check-in (fire-and-forget)
@@ -142,10 +131,11 @@ export function AuthProvider({ children }) {
       setToken(newToken);
       try {
         const userData = await apiFetch('/api/Account/profile');
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        const formatted = formatUserData(userData);
+        localStorage.setItem('user', JSON.stringify(formatted));
+        setUser(formatted);
       } catch {
-        setUser({ isGuest: false });
+        setUser(null);
       }
 
       // Daily check-in (fire-and-forget)
@@ -153,14 +143,6 @@ export function AuthProvider({ children }) {
     }
     return responseData;
   };
-
-  const loginGuest = () => {
-    const guestUser = { name: 'ضيف أثر', isGuest: true };
-    localStorage.setItem('user', JSON.stringify(guestUser));
-    setToken('guest-session-token');
-    setUser(guestUser);
-  };
-
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -181,14 +163,13 @@ export function AuthProvider({ children }) {
   const value = {
     token,
     user,
-    isAuthenticated: Boolean(token) && !user?.isGuest,
-    isGuest: Boolean(user?.isGuest),
+    isAuthenticated: Boolean(token),
+    isGuest: false,
     isLoading,
     login,
     register,
     confirmEmail,
     loginGoogle,
-    loginGuest,
     logout,
     updateUser,
   };

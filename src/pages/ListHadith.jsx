@@ -14,7 +14,6 @@ import {
   IoEllipseOutline,
 } from "react-icons/io5";
 import Navbar from "../components/shared/Navbar";
-import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";
@@ -142,7 +141,6 @@ function HadithMobileCard({ hadith, status, isSingleColumn = false, onAction }) 
 export default function ListHadith() {
   const { bookId, sectionId } = useParams();
   const navigate = useNavigate();
-  const { isGuest } = useAuth();
 
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
 
@@ -151,7 +149,6 @@ export default function ListHadith() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [progressMap, setProgressMap] = useState({});
 
   // View Mode state: 'cards' by default on mobile size (<640px) or 'table' on desktop, persisted in localStorage
@@ -195,7 +192,7 @@ export default function ListHadith() {
         const [hadithsData, booksData, progressData] = await Promise.all([
           hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
-          isGuest ? Promise.resolve([]) : hadithsService.getHadithProgress(bookId).catch(() => []),
+          hadithsService.getHadithProgress(bookId).catch(() => []),
         ]);
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
@@ -225,11 +222,6 @@ export default function ListHadith() {
 
   /** Navigate to the Study page for a specific hadith and update status to 1 (InProgress) if 0 (NotStarted) */
   const handleAction = async (hadith) => {
-    if (isGuest) {
-      setIsGuestModalOpen(true);
-      return;
-    }
-
     const currentStatus = getHadithStatus(hadith.id);
     const targetSection = sectionId || hadith.hadithSectionId || 0;
 
@@ -512,15 +504,6 @@ export default function ListHadith() {
             )}
           </>
         )}
-
-        {/* ── Guest Login Modal ── */}
-        <GuestLoginModal
-          isOpen={isGuestModalOpen}
-          onClose={() => setIsGuestModalOpen(false)}
-          title="تسجيل الدخول لبدء الحفظ"
-          message="بدء حفظ أو مراجعة هذا الحديث والتسميع بالصوت يتطلب تسجيل الدخول إلى حسابك."
-        />
-
       </main>
     </div>
   );

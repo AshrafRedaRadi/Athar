@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { IoLogInOutline, IoPersonAddOutline, IoBookOutline, IoMicOutline, IoStatsChartOutline } from "react-icons/io5";
-import { BsStars } from "react-icons/bs";
 import Navbar from "../components/shared/Navbar";
 import Stat from "../components/home/Stat";
 import Progress from "../components/home/Progress";
@@ -12,22 +9,21 @@ import { hadithsService } from "../services/hadithsService";
 import { activityService, computeCurrentStreak } from "../services/activityService";
 
 function Home() {
-  const { isAuthenticated, isGuest, logout } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const [summaryData, setSummaryData] = useState(null);
-  const [isLoading, setIsLoading]     = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [calendarDays, setCalendarDays] = useState([]);
   const [realMemorizedCount, setRealMemorizedCount] = useState(null);
 
   useEffect(() => {
     async function loadDashboardSummary() {
-      if (isGuest || !isAuthenticated) return;
+      if (!isAuthenticated) return;
 
       try {
         setIsLoading(true);
-        const now   = new Date();
-        const year  = now.getFullYear();
+        const now = new Date();
+        const year = now.getFullYear();
         const month = now.getMonth() + 1; // 1-indexed
 
         // Fetch dashboard summary and activity calendar in parallel
@@ -47,20 +43,26 @@ function Home() {
     }
 
     loadDashboardSummary();
-  }, [isAuthenticated, isGuest]);
+  }, [isAuthenticated]);
 
   // Fetch real status-2 (fully memorized) hadith count once the last book is known
   useEffect(() => {
-    if (isGuest || !summaryData) return;
-    // Derive bookId from summaryData inline to avoid rules-of-hooks violation
+    if (!summaryData) return;
     const unwrap = (d) =>
       d?.data && typeof d.data === "object" && !Array.isArray(d.data) ? d.data : d;
     const sd = unwrap(summaryData);
-    const book = sd?.lastOpenedBook || sd?.lastBook || sd?.book ||
-      summaryData?.lastOpenedBook || summaryData?.lastBook || null;
+    const book =
+      sd?.lastOpenedBook ||
+      sd?.lastBook ||
+      sd?.book ||
+      summaryData?.lastOpenedBook ||
+      summaryData?.lastBook ||
+      null;
     const bookId = book?.id ?? book?.bookId ?? sd?.currentBookId ?? sd?.bookId ?? null;
     if (!bookId) return;
-    hadithsService.getHadithProgress(bookId)
+
+    hadithsService
+      .getHadithProgress(bookId)
       .then((progressList) => {
         if (!Array.isArray(progressList)) return;
         const count = progressList.filter(
@@ -71,16 +73,7 @@ function Home() {
       .catch((err) => {
         console.warn("Could not fetch hadith progress list:", err.message);
       });
-  }, [summaryData, isGuest]);
-
-  const handleLoginRedirect = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const handleSignupRedirect = () => {
-    navigate("/signup");
-  };
+  }, [summaryData]);
 
   // Helper for case-insensitive property lookup across multiple objects
   const getProp = (obj, ...keys) => {
@@ -96,25 +89,22 @@ function Home() {
     return undefined;
   };
 
-  // Unwrap summaryData if data property exists (e.g. { data: { inProgressHadithCount, ... } })
+  // Unwrap summaryData if data property exists
   const actualData =
     summaryData?.data && typeof summaryData.data === "object" && !Array.isArray(summaryData.data)
       ? summaryData.data
       : summaryData;
 
-  // Extract overallProgress object from summaryData API response
   const overallProgress =
     getProp(actualData, "overallProgress", "progress", "overall") ||
     getProp(summaryData, "overallProgress", "progress", "overall") ||
     null;
 
-  // Extract lastOpenedBook object from summaryData API response
   const lastOpenedBook =
     getProp(actualData, "lastOpenedBook", "lastBook", "book") ||
     getProp(summaryData, "lastOpenedBook", "lastBook", "book") ||
     null;
 
-  // Memorized hadith count from overallProgress, actualData, summaryData, or lastOpenedBook
   const memorizedHadithCount =
     getProp(overallProgress, "memorizedHadithCount", "memorizedHadithsCount", "totalMemorizedHadiths", "memorizedCount", "totalMemorized") ??
     getProp(actualData, "memorizedHadithCount", "memorizedHadithsCount", "totalMemorizedHadiths", "memorizedCount", "totalMemorized") ??
@@ -122,7 +112,6 @@ function Home() {
     getProp(lastOpenedBook, "memorizedHadithCount", "memorizedHadithsCount", "memorizedCount", "hadithCount") ??
     0;
 
-  // Progress percentage from overallProgress, lastOpenedBook, or actualData/summaryData
   const rawProgress =
     getProp(overallProgress, "percentage", "progressPercentage", "progressRatio", "progress", "completionPercentage") ??
     getProp(lastOpenedBook, "percentage", "progressPercentage", "progressRatio", "progress", "completionPercentage") ??
@@ -132,7 +121,6 @@ function Home() {
 
   const progressPercentage = Math.min(Math.max(Number(rawProgress) || 0, 0), 100);
 
-  // Extract inProgressHadithCount directly from overallProgress -> inProgressHadithCount
   const inProgressHadithCount =
     getProp(overallProgress, "inProgressHadithCount", "inProgressCount", "inProgressHadithsCount", "inProgressHadiths") ??
     getProp(actualData, "inProgressHadithCount", "inProgressCount", "inProgressHadithsCount", "inProgressHadiths") ??
@@ -141,18 +129,16 @@ function Home() {
     getProp(lastOpenedBook, "inProgressHadithCount", "inProgressCount") ??
     0;
 
-  // Streak — prefer the server-computed currentStreak from the calendar API;
-  // fall back to local computation for safety.
   const daysStreak =
-    (calendarDays && typeof calendarDays.currentStreak === "number")
+    calendarDays && typeof calendarDays.currentStreak === "number"
       ? calendarDays.currentStreak
       : computeCurrentStreak(calendarDays?.dates ?? calendarDays ?? []);
+
   const accuracyRate =
     getProp(actualData, "accuracyRate", "accuracyPercentage", "accuracy", "rate") ??
     getProp(summaryData, "accuracyRate", "accuracy") ??
     0;
 
-  // Book title, ID, and total hadith count for "أكمل من حيث توقفت"
   const currentBookTitle =
     getProp(lastOpenedBook, "title", "name", "bookTitle") ??
     getProp(actualData, "currentBookTitle", "title", "name") ??
@@ -163,6 +149,7 @@ function Home() {
     getProp(lastOpenedBook, "id", "bookId") ??
     getProp(actualData, "currentBookId", "bookId", "id") ??
     null;
+
   const resumeHadithId =
     getProp(lastOpenedBook, "resumeHadithId", "lastHadithId", "lastOpenedHadithId", "hadithId") ??
     getProp(actualData, "resumeHadithId", "lastHadithId", "lastOpenedHadithId") ??
@@ -187,103 +174,36 @@ function Home() {
         {/* Unified Navbar */}
         <Navbar activePage="home" />
 
-        {isGuest ? (
-          /* ── Guest View ── */
-          <div className="max-w-3xl mx-auto my-6 space-y-6">
-            {/* Main Guest Banner Card */}
-            <div className="card bg-gradient-to-br from-cyan-900/10 via-base-100 to-base-100 border border-cyan-700/20 shadow-lg p-6 sm:p-10 rounded-3xl text-center flex flex-col items-center gap-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full blur-2xl -z-0 pointer-events-none" />
-
-              {/* Top Badge Icon */}
-              <div className="w-16 h-16 rounded-2xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-3xl shadow-sm shrink-0">
-                <BsStars />
-              </div>
-
-              {/* Title & Description */}
-              <div className="space-y-2 max-w-xl">
-                <h1 className="font-1 font-bold text-2xl sm:text-3xl text-base-content leading-tight">
-                  أهلاً بك في منصة أثر 🌿
-                </h1>
-                <p className="font-2 text-sm sm:text-base text-base-content/75 leading-relaxed">
-                  أنت تتصفح المنصة حالياً كـ <span className="font-semibold text-cyan-700 dark:text-cyan-400">ضيف</span>. سجّل دخولك لتستمتع بجميع المميزات وحفظ المتون وحساب تقدمك اليومي.
-                </p>
-              </div>
-
-              {/* Feature Highlights Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full my-2 text-start font-2">
-                <div className="bg-base-200/70 border border-base-300/60 p-4 rounded-2xl flex flex-col gap-1.5">
-                  <IoBookOutline className="text-cyan-700 dark:text-cyan-400 text-2xl" />
-                  <h3 className="font-bold text-xs sm:text-sm text-base-content">حفظ المتون والكتب</h3>
-                  <p className="text-[11px] text-base-content/60">تصفح الأربعون النووية وصحيح البخاري وغيرها</p>
-                </div>
-
-                <div className="bg-base-200/70 border border-base-300/60 p-4 rounded-2xl flex flex-col gap-1.5">
-                  <IoMicOutline className="text-cyan-700 dark:text-cyan-400 text-2xl" />
-                  <h3 className="font-bold text-xs sm:text-sm text-base-content">التسميع الذكي</h3>
-                  <p className="text-[11px] text-base-content/60">تصحيح تلقائي بالذكاء الاصطناعي أثناء التسميع</p>
-                </div>
-
-                <div className="bg-base-200/70 border border-base-300/60 p-4 rounded-2xl flex flex-col gap-1.5">
-                  <IoStatsChartOutline className="text-cyan-700 dark:text-cyan-400 text-2xl" />
-                  <h3 className="font-bold text-xs sm:text-sm text-base-content">متابعة الإحصائيات</h3>
-                  <p className="text-[11px] text-base-content/60">قياس نسبة الدقة والالتزام اليومي بحفظ الأحاديث</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md font-2 pt-2">
-                <button
-                  onClick={handleLoginRedirect}
-                  className="btn bg-cyan-700 hover:bg-cyan-800 text-white border-none rounded-xl w-full sm:w-auto px-8 flex items-center justify-center gap-2 shadow-md"
-                >
-                  <IoLogInOutline className="text-xl" />
-                  <span>تسجيل الدخول</span>
-                </button>
-
-                <button
-                  onClick={handleSignupRedirect}
-                  className="btn btn-outline border-cyan-700 text-cyan-700 hover:bg-cyan-700 hover:text-white rounded-xl w-full sm:w-auto px-8 flex items-center justify-center gap-2"
-                >
-                  <IoPersonAddOutline className="text-lg" />
-                  <span>إنشاء حساب جديد</span>
-                </button>
-              </div>
+        {/* ── Authenticated User Main Home Content ── */}
+        {isLoading ? (
+          <div className="space-y-6 mt-8 animate-pulse">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
+              <div className="h-24 bg-base-100 rounded-2xl" />
+              <div className="h-24 bg-base-100 rounded-2xl" />
+              <div className="h-24 bg-base-100 rounded-2xl" />
             </div>
+            <div className="h-32 bg-base-100 rounded-2xl" />
+            <div className="h-44 bg-base-100 rounded-2xl" />
           </div>
         ) : (
-          /* ── Authenticated User Main Home Content ── */
           <>
-            {isLoading ? (
-              <div className="space-y-6 mt-8 animate-pulse">
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
-                  <div className="h-24 bg-base-100 rounded-2xl" />
-                  <div className="h-24 bg-base-100 rounded-2xl" />
-                  <div className="h-24 bg-base-100 rounded-2xl" />
-                </div>
-                <div className="h-32 bg-base-100 rounded-2xl" />
-                <div className="h-44 bg-base-100 rounded-2xl" />
-              </div>
-            ) : (
-              <>
-                <Stat
-                  days={daysStreak}
-                  hadith={realMemorizedCount ?? memorizedHadithCount}
-                  inProgressHadithCount={inProgressHadithCount}
-                  accuracy={accuracyRate}
-                />
-                <Progress
-                  title={currentBookTitle}
-                  progress={progressPercentage}
-                  bookId={currentBookId}
-                  inProgressHadithCount={inProgressHadithCount}
-                  memorizedHadithCount={realMemorizedCount ?? memorizedHadithCount}
-                  totalHadiths={totalHadiths}
-                  resumeHadithId={resumeHadithId}
-                  resumeSectionId={resumeSectionId}
-                />
-                <Tasks summary={summaryData} />
-              </>
-            )}
+            <Stat
+              days={daysStreak}
+              hadith={realMemorizedCount ?? memorizedHadithCount}
+              inProgressHadithCount={inProgressHadithCount}
+              accuracy={accuracyRate}
+            />
+            <Progress
+              title={currentBookTitle}
+              progress={progressPercentage}
+              bookId={currentBookId}
+              inProgressHadithCount={inProgressHadithCount}
+              memorizedHadithCount={realMemorizedCount ?? memorizedHadithCount}
+              totalHadiths={totalHadiths}
+              resumeHadithId={resumeHadithId}
+              resumeSectionId={resumeSectionId}
+            />
+            <Tasks summary={summaryData} />
           </>
         )}
       </main>

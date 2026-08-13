@@ -12,10 +12,10 @@ import logoImg from "../../assets/logo.png";
  */
 function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar, drawerId = "sidebar-drawer", onOpenSettings }) {
   const navigate = useNavigate();
-  const { user, isGuest, logout } = useAuth();
+  const { user, logout } = useAuth();
   const drawerRef = useRef(null);
 
-  const userName = customName || user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
+  const userName = customName || user?.fullName || user?.name || user?.userName || "المستخدم";
   const userAvatar = customAvatar || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
 
   const closeDrawer = () => {

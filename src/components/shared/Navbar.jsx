@@ -26,19 +26,15 @@ export default function Navbar({
   onOpenSettings,
 }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, isGuest, logout } = useAuth();
+  const { user } = useAuth();
 
   const isSettingsPage = activePage === "settings" || location.pathname === "/settings";
 
-  const userName = user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
+  const userName = user?.fullName || user?.name || user?.userName || "المستخدم";
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
 
   const handleAvatarClick = () => {
-    if (isGuest) {
-      logout();
-      navigate('/login');
-    } else if (isSettingsPage) {
+    if (isSettingsPage) {
       navigate('/');
     } else {
       if (typeof onOpenSettings === 'function') {

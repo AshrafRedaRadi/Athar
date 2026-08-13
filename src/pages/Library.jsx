@@ -6,10 +6,8 @@ import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import Navbar from "../components/shared/Navbar";
 import CategoryFilters from "../components/shared/CategoryFilters";
 import Card from "../components/library/Card";
-import GuestLoginModal from "../components/auth/GuestLoginModal";
 import { booksService } from "../services/booksService";
 import { useTheme } from "../hooks/useTheme";
-import { useAuth } from "../context/AuthContext";
 
 // ─────────────────────────────────────────────
 //  Static mock fallback data (in case API is offline)
@@ -27,12 +25,10 @@ const MOCK_CATEGORIES = [
 //  Library Page
 // ─────────────────────────────────────────────
 export default function Library() {
-  const { isGuest } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("الكل");
   const [books, setBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
 
   // ── Fetch books from real Backend API ──
   useEffect(() => {
@@ -58,10 +54,6 @@ export default function Library() {
 
   // ── Smart navigation: check sections before deciding which page to go to ──
   const handleBookClick = async (book) => {
-    if (isGuest) {
-      setIsGuestModalOpen(true);
-      return;
-    }
     try {
       const sections = await booksService.getBookSections(book.id);
       if (Array.isArray(sections) && sections.length > 1) {
@@ -74,77 +66,83 @@ export default function Library() {
         // No sections → sectionId=0 means "fetch all hadiths for this book"
         navigate(`/library/${book.id}/0`);
       }
-    } catch {
+    } catch (err) {
+      console.warn("Could not check book sections, navigating to default view:", err.message);
       navigate(`/library/${book.id}/0`);
     }
   };
 
-  // Client-side filter on books list (only display visible books to public users)
-  const filteredBooks = books.filter((book) => {
-    const isVisible = book.status !== "مخفي";
-    const matchesSearch = (book.title || "").includes(searchQuery) || (book.author || "").includes(searchQuery);
-    const matchesCategory = activeCategory === "الكل" || book.category === activeCategory;
-    return isVisible && matchesSearch && matchesCategory;
+  // ── Client-side filter: category & search query ──
+  const filteredBooks = books.filter((b) => {
+    const matchesCategory =
+      activeCategory === "الكل" || b.category === activeCategory;
+    const matchesSearch =
+      !searchQuery ||
+      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.author.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
+
+  // ── Skeleton placeholders while loading ──
+  const SkeletonCard = () => (
+    <div className="card bg-base-100 border border-base-200 shadow-sm p-4 flex flex-col gap-3 animate-pulse">
+      <div className="w-full h-40 bg-base-300 rounded-xl" />
+      <div className="w-3/4 h-4 bg-base-300 rounded" />
+      <div className="w-1/2 h-3 bg-base-300 rounded" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-base-200">
       {/* ── Page content ── */}
       <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
+        {/* ── Top bar ── */}
+        <Navbar activePage="library" />
 
-        {/* ── Unified Navbar with Search Slot ── */}
-        <Navbar
-          activePage="library"
-          searchSlot={
-            <label className="input input-bordered flex items-center gap-2 w-full max-w-xl mx-auto font-2 bg-base-100 shadow-sm text-sm">
-              <FiSearch className="text-base-content/40 text-lg shrink-0" />
-              <input
-                id="library-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في المكتبة ..."
-                className="grow"
-                aria-label="بحث في المكتبة"
-              />
-            </label>
-          }
-        />
-
-        {/* ── Page title ── */}
-        <header className="text-center mb-8 mt-4 sm:mt-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <IoBookOutline className="text-3xl text-cyan-700 dark:text-cyan-400" />
-            <h1 className="font-1 font-bold text-2xl sm:text-3xl text-base-content">
-              مكتبة المتون
-            </h1>
+        {/* ── Search & Filter Controls ── */}
+        <div className="flex flex-col sm:flex-row gap-3 my-6">
+          <div className="relative flex-1">
+            <FiSearch className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base-content/40 text-lg pointer-events-none" />
+            <input
+              id="library-search-input"
+              type="text"
+              placeholder="ابحث في المتون والكتب..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input input-bordered w-full pr-10 pl-4 font-2 text-sm bg-base-100 border-base-300 focus:border-cyan-700"
+            />
           </div>
-          <p className="font-2 text-base-content/60 text-sm">
-            تصفح واختر من مجموعة واسعة من المتون العلمية والأحاديث النبوية
-            لحفظها ومراجعتها
-          </p>
-        </header>
 
-        {/* ── Category filter tabs (Shared Component) ── */}
-        <CategoryFilters
-          activeCategory={activeCategory}
-          onSelectCategory={setActiveCategory}
-          categories={MOCK_CATEGORIES}
-        />
+          <div className="flex items-center gap-2">
+            <button
+              id="library-filter-btn"
+              className="btn btn-outline border-base-300 text-base-content/70 hover:text-cyan-700 hover:border-cyan-700 font-2 gap-2"
+              aria-label="تصفية متقدمة"
+            >
+              <HiOutlineAdjustmentsHorizontal className="text-lg" />
+              <span className="hidden sm:inline">تصفية</span>
+            </button>
+          </div>
+        </div>
 
-        {/* ── Books grid ── */}
+        {/* ── Category pills ── */}
+        <div className="mb-6">
+          <CategoryFilters
+            categories={MOCK_CATEGORIES}
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+          />
+        </div>
+
+        {/* ── Book Cards Grid ── */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="card bg-base-100 h-64 animate-pulse border border-base-200 rounded-2xl p-4 flex flex-col justify-between">
-                <div className="w-full h-32 bg-base-300 rounded-xl mb-3" />
-                <div className="w-3/4 h-4 bg-base-300 rounded mb-2" />
-                <div className="w-1/2 h-3 bg-base-300 rounded" />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
             ))}
           </div>
         ) : filteredBooks.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredBooks.map((book) => (
               <Card
                 key={book.id}
@@ -158,11 +156,7 @@ export default function Library() {
                 onClick={() => handleBookClick(book)}
                 onAdd={(e) => {
                   e.stopPropagation();
-                  if (isGuest) {
-                    setIsGuestModalOpen(true);
-                  } else {
-                    console.log("Adding book:", book.title);
-                  }
+                  console.log("Adding book:", book.title);
                 }}
               />
             ))}
@@ -183,15 +177,6 @@ export default function Library() {
             </button>
           </div>
         )}
-
-        {/* ── Guest Login Modal ── */}
-        <GuestLoginModal
-          isOpen={isGuestModalOpen}
-          onClose={() => setIsGuestModalOpen(false)}
-          title="تسجيل الدخول فتح الكتب"
-          message="تصفح وحفظ هذا المتن يتطلب تسجيل الدخول إلى حسابك."
-        />
-
       </main>
     </div>
   );

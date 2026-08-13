@@ -42,13 +42,10 @@ export default function Onboarding() {
   const { stepId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, loginGuest } = useAuth();
+  const { token } = useAuth();
 
   const currentStepNum = parseInt(stepId, 10) || 1;
   const totalSteps = ONBOARDING_STEPS.length;
-
-  // Preserve entry point state across step navigation
-  const entrySource = location.state?.from || 'default';
 
   // Check if user has already completed/seen onboarding previously
   useEffect(() => {
@@ -83,10 +80,7 @@ export default function Onboarding() {
     localStorage.setItem('athar_onboarding_seen', 'true');
     localStorage.setItem('athar_has_logged_in_before', 'true');
 
-    if (entrySource === 'guest') {
-      loginGuest();
-      navigate('/home', { replace: true });
-    } else if (token) {
+    if (token) {
       navigate('/home', { replace: true });
     } else {
       navigate('/login', { replace: true });

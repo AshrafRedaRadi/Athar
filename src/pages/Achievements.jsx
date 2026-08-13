@@ -155,7 +155,7 @@ function BadgeCard({ badge }) {
 // Achievements Page
 // ---------------------------------------------------------------------------
 function Achievements() {
-  const { isAuthenticated, isGuest } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const [activeDays, setActiveDays] = useState({ dates: [], currentStreak: 0 });
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -165,7 +165,7 @@ function Achievements() {
 
   // Fetch calendar + achievements on mount
   useEffect(() => {
-    if (isGuest || !isAuthenticated) return;
+    if (!isAuthenticated) return;
 
     const now = new Date();
     const year = now.getFullYear();
@@ -182,7 +182,7 @@ function Achievements() {
       .getAchievements()
       .then((data) => setBadges(data))
       .finally(() => setBadgesLoading(false));
-  }, [isAuthenticated, isGuest]);
+  }, [isAuthenticated]);
 
   // Derived streak metrics — use server value when available, fall back locally
   const activeDatesList = activeDays?.dates ?? [];

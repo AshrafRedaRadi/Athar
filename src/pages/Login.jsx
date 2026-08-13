@@ -14,7 +14,7 @@ const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginGuest } = useAuth();
+  const { login } = useAuth();
   const { handleGoogleSuccess, handleGoogleError, googleLoading, googleError } = useGoogleAuth();
 
   const [email, setEmail] = useState('');
@@ -22,16 +22,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleGuestAuth = () => {
-    loginGuest();
-    const hasSeenOnboarding = localStorage.getItem('athar_onboarding_seen') === 'true';
-    if (hasSeenOnboarding) {
-      navigate('/home', { replace: true });
-    } else {
-      navigate('/onboarding/1', { state: { from: 'guest' } });
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -178,14 +168,6 @@ export default function Login() {
                 text="continue_with"
               />
             </div>
-
-            <button
-              type="button"
-              onClick={handleGuestAuth}
-              className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.85rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors mt-0.5"
-            >
-              دخول كضيف
-            </button>
           </form>
 
           <div className="text-center mt-2 text-[0.75rem] text-white/80 font-2">

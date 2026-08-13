@@ -15,16 +15,12 @@ import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";
 import { useRecitation } from "../components/study/recitation/useRecitation";
-import GuestLoginModal from "../components/auth/GuestLoginModal";
-
-
 
 // ─────────────────────────────────────────────
 //  Study Page
 // ─────────────────────────────────────────────
 export default function Study() {
   const { bookId, sectionId, hadithId } = useParams();
-  const { isGuest } = useAuth();
 
   // sectionId "0" means the book has no sections → omit &sectionId from API call
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
@@ -63,23 +59,11 @@ export default function Study() {
         const [hadithsData, booksData, progressData] = await Promise.all([
           hadithsService.getHadithsByBook(bookId, effectiveSectionId),
           booksService.getBooks().catch(() => []),
-          isGuest ? Promise.resolve([]) : hadithsService.getHadithProgress(bookId).catch(() => []),
+          hadithsService.getHadithProgress(bookId).catch(() => []),
         ]);
 
         const targetBook = booksData.find((b) => String(b.id) === String(bookId));
         const bookName = targetBook?.title || "";
-
-        const pMap = {};
-        if (Array.isArray(progressData)) {
-          progressData.forEach((item) => {
-            const hId = item.hadithId ?? item.id;
-            const st = item.status ?? item.progressStatus ?? item.Status ?? 0;
-            if (hId != null) {
-              pMap[hId] = Number(st);
-            }
-          });
-        }
-        setProgressMap(pMap);
 
         if (hadithsData && hadithsData.length > 0) {
           const formatted = hadithsData.map((h) => ({
@@ -92,7 +76,7 @@ export default function Study() {
               (item) =>
                 String(item.id) === String(hadithId) ||
                 String(item.order) === String(hadithId) ||
-                String(item.hadithNumber).replace(/[^\d]/g, "") === String(hadithId)
+                String(item.hadithNumber)?.replace(/[^\d]/g, "") === String(hadithId)
             );
             setCurrentHadithIndex(foundIdx >= 0 ? foundIdx : 0);
           } else {
@@ -102,23 +86,21 @@ export default function Study() {
           setHadithsList([]);
         }
       } catch (err) {
-        console.error("Error fetching hadiths from backend API:", err.message);
-        setHadithsList([]);
+        console.error("Error loading hadiths for study:", err.message);
       } finally {
         setIsLoading(false);
       }
     }
     loadHadiths();
-  }, [bookId, isGuest]);
+  }, [bookId]);
 
   const currentHadith = hadithsList[currentHadithIndex] || null;
 
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
   const [backendExplanations, setBackendExplanations] = useState(null);
 
   // Automatically update progress & last opened hadith when viewing a Hadith on Study page
   useEffect(() => {
-    if (!isGuest && currentHadith?.id) {
+    if (currentHadith?.id) {
       hadithsService.updateLastOpenedHadith(currentHadith.id).catch((err) => {
         console.warn("Auto update last opened hadith error:", err.message);
       });
@@ -143,7 +125,7 @@ export default function Study() {
           console.warn("Fetch explanations error:", err.message);
         });
     }
-  }, [currentHadith?.id, isGuest]);
+  }, [currentHadith?.id]);
 
   // SignalR Real-Time Speech Recitation Hook
   const {
@@ -169,7 +151,7 @@ export default function Study() {
 
   // Check conditions and show congratulations toast when recitation finishes
   useEffect(() => {
-    if (!completedSummary || memorizeCalledRef.current || isGuest) return;
+    if (!completedSummary || memorizeCalledRef.current) return;
 
     // Extract accuracy and coverage from summary
     const extractVal = (obj, ...keys) => {
@@ -198,7 +180,7 @@ export default function Study() {
         console.warn("Could not mark hadith as memorized:", err?.message);
       });
     }
-  }, [completedSummary, isGuest, currentHadith?.id]);
+  }, [completedSummary, currentHadith?.id]);
 
   // Auto-dismiss congratulations toast after 5 seconds
   useEffect(() => {
@@ -262,10 +244,6 @@ export default function Study() {
 
   // Toggle recording
   const handleRecordToggle = () => {
-    if (isGuest) {
-      setIsGuestModalOpen(true);
-      return;
-    }
     if (isListening) {
       stopListening();
     } else {
@@ -538,14 +516,6 @@ export default function Study() {
         onTabChange={setActiveTab}
         explanation={backendExplanations || currentHadith?.explanation}
         hadith={currentHadith}
-      />
-
-      {/* ── Guest Login Modal ── */}
-      <GuestLoginModal
-        isOpen={isGuestModalOpen}
-        onClose={() => setIsGuestModalOpen(false)}
-        title="تسجيل الدخول لبدء التسميع"
-        message="التسميع الصوتي واكتشاف أخطاء الحفظ بالذكاء الاصطناعي يتطلب تسجيل الدخول إلى حسابك."
       />
 
       {/* ── Recitation Results Modal ── */}
