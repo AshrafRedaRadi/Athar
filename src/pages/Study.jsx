@@ -160,14 +160,12 @@ export default function Study() {
     resetRecitation,
   } = useRecitation();
 
-  // Automatically switch to revealed mode (isHidden = false) whenever recitation stops or finishes
-  const prevListeningRef = useRef(isListening);
+  // Automatically switch to revealed mode (isHidden = false) ONLY when recitation completes with summary
   useEffect(() => {
-    if ((prevListeningRef.current && !isListening) || completedSummary || recitationStopped) {
+    if (completedSummary) {
       setIsHidden(false);
     }
-    prevListeningRef.current = isListening;
-  }, [isListening, completedSummary, recitationStopped]);
+  }, [completedSummary]);
 
   // Check conditions and show congratulations toast when recitation finishes
   useEffect(() => {
