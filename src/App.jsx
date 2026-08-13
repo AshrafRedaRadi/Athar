@@ -41,11 +41,9 @@ function App() {
             <Route path='/admin/users' element={<UsersManagement />} />
             <Route path='/admin/ai-assistant' element={<AiAssistantManagement />} />
           </Route>
-          {/* Public landing page — accessible to everyone */}
-          <Route path="/" element={<LandingPage />} />
-
-          {/* Guest-only routes */}
+          {/* Public landing & auth routes — automatically redirects logged-in users to /home */}
           <Route element={<GuestRoute fallback="/home" />}>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/confirm-email" element={<ConfirmEmail />} />

@@ -3,9 +3,16 @@ import { HiArrowRightOnRectangle, HiOutlineTrash, HiOutlineExclamationTriangle }
 import { useAuth } from "../../context/AuthContext";
 
 function DeleteAccountSection() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const isAdmin = Boolean(
+    user?.isAdmin ||
+    String(user?.role || "").toLowerCase().includes("admin") ||
+    String(user?.role || "").toLowerCase().includes("مشرف") ||
+    String(user?.role || "").toLowerCase().includes("أدمن")
+  );
 
   const handleLogout = () => {
     logout();
@@ -28,7 +35,7 @@ function DeleteAccountSection() {
             <span>منطقة الحساب والأمان</span>
           </h4>
           <p className="text-xs text-base-content/60 mt-1">
-            إدارة تسجيل الخروج والحذف النهائي لحسابك
+            {isAdmin ? "إدارة تسجيل الخروج من حسابك" : "إدارة تسجيل الخروج والحذف النهائي لحسابك"}
           </p>
         </div>
 
@@ -44,20 +51,22 @@ function DeleteAccountSection() {
             <span>تسجيل الخروج</span>
           </button>
 
-          {/* Compact Delete Account Button */}
-          <button
-            type="button"
-            onClick={() => setIsConfirmOpen(true)}
-            className="btn bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-700 h-10 min-h-0 px-4 rounded-xl flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer"
-          >
-            <HiOutlineTrash className="text-base" />
-            <span>حذف الحساب</span>
-          </button>
+          {/* Compact Delete Account Button — Hidden for Admin */}
+          {!isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsConfirmOpen(true)}
+              className="btn bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-700 h-10 min-h-0 px-4 rounded-xl flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer"
+            >
+              <HiOutlineTrash className="text-base" />
+              <span>حذف الحساب</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Delete Account Confirmation Modal */}
-      {isConfirmOpen && (
+      {!isAdmin && isConfirmOpen && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn"
           role="dialog"

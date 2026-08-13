@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { HiOutlineLogout } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
 import { ADMIN_NAV_ITEMS } from "./adminNavConfig.jsx";
 import defaultAvatar from "../../assets/user.png";
@@ -17,7 +16,7 @@ function AdminSidebar({
   drawerId = "admin-sidebar-drawer",
 }) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const drawerRef = useRef(null);
 
   const userName = customName || user?.fullName || user?.name || user?.userName || "مدير النظام";
@@ -27,12 +26,6 @@ function AdminSidebar({
     if (drawerRef.current) {
       drawerRef.current.checked = false;
     }
-  };
-
-  const handleLogout = () => {
-    closeDrawer();
-    logout();
-    navigate("/login");
   };
 
   useEffect(() => {
@@ -154,18 +147,6 @@ function AdminSidebar({
               );
             })}
           </div>
-        </div>
-
-        {/* Bottom area — Logout button */}
-        <div className="pt-4 mt-6 border-t border-base-300">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="btn font-2 rounded-xl justify-start w-full bg-red-500/10 text-red-500 hover:bg-red-600 hover:text-white border-transparent transition-colors flex items-center gap-2"
-          >
-            <HiOutlineLogout className="text-xl" />
-            <span>تسجيل الخروج</span>
-          </button>
         </div>
       </div>
     </div>

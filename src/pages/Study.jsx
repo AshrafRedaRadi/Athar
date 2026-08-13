@@ -65,6 +65,18 @@ export default function Study() {
         const targetBook = booksData.find((b) => String(b.id) === String(bookId));
         const bookName = targetBook?.title || "";
 
+        const pMap = {};
+        if (Array.isArray(progressData)) {
+          progressData.forEach((item) => {
+            const hId = item.hadithId ?? item.id;
+            const st = item.status ?? item.progressStatus ?? item.Status ?? 0;
+            if (hId != null) {
+              pMap[hId] = Number(st);
+            }
+          });
+        }
+        setProgressMap(pMap);
+
         if (hadithsData && hadithsData.length > 0) {
           const formatted = hadithsData.map((h) => ({
             ...h,
@@ -200,40 +212,81 @@ export default function Study() {
     setRevealedCount(0);
   }, [currentHadith?.id, isHidden]);
 
-  // Reveal next single word hint (<)
+  // Calculate current recitation cursor position in the hadith
+  const getRecitationCurrentIndex = () => {
+    let maxIdx = 0;
+    if (activeWordIndex !== undefined && activeWordIndex !== null && activeWordIndex >= 0) {
+      maxIdx = Math.max(maxIdx, activeWordIndex);
+    }
+    if (Array.isArray(spokenWords)) {
+      spokenWords.forEach((item, idx) => {
+        if (item && item.state && item.state !== "Pending") {
+          maxIdx = Math.max(maxIdx, idx + 1);
+        }
+      });
+    }
+    return maxIdx;
+  };
+
+  // Reveal next single word hint (<) starting from the user's current recitation position
   const handleRevealNextWord = () => {
     if (!currentHadith?.text) return;
     const words = currentHadith.text.trim().split(/\s+/);
-    setRevealedCount((prev) => Math.min(prev + 1, words.length));
+    const recitationIdx = getRecitationCurrentIndex();
+
+    setRevealedCount((prev) => {
+      const baseIndex = Math.max(prev, recitationIdx);
+      const next = baseIndex + 1;
+      return next > words.length ? words.length : next;
+    });
   };
 
-  // Reveal next sentence / phrase hint (<<) (stopping at punctuation or next 5 words)
+  // Reveal next sentence / phrase hint (<<) starting from the user's current recitation position
   const handleRevealNextSentence = () => {
     if (!currentHadith?.text) return;
     const words = currentHadith.text.trim().split(/\s+/);
-    let nextEnd = revealedCount + 1;
-    while (nextEnd < words.length) {
-      const w = words[nextEnd - 1];
-      if (/[،,.:؛!؟]/.test(w) || nextEnd - revealedCount >= 5) break;
-      nextEnd++;
-    }
-    setRevealedCount(Math.min(nextEnd, words.length));
+    const recitationIdx = getRecitationCurrentIndex();
+
+    setRevealedCount((prev) => {
+      const baseIndex = Math.max(prev, recitationIdx);
+      if (baseIndex >= words.length) return words.length;
+
+      let nextEnd = baseIndex + 1;
+      while (nextEnd < words.length) {
+        const word = words[nextEnd - 1];
+        if ((/[،,.:؛!؟]/.test(word) && nextEnd - baseIndex >= 2) || nextEnd - baseIndex >= 5) {
+          break;
+        }
+        nextEnd++;
+      }
+      return Math.min(nextEnd, words.length);
+    });
   };
 
   // Render reusable hint pill container with circular arrow buttons
   const renderHintPill = () => (
-    <div className="flex items-center gap-1 bg-base-100/95 backdrop-blur-md border border-base-300 rounded-full p-1 shadow-md">
+    <div className="flex items-center gap-1 bg-base-100/95 dark:bg-slate-800/95 backdrop-blur-md border border-base-300 dark:border-slate-700 rounded-full p-1 shadow-md z-50">
       <button
-        onClick={handleRevealNextWord}
-        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleRevealNextWord();
+        }}
+        className="w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-slate-700 text-cyan-700 dark:text-cyan-400 flex items-center justify-center transition-all hover:scale-110 active:scale-90 shrink-0 shadow-xs cursor-pointer"
         title="كشف الكلمة التالية"
         aria-label="كشف الكلمة التالية"
       >
         <FiChevronLeft className="text-base" />
       </button>
       <button
-        onClick={handleRevealNextSentence}
-        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleRevealNextSentence();
+        }}
+        className="w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-slate-700 text-cyan-700 dark:text-cyan-400 flex items-center justify-center transition-all hover:scale-110 active:scale-90 shrink-0 shadow-xs cursor-pointer"
         title="كشف الجملة التالية"
         aria-label="كشف الجملة التالية"
       >

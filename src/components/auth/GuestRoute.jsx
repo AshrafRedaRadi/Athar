@@ -26,7 +26,9 @@ export default function GuestRoute({ children, fallback = '/home' }) {
       defaultTarget = '/admin/controlpanel';
     }
 
-    const destination = location.state?.from?.pathname || defaultTarget;
+    const fromPath = location.state?.from?.pathname;
+    const isPublicPath = !fromPath || fromPath === '/' || fromPath === '/login' || fromPath === '/signup' || fromPath === '/confirm-email';
+    const destination = !isPublicPath ? fromPath : defaultTarget;
     return <Navigate to={destination} replace />;
   }
 
