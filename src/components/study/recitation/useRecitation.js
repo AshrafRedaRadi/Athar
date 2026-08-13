@@ -47,6 +47,23 @@ export function useRecitation() {
   const highlightTimerRef = useRef(null);
   const lastHighlightedIdxRef = useRef(-1);
   const lastUpdateNumberRef = useRef(-1);
+  const lastMaxEvaluatedIdxRef = useRef(-1);
+
+  /**
+   * Convert any remaining unspoken (Pending) words to Incorrect (RED) when recitation finishes
+   */
+  const markUnspokenWordsAsIncorrect = useCallback(() => {
+    setSpokenWords((prevWords) => {
+      if (!prevWords || prevWords.length === 0) return prevWords;
+      return prevWords.map((w) => {
+        if (!w) return w;
+        if (w.state === "Pending") {
+          return { ...w, state: "Incorrect" };
+        }
+        return w;
+      });
+    });
+  }, []);
 
   /**
    * Normalize server word state to a consistent string format
@@ -293,8 +310,10 @@ export function useRecitation() {
             stopListeningRef.current?.();
           }, 1300);
         }
-      } else {
-        resetSilenceTimer(3500);
+      } else if (maxEvaluatedIdx > lastMaxEvaluatedIdxRef.current) {
+        // Reset 3.0s silence timer ONLY when a NEW word is evaluated/spoken!
+        lastMaxEvaluatedIdxRef.current = maxEvaluatedIdx;
+        resetSilenceTimer(3000);
       }
     }
   }, [processHighlightQueue, resetSilenceTimer]);
@@ -319,6 +338,7 @@ export function useRecitation() {
       playMicOffSound();
     }
     cleanupAudioResources();
+    markUnspokenWordsAsIncorrect();
 
     setCompletedSummary({
       ...result,
@@ -421,6 +441,7 @@ export function useRecitation() {
       setActiveWordIndex(-1);
       lastHighlightedIdxRef.current = -1;
       lastUpdateNumberRef.current = -1;
+      lastMaxEvaluatedIdxRef.current = -1;
       highlightQueueRef.current = [];
       if (highlightTimerRef.current) {
         clearTimeout(highlightTimerRef.current);
@@ -576,6 +597,7 @@ export function useRecitation() {
 
     // Immediately stop local microphone hardware tracks & AudioContext
     cleanupAudioResources();
+    markUnspokenWordsAsIncorrect();
     setIsListening(false);
     setIsConnecting(false);
     setRecitationStopped(true);
