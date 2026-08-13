@@ -295,9 +295,9 @@ export function useRecitation() {
           }, 1300);
         }
       } else if (maxEvaluatedIdx > lastMaxEvaluatedIdxRef.current) {
-        // Reset 6.0s silence timer ONLY when a NEW word is evaluated/spoken!
+        // Reset 5.0s silence timer ONLY when a NEW word is evaluated/spoken!
         lastMaxEvaluatedIdxRef.current = maxEvaluatedIdx;
-        resetSilenceTimer(6000);
+        resetSilenceTimer(5000);
       }
     }
   }, [processHighlightQueue, resetSilenceTimer]);
