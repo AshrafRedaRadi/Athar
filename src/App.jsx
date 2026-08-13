@@ -45,7 +45,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
 
           {/* Guest-only routes */}
-          <Route element={<GuestRoute fallback="/library" />}>
+          <Route element={<GuestRoute fallback="/home" />}>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/confirm-email" element={<ConfirmEmail />} />

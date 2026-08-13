@@ -52,13 +52,8 @@ export default function Login() {
       } else if (savedUser?.isAdmin || savedUser?.role === 'admin') {
         navigate('/admin/controlpanel', { replace: true });
       } else {
-        const hasLoggedInBefore = localStorage.getItem('athar_has_logged_in_before') === 'true';
-        if (!hasLoggedInBefore) {
-          localStorage.setItem('athar_has_logged_in_before', 'true');
-          navigate('/library', { replace: true });
-        } else {
-          navigate('/home', { replace: true });
-        }
+        localStorage.setItem('athar_has_logged_in_before', 'true');
+        navigate('/home', { replace: true });
       }
     } catch (err) {
       setErrorMsg(err.message || 'فشل تسجيل الدخول، يُرجى التحقق من البيانات.');
