@@ -90,21 +90,26 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
       >
         <div>
           {/* User Avatar + Welcome Header */}
-          <div className="flex items-center justify-start gap-3 border-b border-base-300 pb-4">
+          <Link
+            to="/settings"
+            onClick={closeDrawer}
+            className="flex items-center justify-start gap-3 border-b border-base-300 pb-4 hover:opacity-90 transition-opacity cursor-pointer group"
+            title="انتقل إلى إعدادات الملف الشخصي"
+          >
             {/* User Avatar (Right in RTL) */}
             <div className="avatar shrink-0">
-              <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 ring-offset-2 overflow-hidden">
+              <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 group-hover:ring-cyan-600 ring-offset-2 overflow-hidden transition-all">
                 <img src={userAvatar} alt={userName} />
               </div>
             </div>
             {/* Welcome Text + Username */}
             <div className="flex flex-col text-start">
               <span className="text-xs text-base-content/60 font-2">أهلاً بك،</span>
-              <span className="font-1 font-bold text-base text-base-content">
+              <span className="font-1 font-bold text-base text-base-content group-hover:text-cyan-600 transition-colors">
                 {userName}
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Athar Logo */}
           <div className="flex justify-center mt-4">

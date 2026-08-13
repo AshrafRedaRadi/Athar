@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { HiOutlineMenuAlt3, HiOutlineHome, HiOutlineCog } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
@@ -26,7 +26,10 @@ export default function Navbar({
   onOpenSettings,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isGuest, logout } = useAuth();
+
+  const isSettingsPage = activePage === "settings" || location.pathname === "/settings";
 
   const userName = user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "زائر");
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
@@ -35,7 +38,12 @@ export default function Navbar({
     if (isGuest) {
       logout();
       navigate('/login');
+    } else if (isSettingsPage) {
+      navigate('/');
     } else {
+      if (typeof onOpenSettings === 'function') {
+        onOpenSettings();
+      }
       navigate('/settings');
     }
   };
@@ -113,7 +121,7 @@ export default function Navbar({
           <div
             onClick={handleAvatarClick}
             className="shrink-0 hidden lg:block cursor-pointer transition-transform hover:scale-105"
-            title={isGuest ? "تسجيل الدخول" : "الإعدادات"}
+            title={isGuest ? "تسجيل الدخول" : (isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات")}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>
@@ -122,7 +130,7 @@ export default function Navbar({
           <div
             onClick={handleAvatarClick}
             className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
-            title={isGuest ? "تسجيل الدخول" : "الإعدادات"}
+            title={isGuest ? "تسجيل الدخول" : (isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات")}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>

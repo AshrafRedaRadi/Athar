@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   HiOutlineUsers, 
   HiOutlineAcademicCap, 
@@ -36,6 +37,7 @@ function formatTimeAgo(dateInput) {
  * Route: /admin/controlpanel
  */
 function ControlPanel() {
+  const navigate = useNavigate();
   const [studentsCount, setStudentsCount] = useState(null);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
 
@@ -210,7 +212,8 @@ function ControlPanel() {
               </h2>
               <button
                 type="button"
-                className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition-colors"
+                onClick={() => navigate("/admin/users")}
+                className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition-colors cursor-pointer"
               >
                 عرض الكل
               </button>
