@@ -34,15 +34,26 @@ export const activityService = {
         `/api/activity/calendar?year=${year}&month=${month}`
       );
       console.log("📅 [Activity Calendar API Data]:", data);
-      // Normalise: the API might return an array directly or { data: [...] }
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.data)) return data.data;
-      if (data && Array.isArray(data.dates)) return data.dates;
-      if (data && Array.isArray(data.activeDays)) return data.activeDays;
-      return [];
+
+      // The API (after apiFetch unwraps isSuccess/data) returns:
+      // { year, month, activeDates: ["YYYY-MM-DD", ...], currentStreak: N, ... }
+      // Normalise to a consistent { dates, currentStreak } shape.
+      if (Array.isArray(data)) {
+        return { dates: data, currentStreak: null };
+      }
+      const dates =
+        (data && Array.isArray(data.activeDates) && data.activeDates) ||
+        (data && Array.isArray(data.dates)       && data.dates)       ||
+        (data && Array.isArray(data.activeDays)  && data.activeDays)  ||
+        (data && Array.isArray(data.data)        && data.data)        ||
+        [];
+      const currentStreak =
+        (data && typeof data.currentStreak === "number" ? data.currentStreak : null);
+
+      return { dates, currentStreak };
     } catch (error) {
       console.error("Error fetching activity calendar:", error.message);
-      return []; // Always return an empty array so callers never crash
+      return { dates: [], currentStreak: null };
     }
   },
 };
@@ -59,7 +70,9 @@ export function computeCurrentStreak(activeDates) {
 
   const dateSet = new Set(activeDates);
 
-  const toDateStr = (d) => d.toISOString().slice(0, 10);
+  // Use local date parts — toISOString() returns UTC and shifts the date for UTC+ timezones
+  const toDateStr = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const addDays = (d, n) => {
     const copy = new Date(d);
     copy.setDate(copy.getDate() + n);

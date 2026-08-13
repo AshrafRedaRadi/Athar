@@ -38,7 +38,7 @@ export default function DashboardTasks() {
           </div>
 
 
-          <button className="btn hover:bg-cyan-800 hover:text-white bg-cyan-600  px-4 py-2 rounded-lg text-sm">
+          <button className="btn btn-outline border-cyan-600 text-cyan-600 hover:bg-cyan-600 hover:text-white border px-4 py-2 rounded-lg text-sm transition-colors">
             ابدأ المراجعة
           </button>
 

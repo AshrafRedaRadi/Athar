@@ -31,14 +31,14 @@ function Home() {
         const month = now.getMonth() + 1; // 1-indexed
 
         // Fetch dashboard summary and activity calendar in parallel
-        const [data, days] = await Promise.all([
+        const [data, calendarResult] = await Promise.all([
           dashboardService.getSummary(),
           activityService.getCalendar(year, month),
         ]);
 
         console.log("🏠 [Home Component Dashboard Summary Data]:", data);
         setSummaryData(data);
-        setCalendarDays(days);
+        setCalendarDays(calendarResult);
       } catch (err) {
         console.warn("Could not fetch dashboard summary from API:", err.message);
       } finally {
@@ -141,8 +141,12 @@ function Home() {
     getProp(lastOpenedBook, "inProgressHadithCount", "inProgressCount") ??
     0;
 
-  // Streak — computed from real calendar data (longest consecutive run including today)
-  const daysStreak = computeCurrentStreak(calendarDays);
+  // Streak — prefer the server-computed currentStreak from the calendar API;
+  // fall back to local computation for safety.
+  const daysStreak =
+    (calendarDays && typeof calendarDays.currentStreak === "number")
+      ? calendarDays.currentStreak
+      : computeCurrentStreak(calendarDays?.dates ?? calendarDays ?? []);
   const accuracyRate =
     getProp(actualData, "accuracyRate", "accuracyPercentage", "accuracy", "rate") ??
     getProp(summaryData, "accuracyRate", "accuracy") ??

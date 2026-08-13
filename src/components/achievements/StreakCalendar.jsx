@@ -17,8 +17,9 @@ import { IoChevronBack, IoChevronForward } from "react-icons/io5";
  */
 function StreakCalendar({ activeDays = [], isLoading = false }) {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().slice(0, 10);
+  // Build date string from LOCAL parts to avoid UTC offset shifting the date
+  // (toISOString() is UTC — for UTC+3, local midnight is yesterday in UTC)
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 

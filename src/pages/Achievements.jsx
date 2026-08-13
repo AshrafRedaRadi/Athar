@@ -157,7 +157,7 @@ function BadgeCard({ badge }) {
 function Achievements() {
   const { isAuthenticated, isGuest } = useAuth();
 
-  const [activeDays, setActiveDays] = useState([]);
+  const [activeDays, setActiveDays] = useState({ dates: [], currentStreak: 0 });
   const [calendarLoading, setCalendarLoading] = useState(false);
 
   const [badges, setBadges] = useState([]);
@@ -174,7 +174,7 @@ function Achievements() {
     setCalendarLoading(true);
     activityService
       .getCalendar(year, month)
-      .then((days) => setActiveDays(days))
+      .then((result) => setActiveDays(result))
       .finally(() => setCalendarLoading(false));
 
     setBadgesLoading(true);
@@ -184,11 +184,15 @@ function Achievements() {
       .finally(() => setBadgesLoading(false));
   }, [isAuthenticated, isGuest]);
 
-  // Derived streak metrics
-  const currentStreak = computeCurrentStreak(activeDays);
+  // Derived streak metrics — use server value when available, fall back locally
+  const activeDatesList = activeDays?.dates ?? [];
+  const currentStreak =
+    typeof activeDays?.currentStreak === "number"
+      ? activeDays.currentStreak
+      : computeCurrentStreak(activeDatesList);
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const checkedInCount = activeDays.filter((d) => {
+  const checkedInCount = activeDatesList.filter((d) => {
     const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     return d.startsWith(prefix);
   }).length;
@@ -214,7 +218,7 @@ function Achievements() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Calendar Component (8 cols on lg) */}
           <div className="lg:col-span-8 h-full">
-            <StreakCalendar activeDays={activeDays} isLoading={calendarLoading} />
+            <StreakCalendar activeDays={activeDatesList} isLoading={calendarLoading} />
           </div>
 
           {/* Days Streak & Monthly Progress Card (4 cols on lg) */}

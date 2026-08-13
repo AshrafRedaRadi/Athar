@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
           localStorage.setItem('user', JSON.stringify(formatted));
 
           // Daily check-in for returning users (fire-and-forget)
-          const today = new Date().toISOString().slice(0, 10);
+          const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
           const lastCheckIn = localStorage.getItem('athar_last_checkin');
           if (lastCheckIn !== today) {
             apiFetch('/api/activity/check-in', { method: 'POST' })
@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
   // ---------------------------------------------------------------------------
   const performDailyCheckIn = async () => {
     try {
-      const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(); // "YYYY-MM-DD"
       const lastCheckIn = localStorage.getItem('athar_last_checkin');
       if (lastCheckIn === today) return; // already checked in today
 
