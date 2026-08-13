@@ -327,7 +327,7 @@ export default function Signup() {
               </div>
 
               {/* Google register */}
-              <div className="w-full flex justify-center my-1.5 overflow-hidden rounded-full font-2">
+              <div className="w-full flex justify-center my-1.5 items-center min-h-[40px]">
                 <GoogleLogin
                   onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -336,7 +336,7 @@ export default function Signup() {
                   }}
                   onError={() => handleGoogleError()}
                   shape="circle"
-                  width="100%"
+                  width={280}
                   locale="ar"
                   text="signup_with"
                 />
