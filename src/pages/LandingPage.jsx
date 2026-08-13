@@ -361,7 +361,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mb-6 px-5 py-2 rounded-full text-xs font-2 border"
             style={{ background: 'rgba(201,149,58,0.12)', borderColor: 'rgba(201,149,58,0.4)', color: '#e4b25e' }}>
-            ﴿ وَمَا آتَاكُمُ الرَّسُولُ فَخُذُوهُ ﴾
+            ﴿ وَمَا آتَاكُمُ الرَّسُولُ فَخُذُوهُ وَمَا نَهَاكُمْ عَنْهُ فَانتَهُوا وَاتَّقُوا اللَّهَ﴾
           </motion.div>
 
           {/* App name */}

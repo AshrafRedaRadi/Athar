@@ -118,8 +118,6 @@ export default function Login() {
                   placeholder="كلمة المرور"
                   required
                 />
-                
-                {/* لن تظهر الأيقونة إلا عند كتابة أحرف داخل الحقل */}
                 {password.length > 0 && (
                   <button
                     type="button"
@@ -142,7 +140,7 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="text-left mb-1">
+            <div className="text-left mb-0.5">
               <button
                 type="button"
                 className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif] bg-transparent border-0 p-0 cursor-pointer"
@@ -154,18 +152,19 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-2 transition-colors cursor-pointer"
+              className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-1 transition-colors cursor-pointer"
             >
               {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
 
-            <div className="flex items-center my-1.5 gap-2.5">
+            <div className="flex items-center my-1 gap-2.5">
               <hr className="flex-1 border-white/20" />
               <span className="text-white/60 text-[0.7rem] font-2">أو</span>
               <hr className="flex-1 border-white/20" />
             </div>
 
-            <div className="w-full flex justify-center my-1.5 overflow-hidden rounded-full font-2">
+            {/* تم تمرير width={280} كـ Number مباشر لكي تظهر الأيقونة فوراً دون مساحة فارغة */}
+            <div className="w-full flex justify-center my-1 items-center min-h-[40px]">
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
                   if (credentialResponse.credential) {
@@ -174,7 +173,7 @@ export default function Login() {
                 }}
                 onError={() => handleGoogleError()}
                 shape="circle"
-                width="100%"
+                width={280}
                 locale="ar"
                 text="continue_with"
               />
@@ -183,19 +182,19 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGuestAuth}
-              className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.85rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors"
+              className="w-full py-1.5 rounded-full bg-white/15 border border-white/25 text-white font-2 text-[0.85rem] font-semibold flex items-center justify-center cursor-pointer hover:bg-white/25 transition-colors mt-0.5"
             >
               دخول كضيف
             </button>
           </form>
 
-          <div className="text-center mt-1.5 text-[0.75rem] text-white/80 font-2 pt-3 ">
+          <div className="text-center mt-2 text-[0.75rem] text-white/80 font-2">
             ليس لديك حساب؟{' '}
             <Link
               to="/signup"
               className="text-white font-bold no-underline hover:underline font-2"
             >
-              انشاء حساب 
+               انشاء حساب 
             </Link>
           </div>
 
