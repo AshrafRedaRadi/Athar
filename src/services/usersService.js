@@ -8,7 +8,7 @@ export function normalizeRole(rawRole, userObj = null) {
   const email = (userObj?.email || (typeof rawRole === "object" ? rawRole?.email : "") || "").toLowerCase();
   const isAdminFlag =
     userObj?.isAdmin === true ||
-    (typeof rawRole === "object" && rawRole?.isAdmin === true)
+    (typeof rawRole === "object" && rawRole?.isAdmin === true);
 
   if (isAdminFlag) return "أدمن";
 
@@ -26,12 +26,10 @@ export function normalizeRole(rawRole, userObj = null) {
   return "طالب";
 }
 
-/**
- * Helper to format raw backend user object to standard UI user structure
- */
 export function formatUserItem(u, override = {}) {
   const roleDisplay = override.role || normalizeRole(u.role || u.Role, u);
   const isActivated = u.isActivated ?? u.isActive ?? (u.status !== "غير نشط");
+  const rawCreatedAt = u.createdAt || u.createdDate || u.JoinedDate || u.joinedDate || u.createdDateUtc || u.createDate || null;
   return {
     id: u.id || u.userId || u.UserId || override.id || Date.now(),
     name: u.fullName || u.name || u.Name || override.name || u.email || "",
@@ -39,8 +37,9 @@ export function formatUserItem(u, override = {}) {
     role: roleDisplay,
     isActivated: isActivated,
     status: isActivated ? "نشط" : "غير نشط",
-    joinedDate: u.createdAt
-      ? new Date(u.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
+    createdAt: rawCreatedAt,
+    joinedDate: rawCreatedAt
+      ? new Date(rawCreatedAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
       : override.joinedDate || 'مؤخراً',
     avatar: getImageUrl(u.avatarUrl || u.avatar),
     details: roleDisplay === "أدمن" ? "مشرف النظام" : roleDisplay === "معلم" ? "معلم بالمنصة" : "طالب بالمنصة",
@@ -120,5 +119,30 @@ export const usersService = {
     return await apiFetch(`/api/Admin/users/${userId}/send-password-reset`, {
       method: 'POST',
     });
+  },
+
+  /**
+   * Fetch active students count via GET /api/Admin/users?Role=Student&IsActive=true
+   */
+  async getStudentsCount() {
+    try {
+      const data = await apiFetch('/api/Admin/users?Role=Student&IsActive=true');
+      console.log("👥 [Active Students API Data]:", data);
+      if (Array.isArray(data)) {
+        return data.length;
+      }
+      if (data && typeof data === 'object') {
+        if (typeof data.totalCount === 'number') return data.totalCount;
+        if (typeof data.total === 'number') return data.total;
+        if (typeof data.count === 'number') return data.count;
+        if (Array.isArray(data.items)) return data.items.length;
+        if (Array.isArray(data.data)) return data.data.length;
+        if (Array.isArray(data.users)) return data.users.length;
+      }
+      return 0;
+    } catch (err) {
+      console.warn("Could not fetch active students count:", err.message);
+      return null;
+    }
   },
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   HiOutlineUsers, 
   HiOutlineAcademicCap, 
@@ -12,6 +12,23 @@ import {
 } from "react-icons/hi";
 import { HiOutlineChartBar } from "react-icons/hi2";
 import Navbar from "../../components/shared/Navbar";
+import { usersService } from "../../services/usersService";
+import { booksService } from "../../services/booksService";
+
+function formatTimeAgo(dateInput) {
+  if (!dateInput) return "مؤخراً";
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return String(dateInput);
+
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - date) / 1000);
+
+  if (diffInSeconds < 60) return "الآن";
+  if (diffInSeconds < 3600) return `منذ ${Math.floor(diffInSeconds / 60)} دقيقة`;
+  if (diffInSeconds < 86400) return `منذ ${Math.floor(diffInSeconds / 3600)} ساعة`;
+  if (diffInSeconds < 2592000) return `منذ ${Math.floor(diffInSeconds / 86400)} يوم`;
+  return date.toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" });
+}
 
 /**
  * Admin Control Panel Page (لوحة التحكم).
@@ -19,7 +36,66 @@ import Navbar from "../../components/shared/Navbar";
  * Route: /admin/controlpanel
  */
 function ControlPanel() {
-  // Static KPI Cards Data
+  const [studentsCount, setStudentsCount] = useState(null);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
+
+  const [booksCount, setBooksCount] = useState(null);
+  const [isLoadingBooks, setIsLoadingBooks] = useState(true);
+
+  const [activities, setActivities] = useState([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      setIsLoadingStudents(true);
+      setIsLoadingBooks(true);
+      setIsLoadingActivities(true);
+
+      try {
+        const [students, books, users] = await Promise.all([
+          usersService.getStudentsCount(),
+          booksService.getExplanationBooksCount(),
+          usersService.getUsers(),
+        ]);
+        setStudentsCount(students);
+        setBooksCount(books);
+
+        if (Array.isArray(users) && users.length > 0) {
+          // Sort users according to createdAt date ascendingly
+          const sorted = [...users].sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateA - dateB;
+          });
+
+          const formatted = sorted.slice(0, 6).map((u, index) => {
+            const roleStr = u.role === "أدمن" ? "قام بالتسجيل كأدمن" : u.role === "معلم" ? "سجل كمعلم" : "انضم كطالب جديد";
+            const bg = u.role === "أدمن" ? "bg-cyan-700 text-white" : u.role === "معلم" ? "bg-amber-600 text-white" : "bg-cyan-100 text-cyan-800 border border-cyan-200";
+            return {
+              id: u.id || index,
+              user: u.name || u.email || "مستخدم",
+              action: roleStr,
+              time: formatTimeAgo(u.createdAt) || u.joinedDate || "مؤخراً",
+              avatarBg: bg,
+              avatar: u.avatar,
+              icon: <HiOutlineUsers className="text-lg" />,
+            };
+          });
+          setActivities(formatted);
+        }
+      } catch (err) {
+        console.warn("Could not load control panel stats:", err);
+      } finally {
+        setIsLoadingStudents(false);
+        setIsLoadingBooks(false);
+        setIsLoadingActivities(false);
+      }
+    }
+
+    loadStats();
+  }, []);
+
+  // KPI Cards Data
   const statsData = [
     {
       id: "teachers",
@@ -33,8 +109,8 @@ function ControlPanel() {
     {
       id: "students",
       title: "الطلاب",
-      value: "1,240",
-      change: "+12%",
+      value: isLoadingStudents ? "..." : (studentsCount !== null ? studentsCount.toLocaleString('en-US') : "0"),
+      change: null,
       changeType: "increase",
       icon: <HiOutlineAcademicCap className="text-2xl text-cyan-800" />,
       iconBg: "bg-cyan-100",
@@ -42,7 +118,7 @@ function ControlPanel() {
     {
       id: "books",
       title: "الكتب والمتون",
-      value: "45",
+      value: isLoadingBooks ? "..." : (booksCount !== null ? booksCount.toLocaleString('en-US') : "0"),
       change: null,
       icon: <HiOutlineBookOpen className="text-2xl text-amber-800" />,
       iconBg: "bg-amber-100",
@@ -57,41 +133,7 @@ function ControlPanel() {
     },
   ];
 
-  // Static Activity Feed Items
-  const activities = [
-    {
-      id: 1,
-      user: "فاطمة علي",
-      action: "سجلت كمعلمة",
-      time: "منذ ساعتين",
-      avatarBg: "bg-cyan-600 text-white",
-      icon: <HiOutlineUsers className="text-lg" />,
-    },
-    {
-      id: 2,
-      user: "أحمد محمد",
-      action: "أضاف متناً جديداً",
-      time: "منذ 4 ساعات",
-      avatarBg: "bg-amber-600 text-white",
-      icon: <HiOutlineDocumentText className="text-lg" />,
-    },
-    {
-      id: 3,
-      user: "",
-      action: 'تم اعتماد حلقة "النور" الجديدة',
-      time: "14:30",
-      avatarBg: "bg-teal-100 text-teal-700 border border-teal-300",
-      icon: <HiOutlineCheck className="text-lg" />,
-    },
-    {
-      id: 4,
-      user: "عمر محمود",
-      action: "قام بتحديث إعدادات النظام",
-      time: "09:15",
-      avatarBg: "bg-slate-200 text-slate-700",
-      icon: <HiOutlineCog className="text-lg" />,
-    },
-  ];
+
 
   return (
     <div dir="rtl" className="min-h-screen bg-base-200 text-base-content font-2">
@@ -176,31 +218,53 @@ function ControlPanel() {
 
             {/* Activity List */}
             <div className="space-y-5">
-              {activities.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between pb-4 border-b border-base-200 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.avatarBg}`}
-                    >
-                      {item.icon}
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-semibold text-base-content">
-                        {item.user ? `${item.user} ` : ""}
-                        <span className="font-normal text-base-content/80">
-                          {item.action}
-                        </span>
-                      </p>
-                      <p className="text-xs text-base-content/50 mt-0.5">
-                        {item.time}
-                      </p>
+              {isLoadingActivities ? (
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-base-300/60 shrink-0" />
+                    <div className="space-y-1 flex-1">
+                      <div className="h-4 w-3/4 bg-base-300/60 rounded" />
+                      <div className="h-3 w-1/3 bg-base-300/40 rounded" />
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : activities.length === 0 ? (
+                <p className="text-xs text-base-content/50 text-center py-4">لا توجد نشاطات حالياً</p>
+              ) : (
+                activities.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between pb-4 border-b border-base-200 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.avatar ? (
+                        <img
+                          src={item.avatar}
+                          alt={item.user}
+                          className="w-10 h-10 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.avatarBg}`}
+                        >
+                          {item.icon}
+                        </div>
+                      )}
+                      <div className="text-sm">
+                        <p className="font-semibold text-base-content">
+                          {item.user ? `${item.user} ` : ""}
+                          <span className="font-normal text-base-content/80">
+                            {item.action}
+                          </span>
+                        </p>
+                        <p className="text-xs text-base-content/50 mt-0.5">
+                          {item.time}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

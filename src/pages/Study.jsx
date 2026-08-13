@@ -318,9 +318,61 @@ export default function Study() {
 
           <div className="max-w-4xl mx-auto min-h-full flex flex-col">
             {isLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-20">
-                <div className="w-12 h-12 border-4 border-cyan-600/20 border-t-cyan-600 rounded-full animate-spin mb-4" />
-                <p className="font-2 text-base text-base-content/70">جاري استحضار أحاديث الكتاب...</p>
+              <div className="flex-1 flex flex-col items-center justify-center py-24 relative select-none animate-cardIn">
+                {/* Background Soft Cyan Glow */}
+                <div className="absolute w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+
+                {/* Center Ring Container */}
+                <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                  {/* Outer Pulse Glow Ring */}
+                  <div className="absolute inset-0 rounded-full bg-cyan-600/10 animate-ping" />
+
+                  {/* SVG Circular Progress Ring */}
+                  <svg className="w-full h-full transform -rotate-90 animate-[spin_3s_linear_infinite]" viewBox="0 0 100 100">
+                    {/* Track */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      stroke="currentColor"
+                      strokeWidth="5"
+                      className="text-cyan-900/20 dark:text-cyan-950/40 fill-none"
+                    />
+                    {/* Animated Dash Ring */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      stroke="currentColor"
+                      strokeWidth="5"
+                      strokeDasharray="264"
+                      strokeDashoffset="75"
+                      strokeLinecap="round"
+                      className="text-cyan-600 dark:text-cyan-400 fill-none transition-all duration-500"
+                    />
+                  </svg>
+
+                  {/* Central Arabic Calligraphy Text "أثر" */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="font-1 font-bold text-3xl tracking-wide text-cyan-700 dark:text-cyan-400 drop-shadow-sm">
+                      أَثَـر
+                    </span>
+                  </div>
+                </div>
+
+                {/* Loading Label & Animated Dots */}
+                <div className="flex flex-col items-center gap-2">
+                  <p className="font-2 font-medium text-base text-base-content/80 tracking-wide">
+                    جاري استحضار أحاديث الكتاب...
+                  </p>
+                  
+                  {/* Cyan Animated Bouncing Dots */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-2 h-2 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-bounce" />
+                  </div>
+                </div>
               </div>
             ) : currentHadith ? (
               <>

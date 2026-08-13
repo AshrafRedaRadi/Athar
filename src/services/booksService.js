@@ -77,4 +77,29 @@ export const booksService = {
     if (!bookId) return [];
     return await apiFetch(`/api/HadithSections?bookId=${bookId}`);
   },
+
+  /**
+   * Fetch total explanation books count via GET /api/ExplanationBooks
+   */
+  async getExplanationBooksCount() {
+    try {
+      const data = await apiFetch("/api/ExplanationBooks");
+      console.log("📚 [Explanation Books API Data]:", data);
+      if (Array.isArray(data)) {
+        return data.length;
+      }
+      if (data && typeof data === "object") {
+        if (typeof data.totalCount === "number") return data.totalCount;
+        if (typeof data.total === "number") return data.total;
+        if (typeof data.count === "number") return data.count;
+        if (Array.isArray(data.items)) return data.items.length;
+        if (Array.isArray(data.data)) return data.data.length;
+        if (Array.isArray(data.books)) return data.books.length;
+      }
+      return 0;
+    } catch (err) {
+      console.warn("Could not fetch explanation books count:", err.message);
+      return null;
+    }
+  },
 };
