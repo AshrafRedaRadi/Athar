@@ -50,22 +50,6 @@ export function useRecitation() {
   const lastMaxEvaluatedIdxRef = useRef(-1);
 
   /**
-   * Convert any remaining unspoken (Pending) words to Incorrect (RED) when recitation finishes
-   */
-  const markUnspokenWordsAsIncorrect = useCallback(() => {
-    setSpokenWords((prevWords) => {
-      if (!prevWords || prevWords.length === 0) return prevWords;
-      return prevWords.map((w) => {
-        if (!w) return w;
-        if (w.state === "Pending") {
-          return { ...w, state: "Incorrect" };
-        }
-        return w;
-      });
-    });
-  }, []);
-
-  /**
    * Normalize server word state to a consistent string format
    */
   const mapWordState = (serverState) => {
@@ -313,7 +297,7 @@ export function useRecitation() {
       } else if (maxEvaluatedIdx > lastMaxEvaluatedIdxRef.current) {
         // Reset 3.0s silence timer ONLY when a NEW word is evaluated/spoken!
         lastMaxEvaluatedIdxRef.current = maxEvaluatedIdx;
-        resetSilenceTimer(3000);
+        resetSilenceTimer(5000);
       }
     }
   }, [processHighlightQueue, resetSilenceTimer]);
@@ -338,7 +322,6 @@ export function useRecitation() {
       playMicOffSound();
     }
     cleanupAudioResources();
-    markUnspokenWordsAsIncorrect();
 
     setCompletedSummary({
       ...result,
@@ -597,7 +580,6 @@ export function useRecitation() {
 
     // Immediately stop local microphone hardware tracks & AudioContext
     cleanupAudioResources();
-    markUnspokenWordsAsIncorrect();
     setIsListening(false);
     setIsConnecting(false);
     setRecitationStopped(true);
