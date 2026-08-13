@@ -23,18 +23,30 @@ function parseScholarItem(item) {
   }
 
   if (typeof item === "object" && item !== null) {
+    const rawText =
+      item.text ||
+      item.Text ||
+      item.content ||
+      item.Content ||
+      item.explanationText ||
+      item.ExplanationText ||
+      item.details ||
+      item.Details ||
+      item.body ||
+      item.Body ||
+      item.description ||
+      item.Description ||
+      "";
+
+    const summary = item.summary || item.Summary || "";
+    const rawSecs = item.sections || item.Sections;
+    const rawKeys = item.keyPoints || item.KeyPoints;
+
     return {
-      rawText:
-        item.text ||
-        item.content ||
-        item.explanationText ||
-        item.details ||
-        item.body ||
-        item.description ||
-        "",
-      summary: item.summary || "",
-      sections: Array.isArray(item.sections) ? item.sections : null,
-      keyPoints: Array.isArray(item.keyPoints) ? item.keyPoints : null,
+      rawText,
+      summary,
+      sections: Array.isArray(rawSecs) ? rawSecs : null,
+      keyPoints: Array.isArray(rawKeys) ? rawKeys : null,
     };
   }
 

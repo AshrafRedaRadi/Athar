@@ -100,13 +100,56 @@ export const hadithsService = {
     }
   },
 
+  // Cache for explanation books to avoid repetitive network requests
+  _cachedExpBooks: null,
+
+  /**
+   * Fetch all Explanation Books from API (/api/ExplanationBooks)
+   */
+  async getExplanationBooks() {
+    if (this._cachedExpBooks && this._cachedExpBooks.length > 0) {
+      return this._cachedExpBooks;
+    }
+    try {
+      const data = await apiFetch("/api/ExplanationBooks");
+      this._cachedExpBooks = Array.isArray(data) ? data : data?.data || data?.items || [];
+      return this._cachedExpBooks;
+    } catch {
+      return [];
+    }
+  },
+
   /**
    * Fetch explanations for a given hadith from API (/api/Hadiths/{id}/explanations)
+   * Automatically resolves author and book info from ExplanationBooks.
    */
   async getHadithExplanations(hadithId) {
     if (!hadithId) return null;
     try {
-      return await apiFetch(`/api/Hadiths/${hadithId}/explanations`);
+      const [explanations, expBooks] = await Promise.all([
+        apiFetch(`/api/Hadiths/${hadithId}/explanations`),
+        this.getExplanationBooks().catch(() => []),
+      ]);
+
+      const list = Array.isArray(explanations)
+        ? explanations
+        : Array.isArray(explanations?.data)
+        ? explanations.data
+        : explanations && typeof explanations === "object"
+        ? [explanations]
+        : [];
+
+      return list.map((item) => {
+        const book = Array.isArray(expBooks)
+          ? expBooks.find((b) => Number(b.id) === Number(item.explanationBookId))
+          : null;
+
+        return {
+          ...item,
+          author: book?.author || "",
+          bookTitle: item.explanationBookName || "",
+        };
+      });
     } catch (err) {
       console.warn("Error fetching hadith explanations:", err.message);
       return null;
@@ -122,18 +165,6 @@ export const hadithsService = {
       return Array.isArray(data) ? data : data?.data || data?.items || [];
     } catch (err) {
       console.warn("Could not fetch all explanations:", err.message);
-      return [];
-    }
-  },
-
-  /**
-   * Fetch all Explanation Books from API (/api/ExplanationBooks)
-   */
-  async getExplanationBooks() {
-    try {
-      const data = await apiFetch("/api/ExplanationBooks");
-      return Array.isArray(data) ? data : [];
-    } catch {
       return [];
     }
   },
