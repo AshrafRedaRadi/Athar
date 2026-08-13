@@ -13,15 +13,15 @@ function LoadingScreen() {
 }
 
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, isGuest, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // Allow both authenticated users and guests to browse
-  if (!isAuthenticated && !isGuest) {
+  // Redirect to login if user is not authenticated
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

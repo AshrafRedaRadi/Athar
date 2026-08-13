@@ -17,7 +17,7 @@ function LoadingScreen() {
  * AdminRoute Guard - Restricts access strictly to users with Admin role.
  */
 export default function AdminRoute({ children }) {
-  const { isAuthenticated, isGuest, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -25,15 +25,13 @@ export default function AdminRoute({ children }) {
   }
 
   // Check if current user has Admin privileges
-  const isAdmin = Boolean(isAuthenticated) && !isGuest && Boolean(user?.isAdmin);
+  const isAdmin = Boolean(isAuthenticated) && Boolean(user?.isAdmin);
 
-  // In development/demo, allow visiting admin pages if user is logged in or if navigating directly
-  // But block guest users or non-authenticated users
-  if (!isAuthenticated && !isGuest) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!isAdmin && !isGuest) {
+  if (!isAdmin) {
     // Redirect non-admin regular users to home
     return <Navigate to="/home" replace />;
   }

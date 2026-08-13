@@ -17,10 +17,10 @@ function AdminSidebar({
   drawerId = "admin-sidebar-drawer",
 }) {
   const navigate = useNavigate();
-  const { user, isGuest, logout } = useAuth();
+  const { user, logout } = useAuth();
   const drawerRef = useRef(null);
 
-  const userName = customName || user?.fullName || user?.name || user?.userName || (isGuest ? "ضيف أثر" : "مدير النظام");
+  const userName = customName || user?.fullName || user?.name || user?.userName || "مدير النظام";
   const userAvatar = customAvatar || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
 
   const closeDrawer = () => {

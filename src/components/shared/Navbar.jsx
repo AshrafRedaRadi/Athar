@@ -117,7 +117,7 @@ export default function Navbar({
           <div
             onClick={handleAvatarClick}
             className="shrink-0 hidden lg:block cursor-pointer transition-transform hover:scale-105"
-            title={isGuest ? "تسجيل الدخول" : (isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات")}
+            title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>
@@ -126,7 +126,7 @@ export default function Navbar({
           <div
             onClick={handleAvatarClick}
             className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
-            title={isGuest ? "تسجيل الدخول" : (isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات")}
+            title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
             <Avatar src={userAvatar} size="w-10" />
           </div>
