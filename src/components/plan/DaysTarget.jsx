@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { HiOutlineMap, HiCheck } from "react-icons/hi";
 import { IoSparklesOutline } from "react-icons/io5";
-import { activityService } from "../../services/activityService";
 
 const STORAGE_KEY = "athar_daily_goals";
 
@@ -16,19 +15,14 @@ const WEEK_DAYS_CONFIG = [
   { dayIndex: 5, name: "الجمعة", number: 7 },
 ];
 
-export default function DaysTarget() {
+export default function DaysTarget({ weekData = [] }) {
   const [goals, setGoals] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
+      if (saved) return JSON.parse(saved);
     } catch {}
-    return { newAhadith: 2, revisionCount: 5 };
+    return { newAhadith: 2, revisionCount: 3 };
   });
-
-  const [activeDates, setActiveDates] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Synchronize with changes in DailyGoal component
   useEffect(() => {
@@ -51,54 +45,43 @@ export default function DaysTarget() {
     };
   }, []);
 
-  // Fetch backend activity calendar
-  useEffect(() => {
-    let isMounted = true;
-    async function loadActivity() {
-      try {
-        setIsLoading(true);
-        const now = new Date();
-        const cal = await activityService.getCalendar(now.getFullYear(), now.getMonth() + 1);
-        if (isMounted) {
-          setActiveDates(Array.isArray(cal?.dates) ? cal.dates : Array.isArray(cal) ? cal : []);
-        }
-      } catch (err) {
-        console.warn("Could not load activity for DaysTarget:", err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-    loadActivity();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Current date & Arabic week progress calculation
   const now = new Date();
   const currentJsDay = now.getDay(); // 0 (Sun) to 6 (Sat)
-  // Map JS day (0=Sun..6=Sat) to our week index (0=Sat..6=Fri)
-  const currentWeekIndex = (currentJsDay + 1) % 7;
+  const currentWeekIndex = (currentJsDay + 1) % 7; // Map JS day to Sat..Fri
 
-  // Build the 7 days with dynamic targets based on user's custom daily goals
-  const newCount = Number(goals.newAhadith ?? 2);
-  const revCount = Number(goals.revisionCount ?? 5);
+  const newCount = Number(goals.newAhadith ?? goals.newHadithsPerDay ?? 2);
+  const revCount = Number(goals.revisionCount ?? goals.reviewsPerDay ?? 3);
 
+  // Map backend week items if provided or construct local week
   const weekDays = WEEK_DAYS_CONFIG.map((item, idx) => {
-    let status = "upcoming";
-    if (idx < currentWeekIndex) {
-      status = "completed";
-    } else if (idx === currentWeekIndex) {
-      status = "current";
+    let backendDay = null;
+    if (Array.isArray(weekData) && weekData.length > 0) {
+      // Find matching date or by index
+      backendDay = weekData[idx] || null;
     }
 
-    // Dynamic target text
+    let status = "upcoming";
     let target = "";
-    if (idx === 6) {
-      // Friday
-      target = `مراجعة وتثبيت (${newCount + revCount})`;
+
+    if (backendDay) {
+      const rawStatus = (backendDay.status || "").toLowerCase();
+      if (rawStatus === "completed") status = "completed";
+      else if (rawStatus === "current") status = "current";
+      else if (rawStatus === "missed") status = "missed";
+      else if (rawStatus === "rest") status = "rest";
+      else if (rawStatus === "notapplicable") status = "notapplicable";
+      else status = "upcoming";
+
+      const hTarget = backendDay.newTarget ?? newCount;
+      const rTarget = backendDay.reviewTarget ?? revCount;
+      target = `حفظ ${hTarget} • مراجعة ${rTarget}`;
     } else {
-      target = `حفظ ${newCount} • مراجعة ${revCount}`;
+      if (idx < currentWeekIndex) {
+        status = "completed";
+      } else if (idx === currentWeekIndex) {
+        status = "current";
+      }
+      target = idx === 6 ? `مراجعة وتثبيت (${newCount + revCount})` : `حفظ ${newCount} • مراجعة ${revCount}`;
     }
 
     return {
@@ -155,16 +138,19 @@ export default function DaysTarget() {
             {weekDays.map((item, idx) => {
               const isCompleted = item.status === "completed";
               const isCurrent = item.status === "current";
+              const isMissed = item.status === "missed";
 
               return (
                 <div key={item.number || idx} className="flex flex-col items-center group cursor-pointer">
-                  {/* Node Circle (Solid opaque background to cover line completely) */}
+                  {/* Node Circle */}
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-300 relative z-10 shadow-sm ${
                       isCompleted
                         ? "bg-cyan-700 text-white shadow-cyan-700/30 scale-100 border-2 border-cyan-600"
                         : isCurrent
                         ? "bg-emerald-600 dark:bg-emerald-500 text-white ring-4 ring-emerald-500/25 scale-110 shadow-lg shadow-emerald-600/30 font-extrabold z-20"
+                        : isMissed
+                        ? "bg-amber-500 text-white border-2 border-amber-600 shadow-xs"
                         : "bg-base-100 dark:bg-slate-900 text-base-content/70 border-2 border-base-300 dark:border-slate-700 group-hover:border-cyan-600/50 group-hover:scale-105"
                     }`}
                   >
@@ -188,7 +174,7 @@ export default function DaysTarget() {
                     {item.day}
                   </span>
 
-                  {/* Day Target Note (Dynamically based on user's daily goals) */}
+                  {/* Day Target Note */}
                   <span 
                     className={`text-[10px] truncate max-w-[95px] mt-0.5 px-1.5 py-0.5 rounded-md font-medium transition-all ${
                       isCurrent

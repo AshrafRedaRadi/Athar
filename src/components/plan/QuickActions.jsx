@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IoFlashOutline, IoPlaySharp, IoBookOutline } from 'react-icons/io5';
 import { booksService } from '../../services/booksService';
 import { hadithsService } from '../../services/hadithsService';
+import { studyPlanService } from '../../services/studyPlanService';
 
 const QuickActions = () => {
   const navigate = useNavigate();
@@ -24,55 +25,33 @@ const QuickActions = () => {
     }
   };
 
-  // 2. Action: بدء مراجعة (مراجعة الأحاديث المستحقة)
+  // 2. Action: بدء مراجعة (مراجعة الأحاديث المستحقة من الـ StudyPlan API)
   const handleStartReview = async () => {
     try {
       setIsNavigatingReview(true);
+      // Check overview dueReviews directly from Backend StudyPlan API
+      const overview = await studyPlanService.getOverview().catch(() => null);
+      const candidates = overview?.dueReviews?.candidates;
+      if (Array.isArray(candidates) && candidates.length > 0) {
+        const topDue = candidates[0];
+        const hId = topDue.hadithId ?? topDue.id;
+        navigate(`/library/${topDue.bookId || 1}/${topDue.sectionId || 0}/${hId}`);
+        return;
+      }
+
+      // Fallback: check first memorized from backend
       const books = await booksService.getBooks().catch(() => []);
       const activeBookId = books[0]?.id || 1;
-
-      const [hadithsList, progressList] = await Promise.all([
-        hadithsService.getHadithsByBook(activeBookId).catch(() => []),
-        hadithsService.getHadithProgress(activeBookId).catch(() => []),
-      ]);
-
-      const progressMap = {};
-      if (Array.isArray(progressList)) {
-        progressList.forEach((p) => {
-          const hId = p.hadithId ?? p.id;
-          if (hId != null) progressMap[hId] = p;
-        });
+      const progressList = await hadithsService.getHadithProgress(activeBookId).catch(() => []);
+      const memorized = Array.isArray(progressList) ? progressList.filter((p) => p.status === 2 || p.status === "Memorized") : [];
+      if (memorized.length > 0) {
+        const firstMem = memorized[0];
+        const hId = firstMem.hadithId ?? firstMem.id;
+        navigate(`/library/${activeBookId}/0/${hId}`);
+        return;
       }
 
-      let localReviewHistory = {};
-      try {
-        localReviewHistory = JSON.parse(localStorage.getItem("athar_hadith_reviews") || "{}");
-      } catch {}
-
-      const memorizedHadiths = (hadithsList || []).filter((h) => {
-        const p = progressMap[h.id];
-        return p?.status === 2 || p?.status === "Memorized" || p?.isMemorized;
-      });
-
-      if (memorizedHadiths.length > 0) {
-        // Sort to find the oldest reviewed hadith (due for review first)
-        memorizedHadiths.sort((a, b) => {
-          const timeA = progressMap[a.id]?.lastReviewedAt || localReviewHistory[a.id]?.lastReviewedAt || 0;
-          const timeB = progressMap[b.id]?.lastReviewedAt || localReviewHistory[b.id]?.lastReviewedAt || 0;
-          return new Date(timeA) - new Date(timeB);
-        });
-
-        const dueHadith = memorizedHadiths[0];
-        navigate(`/library/${activeBookId}/${dueHadith.hadithSectionId || 0}/${dueHadith.id}`);
-      } else {
-        // If no hadiths memorized yet, start from first hadith
-        const first = hadithsList[0];
-        if (first) {
-          navigate(`/library/${activeBookId}/${first.hadithSectionId || 0}/${first.id}`);
-        } else {
-          navigate(`/library/${activeBookId}/0`);
-        }
-      }
+      navigate(`/library/${activeBookId}/0`);
     } catch (err) {
       console.warn("Could not start review:", err);
       navigate("/library/1/0/1");

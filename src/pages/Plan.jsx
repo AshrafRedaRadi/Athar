@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HiOutlineCalendar } from "react-icons/hi";
 import { HiCheckBadge } from "react-icons/hi2";
 import Navbar from '../components/shared/Navbar';
@@ -6,22 +6,78 @@ import ProgressCard from '../components/plan/ProgressCard';
 import QuickActions from '../components/plan/QuickActions';
 import DaysTarget from '../components/plan/DaysTarget';
 import DailyGoal from '../components/plan/DailyGoal';
-import RecentlyMemorized from '../components/plan/RecentlyMemorized';
+import DueReviewsToday from '../components/plan/DueReviewsToday';
 import RecentlyReviewed from '../components/plan/RecentlyReviewed';
+import RecentlyMemorized from '../components/plan/RecentlyMemorized';
+import { studyPlanService } from '../services/studyPlanService';
 
 export default function Plan() {
+  const [overview, setOverview] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [activeGoals, setActiveGoals] = useState({
+    newHadithsPerDay: 2,
+    reviewsPerDay: 3,
+  });
 
-  const handleSavePlan = () => {
+  const loadPlanData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // 1. Initialize today's session
+      await studyPlanService.initializeToday();
+      // 2. Fetch complete overview
+      const data = await studyPlanService.getOverview();
+      if (data) {
+        setOverview(data);
+        if (data.settings) {
+          setActiveGoals({
+            newHadithsPerDay: data.settings.newHadithsPerDay ?? 2,
+            reviewsPerDay: data.settings.reviewsPerDay ?? 3,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load study plan overview:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPlanData();
+  }, [loadPlanData]);
+
+  const handleGoalsChange = (newGoals) => {
+    setActiveGoals((prev) => ({
+      ...prev,
+      ...newGoals,
+    }));
+  };
+
+  const handleSavePlan = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await studyPlanService.updatePlanSettings({
+        newHadithsPerDay: activeGoals.newHadithsPerDay,
+        reviewsPerDay: activeGoals.reviewsPerDay,
+      });
+
+      // Refresh overview data
+      const data = await studyPlanService.getOverview();
+      if (data) {
+        setOverview(data);
+      }
+
       setShowSuccessToast(true);
       setTimeout(() => {
         setShowSuccessToast(false);
       }, 3500);
-    }, 400);
+    } catch (err) {
+      console.error("Failed to save study plan settings:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -38,52 +94,59 @@ export default function Plan() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 bg-base-100 p-3 sm:p-5 rounded-3xl shadow-sm border border-base-300">
+        {/* Top Progress & Roadmap Container */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 bg-base-100 dark:bg-slate-900 p-3 sm:p-5 rounded-3xl shadow-sm border border-base-300 dark:border-slate-800">
           <div className="col-span-1 lg:col-span-2 w-full">
-            <ProgressCard />
+            <ProgressCard
+              completedCount={overview?.memorizedHadithCount}
+              totalCount={overview?.totalHadithCount}
+              streakDaysCount={overview?.studyStreakDays}
+            />
           </div>
           <div className="col-span-1 lg:col-span-1 w-full">
             <QuickActions />
           </div>
 
           <div className="col-span-1 lg:col-span-3 order-3 w-full my-1">
-            <DaysTarget />
+            <DaysTarget weekData={overview?.week} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 bg-base-100 p-5 sm:p-7 rounded-3xl shadow-sm border border-base-200 mt-6">
-          
-          <div className="col-span-1 lg:col-span-3 text-lg sm:text-xl font-bold font-1 text-base-content border-b border-base-200/70 pb-3 mb-1 flex items-center gap-2.5">
-            <HiOutlineCalendar className="text-2xl text-cyan-700 dark:text-cyan-400 shrink-0" />
-            <h3>خطة الحفظ والمراجعة</h3>
+        {/* Main Plan Sections Container */}
+        <div className="mt-6 space-y-6">
+          {/* Section: خطة الحفظ والمراجعة اليومية (مع زر حفظ التغييرات مدمج في رأس البطاقة) */}
+          <div className="w-full">
+            <DailyGoal
+              settings={overview?.settings}
+              onChange={handleGoalsChange}
+              onSave={handleSavePlan}
+              isSaving={isSaving}
+            />
           </div>
 
-          {/* Section 1: المقدار اليومي */}
-          <DailyGoal />
+          {/* 3 Columns Responsive Grid for the 3 Hadith Lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+            {/* 1. ما يجب مراجعته اليوم */}
+            <div className="w-full h-full">
+              <DueReviewsToday
+                dueReviews={overview?.dueReviews}
+              />
+            </div>
 
-          {/* Section 2: آخر ما تم حفظه (الأحدث أولاً) */}
-          <RecentlyMemorized />
+            {/* 2. آخر ما تمت مراجعته */}
+            <div className="w-full h-full">
+              <RecentlyReviewed
+                items={overview?.recentlyReviewed || []}
+              />
+            </div>
 
-          {/* Section 3: آخر ما تمت مراجعته (الأقدم أولاً) */}
-          <RecentlyReviewed />
-        </div>
-
-        <div className="mt-6 flex justify-start px-1 mb-6">
-          <button
-            onClick={handleSavePlan}
-            disabled={isSaving}
-            className="w-full sm:w-auto bg-cyan-700 hover:bg-cyan-800 text-white px-7 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 font-2 font-bold shadow-md hover:shadow-lg transition active:scale-95 cursor-pointer disabled:opacity-60"
-          >
-            {isSaving ? (
-              <span className="loading loading-spinner loading-sm shrink-0" />
-            ) : (
-              <svg
-                className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-            )}
-            <span>{isSaving ? "جاري حفظ التغييرات..." : "حفظ تغييرات الخطة"}</span>
-          </button>
+            {/* 3. ما تم حفظه (بانتظار المراجعة) */}
+            <div className="w-full h-full">
+              <RecentlyMemorized
+                items={overview?.recentlyMemorizedNotReviewed || []}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Success Notification Toast */}
@@ -93,7 +156,7 @@ export default function Plan() {
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/30 border border-cyan-400/40 flex items-center justify-center shrink-0">
                 <HiCheckBadge className="text-cyan-300 text-lg sm:text-xl" />
               </div>
-              <span className="whitespace-nowrap">تم حفظ تغييرات الخطة بنجاح! 🎉</span>
+              <span className="whitespace-nowrap">تم حفظ إعدادات الخطة بنجاح في النظام! 🎉</span>
             </div>
           </div>
         )}
