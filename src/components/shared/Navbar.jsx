@@ -35,7 +35,11 @@ export default function Navbar({
 
   const handleAvatarClick = () => {
     if (isSettingsPage) {
-      navigate('/');
+      if (window.history?.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
     } else {
       if (typeof onOpenSettings === 'function') {
         onOpenSettings();

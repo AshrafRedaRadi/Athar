@@ -80,16 +80,24 @@ function SettingsContent() {
     setFullName(user?.fullName || user?.name || user?.userName || "");
   };
 
+  const handleGoBack = () => {
+    if (window.history?.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/home");
+    }
+  };
+
   return (
     <div className="settingPage font-2" dir="rtl">
       <header className="text-start space-y-1 mb-6">
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate("/home")}
+            onClick={handleGoBack}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
-            title="الرجوع للصفحة الرئيسية"
-            aria-label="الرجوع للصفحة الرئيسية"
+            title="الرجوع للخلف"
+            aria-label="الرجوع للخلف"
           >
             <HiChevronRight className="text-xl" />
           </button>
