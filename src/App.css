@@ -35,8 +35,60 @@ a,
     font-family: "Tajawal", sans-serif;
 }
 
+@font-face {
+  font-family: "DigitalKhatt";
+  src: url("/fonts/DigitalKhattV2.otf") format("opentype"),
+       url("https://static-cdn.tarteel.ai/qul/fonts/dk/DigitalKhattV2.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "UthmanicHafs";
+  src: url("/fonts/UthmanicHafs.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/mustafa0x/qpc-fonts/f93bf5f3/various-woff2/UthmanicHafs1%20Ver09.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --hadith-font-family: "DigitalKhatt", "UthmanicHafs", "Amiri", serif;
+}
+
+[data-hadith-font="DigitalKhatt"],
+body[data-hadith-font="DigitalKhatt"],
+html[data-hadith-font="DigitalKhatt"] {
+  --hadith-font-family: "DigitalKhatt", "Amiri", serif;
+}
+
+[data-hadith-font="UthmanicHafs"],
+body[data-hadith-font="UthmanicHafs"],
+html[data-hadith-font="UthmanicHafs"] {
+  --hadith-font-family: "UthmanicHafs", "DigitalKhatt", serif;
+}
+
+[data-hadith-font="Amiri"],
+body[data-hadith-font="Amiri"],
+html[data-hadith-font="Amiri"] {
+  --hadith-font-family: "Amiri Quran", "Amiri", serif;
+}
+
 .font-4 {
-    font-family: "Amiri", serif !important;
+    font-family: var(--hadith-font-family, "DigitalKhatt"), "Amiri", serif !important;
+}
+
+.font-digitalkhatt {
+    font-family: "DigitalKhatt", serif !important;
+}
+
+.font-uthmanic {
+    font-family: "UthmanicHafs", "DigitalKhatt", serif !important;
+}
+
+.font-amiri {
+    font-family: "Amiri Quran", "Amiri", serif !important;
 }
 
 /* Background Colors */

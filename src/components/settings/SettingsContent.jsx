@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import ChangeImage from "./ChangeImage";
 import DeleteAccountSection from "./DeleteAccountSection";
 import ThemeSwitcher from "./ThemeSwitcher";
+import HadithFontSwitcher from "./HadithFontSwitcher";
 import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
 function SettingsContent() {
@@ -28,8 +29,12 @@ function SettingsContent() {
     }
   }, [user]);
 
+  const originalName = user?.fullName || user?.name || user?.userName || "";
+  const isNameChanged = fullName.trim() !== originalName.trim() && fullName.trim().length > 0;
+
   const handleSaveProfile = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!fullName.trim()) return;
     setIsSaving(true);
 
     setTimeout(() => {
@@ -41,12 +46,12 @@ function SettingsContent() {
       });
 
       setIsSaving(false);
-      setToastMessage("تم تحديث معلومات الملف الشخصي بنجاح! 🎉");
+      setToastMessage("تم تحديث اسم المستخدم بنجاح! 🎉");
 
       setTimeout(() => {
         setToastMessage("");
       }, 3500);
-    }, 500);
+    }, 400);
   };
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -110,15 +115,44 @@ function SettingsContent() {
             <div className="space-y-4">
               {/* Name & Email Fields Side-by-Side in 2-column Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                {/* User Name Field (Editable) */}
+                {/* User Name Field (Editable with inline Save Button) */}
                 <div className="w-full">
-                  <label
-                    htmlFor="user-name"
-                    className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-base-content"
-                  >
-                    <HiOutlineUser className="text-cyan-700 dark:text-cyan-400 text-base shrink-0" />
-                    <span>اسم المستخدم / الاسم الكامل</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5 gap-1">
+                    <label
+                      htmlFor="user-name"
+                      className="flex items-center gap-1.5 text-sm font-semibold text-base-content"
+                    >
+                      <HiOutlineUser className="text-cyan-700 dark:text-cyan-400 text-base shrink-0" />
+                      <span>اسم المستخدم / الاسم الكامل</span>
+                    </label>
+
+                    {/* Small Inline Save & Cancel Buttons shown only when name is edited */}
+                    {isNameChanged && (
+                      <div className="flex items-center gap-1.5 animate-fadeIn">
+                        <button
+                          type="button"
+                          onClick={() => setFullName(originalName)}
+                          className="text-xs text-base-content/60 hover:text-base-content px-2 py-0.5 rounded-lg hover:bg-base-200 dark:hover:bg-slate-800 transition cursor-pointer"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveProfile}
+                          disabled={isSaving || !fullName.trim()}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-60"
+                          title="حفظ الاسم"
+                        >
+                          {isSaving ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : (
+                            <HiCheckBadge className="text-sm" />
+                          )}
+                          <span>حفظ</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   <input
                     id="user-name"
@@ -177,26 +211,14 @@ function SettingsContent() {
                 </label>
                 <ThemeSwitcher />
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="mt-6 flex gap-3 border-t border-base-200 dark:border-slate-800 pt-5 sm:flex-row sm:items-center">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="btn h-10 min-h-0 rounded-xl border-cyan-700 bg-cyan-700 px-7 text-white hover:border-cyan-800 hover:bg-cyan-800 font-bold shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-60 flex items-center gap-2 text-sm"
-              >
-                {isSaving && <span className="loading loading-spinner loading-xs" />}
-                <span>{isSaving ? "جاري حفظ التغييرات..." : "حفظ التغييرات"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="btn btn-ghost h-10 min-h-0 rounded-xl px-5 text-sm font-semibold"
-              >
-                إلغاء
-              </button>
+              {/* Hadith Typography / Font Switcher */}
+              <div className="w-full pt-2">
+                <label className="mb-2 block text-sm font-semibold text-base-content">
+                  نوع خط نصوص الأحاديث الشريفة
+                </label>
+                <HadithFontSwitcher />
+              </div>
             </div>
           </form>
         </div>

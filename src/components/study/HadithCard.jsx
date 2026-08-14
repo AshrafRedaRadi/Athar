@@ -21,7 +21,13 @@ export default function HadithCard({
   const lastScrolledLineRef = useRef(null);
 
   const displayTokens = useMemo(() => {
-    const originalTokens = text.trim() ? text.trim().split(/\s+/) : [];
+    // Sanitize text from decorative pause/ayah symbols (such as ۞, ۝, ⦿, etc.)
+    const sanitizedText = (text || "")
+      .replace(/[\u06DE\u06DD\u06E9\u25C9\u25CE\u25CB\u25CF\u2022\u25AA\u25AB\u2740\u2741\u272A\u2736\u2219\u061E]/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+    const originalTokens = sanitizedText ? sanitizedText.split(/\s+/) : [];
     const serverWords = canonicalWords
       .filter(Boolean)
       .slice()
