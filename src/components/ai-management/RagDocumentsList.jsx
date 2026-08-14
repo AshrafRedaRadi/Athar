@@ -1,189 +1,446 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
-import { HiOutlineTrash, HiOutlineRefresh, HiOutlineDocumentText, HiOutlineDatabase } from "react-icons/hi";
+import {
+  HiOutlineCircleStack,
+  HiOutlineExclamationCircle,
+  HiOutlineArrowPath,
+  HiOutlineGlobeAlt,
+  HiOutlineEye,
+  HiOutlineEyeSlash,
+  HiOutlineDocumentText,
+  HiOutlineCpuChip,
+} from "react-icons/hi2";
+import { aiAssistantService } from "../../services/aiAssistantService";
 
-/**
- * RagDocumentsList - Interactive Table displaying uploaded PDF documents & RAG Vector status.
- */
-export default function RagDocumentsList({ documents = [], onDeleteDocument, isLoading }) {
+const ACTIVE_PROCESSING_STATUSES = new Set([
+  "Pending",
+  "Extracting",
+  "Cleaning",
+  "DetectingStructure",
+  "Chunking",
+  "Embedding",
+  "Indexing",
+]);
+
+const STATUS_CONFIG = {
+  Pending: { label: "في انتظار المعالجة", badge: "badge-ghost", icon: "⏳" },
+  Extracting: { label: "استخراج النص", badge: "badge-info", icon: "📄" },
+  Cleaning: { label: "تنظيف التنسيق", badge: "badge-info", icon: "🧹" },
+  DetectingStructure: { label: "اكتشاف الأبواب", badge: "badge-info", icon: "📑" },
+  Chunking: { label: "إنشاء وحدات المعرفة", badge: "badge-warning", icon: "✂️" },
+  Embedding: { label: "بناء المتجهات (Vectors)", badge: "badge-warning", icon: "🧠" },
+  Indexing: { label: "الفهرسة في Qdrant", badge: "badge-warning", icon: "📥" },
+  Ready: { label: "اكتملت المعالجة (جاهز)", badge: "badge-success", icon: "✅" },
+  Failed: { label: "فشلت المعالجة", badge: "badge-error", icon: "❌" },
+};
+
+export default function RagDocumentsList({ documents = [], onUpdateDocuments, isLoading }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("الكل");
-  const [deletingId, setDeletingId] = useState(null);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [actionError, setActionError] = useState("");
 
-  const filteredDocs = documents.filter((doc) => {
+  const docsRef = useRef(documents);
+  docsRef.current = documents;
+
+  // Smart Polling Effect for all Active Processing Books (every 2.5s)
+  useEffect(() => {
+    const activeBooks = (documents || []).filter((d) => {
+      const st = d.processingStatus || d.status;
+      return ACTIVE_PROCESSING_STATUSES.has(st);
+    });
+
+    if (activeBooks.length === 0) return;
+
+    const interval = setInterval(async () => {
+      let hasChanges = false;
+      const updatedDocs = [...docsRef.current];
+
+      for (let i = 0; i < updatedDocs.length; i++) {
+        const doc = updatedDocs[i];
+        const docId = doc.bookId ?? doc.id;
+        const currentSt = doc.processingStatus || doc.status;
+
+        if (docId && ACTIVE_PROCESSING_STATUSES.has(currentSt)) {
+          try {
+            const statusRes = await aiAssistantService.getBookStatus(docId);
+            if (statusRes) {
+              const newSt = statusRes.processingStatus || statusRes.status;
+              if (
+                newSt !== currentSt ||
+                statusRes.isPublished !== doc.isPublished ||
+                statusRes.chunkCount !== doc.chunkCount
+              ) {
+                updatedDocs[i] = {
+                  ...doc,
+                  ...statusRes,
+                  processingStatus: newSt,
+                };
+                hasChanges = true;
+              }
+            }
+          } catch (err) {
+            console.warn(`Polling error for book ${docId}:`, err.message);
+          }
+        }
+      }
+
+      if (hasChanges && onUpdateDocuments) {
+        onUpdateDocuments(updatedDocs);
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [documents, onUpdateDocuments]);
+
+  // Action Handlers
+  const handlePublish = async (bookId) => {
+    setActionLoadingId(`publish-${bookId}`);
+    setActionError("");
+    try {
+      await aiAssistantService.publishBook(bookId);
+      if (onUpdateDocuments) {
+        onUpdateDocuments(
+          docsRef.current.map((d) =>
+            (d.bookId ?? d.id) === bookId ? { ...d, isPublished: true } : d
+          )
+        );
+      }
+    } catch (err) {
+      setActionError(err?.message || "تعذر نشر الكتاب.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleUnpublish = async (bookId) => {
+    setActionLoadingId(`unpublish-${bookId}`);
+    setActionError("");
+    try {
+      await aiAssistantService.unpublishBook(bookId);
+      if (onUpdateDocuments) {
+        onUpdateDocuments(
+          docsRef.current.map((d) =>
+            (d.bookId ?? d.id) === bookId ? { ...d, isPublished: false } : d
+          )
+        );
+      }
+    } catch (err) {
+      setActionError(err?.message || "تعذر إلغاء نشر الكتاب.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRetry = async (bookId) => {
+    setActionLoadingId(`retry-${bookId}`);
+    setActionError("");
+    try {
+      await aiAssistantService.retryBook(bookId);
+      if (onUpdateDocuments) {
+        onUpdateDocuments(
+          docsRef.current.map((d) =>
+            (d.bookId ?? d.id) === bookId
+              ? { ...d, processingStatus: "Pending", processingError: null }
+              : d
+          )
+        );
+      }
+    } catch (err) {
+      setActionError(err?.message || "تعذر إعادة محاولة معالجة الكتاب.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReprocess = async (bookId) => {
+    setActionLoadingId(`reprocess-${bookId}`);
+    setActionError("");
+    try {
+      await aiAssistantService.reprocessBook(bookId);
+      if (onUpdateDocuments) {
+        onUpdateDocuments(
+          docsRef.current.map((d) =>
+            (d.bookId ?? d.id) === bookId
+              ? { ...d, processingStatus: "Pending", isPublished: false }
+              : d
+          )
+        );
+      }
+    } catch (err) {
+      setActionError(err?.message || "تعذر إعادة معالجة الكتاب.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const filteredDocs = (documents || []).filter((doc) => {
     const matchesSearch =
       !searchQuery ||
       doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.bookType?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "الكل" || doc.status === statusFilter;
+    const st = doc.processingStatus || doc.status;
+    const matchesStatus = statusFilter === "الكل" || st === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const handleDeleteConfirm = async (id) => {
-    setDeletingId(id);
-    try {
-      await onDeleteDocument(id);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   return (
-    <div className="bg-base-100 border border-base-200 rounded-3xl p-6 shadow-xs font-2 space-y-6" dir="rtl">
-      {/* Header & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-base-200">
+    <div className="bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 rounded-3xl p-5 sm:p-8 shadow-sm font-2 space-y-7 transition-all" dir="rtl">
+      {/* Header & Filter Controls (Fully Responsive) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-base-200 dark:border-slate-800">
         <div>
-          <h2 className="font-1 font-bold text-lg text-base-content flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-base">
-              <HiOutlineDatabase />
+          <h2 className="font-1 font-bold text-xl sm:text-2xl text-base-content flex items-center gap-3">
+            <span className="w-10 h-10 rounded-2xl bg-cyan-700/10 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-2xl shrink-0 shadow-xs">
+              <HiOutlineCircleStack />
             </span>
-            <span>سجل المتون والكتب المفهرسة ({filteredDocs.length})</span>
+            <span>سجل كتب المعرفة وحالة المعالجة ({filteredDocs.length})</span>
           </h2>
-          <p className="text-xs text-base-content/60 mt-1">
-            إدارة الكتب والمستندات المخزنة في قاعدة المتجهات الذكية الخاصة بالمنصة.
+          <p className="text-sm sm:text-base text-base-content/70 mt-1.5 font-2">
+            متابعة استخراج الصفحات، بناء الـ Chunks والمتجهات، ونشر الكتب للبحث والمحادثة الذكية.
           </p>
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex items-center gap-2">
-          {/* Search Box */}
-          <div className="relative">
-            <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 text-sm pointer-events-none" />
+        {/* Search & Filter Controls */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* 1. Search Box */}
+          <div className="relative flex-1 md:w-60 lg:w-72 min-w-0">
+            <FiSearch className="absolute right-3.5 top-1/2 -translate-y-1/2 text-base-content/40 text-base pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="بحث في الكتب والملفات..."
-              className="input input-bordered input-sm rounded-xl pr-9 text-xs font-2 w-44 sm:w-56"
+              placeholder="بحث في الكتب..."
+              className="input input-bordered w-full rounded-2xl pr-10 pl-4 text-sm sm:text-base font-2 bg-base-100 dark:bg-slate-800 border-base-300 dark:border-slate-700 h-11"
             />
           </div>
 
-          {/* Status Select */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="select select-bordered select-sm rounded-xl text-xs font-2 cursor-pointer"
-          >
-            <option value="الكل">كل الحالات</option>
-            <option value="مفهرس بنجاح">مفهرس بنجاح</option>
-            <option value="جاري الفهرسة">جاري الفهرسة</option>
-            <option value="فشل الفهرسة">فشل الفهرسة</option>
-          </select>
+          {/* 2. Select Dropdown on the left */}
+          <div className="shrink-0">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="select select-bordered rounded-2xl text-sm sm:text-base font-2 cursor-pointer w-36 sm:w-40 bg-base-100 dark:bg-slate-800 border-base-300 dark:border-slate-700 h-11"
+            >
+              <option value="الكل">جميع الحالات</option>
+              <option value="Ready">جاهز (Ready)</option>
+              <option value="Failed">فشل (Failed)</option>
+              <option value="Pending">قيد المعالجة</option>
+            </select>
+          </div>
         </div>
       </div>
 
+      {actionError && (
+        <div className="alert alert-error text-sm sm:text-base rounded-2xl flex items-center gap-2.5 py-4 px-5 font-medium shadow-xs font-2 text-white">
+          <HiOutlineExclamationCircle className="text-2xl shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
       {/* Table Content */}
       {isLoading ? (
-        <div className="py-12 text-center space-y-3">
-          <span className="loading loading-spinner loading-md text-cyan-700" />
-          <p className="text-xs text-base-content/60">جاري تحميل سجل الكتب والمستندات المفهرسة...</p>
+        <div className="py-16 text-center space-y-3">
+          <span className="loading loading-spinner loading-lg text-cyan-700" />
+          <p className="text-sm sm:text-base text-base-content/70 font-2">جاري تحميل سجل كتب المعرفة...</p>
         </div>
       ) : filteredDocs.length === 0 ? (
-        <div className="py-12 text-center space-y-3 bg-base-200/30 rounded-2xl border border-dashed border-base-300">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-700/10 text-cyan-700 mx-auto flex items-center justify-center text-2xl">
+        <div className="py-16 text-center space-y-3 bg-base-200/40 dark:bg-slate-800/40 rounded-3xl border border-dashed border-base-300 dark:border-slate-800">
+          <div className="w-14 h-14 rounded-2xl bg-cyan-700/10 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 mx-auto flex items-center justify-center text-3xl shadow-xs">
             <HiOutlineDocumentText />
           </div>
-          <h4 className="font-1 font-bold text-sm text-base-content">لا توجد كتب مفهرسة حتى الآن</h4>
-          <p className="text-xs text-base-content/60 max-w-sm mx-auto">
-            قم برفع أول كتاب بصيغة PDF من خلال النموذج أعلاه لبدء تغذية محرك المعرفة RAG.
+          <h4 className="font-1 font-bold text-base sm:text-lg text-base-content">لا توجد كتب مضافة بعد</h4>
+          <p className="text-sm text-base-content/70 max-w-sm mx-auto font-2">
+            قم برفع كتاب PDF من النموذج أعلاه لبدء تفكيكه وفهرسته في قاعدة المعرفة.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table w-full text-right align-middle text-xs">
+        <div className="overflow-x-auto rounded-2xl border border-base-300 dark:border-slate-800">
+          <table className="table w-full text-right align-middle font-2">
             <thead>
-              <tr className="bg-base-200/50 text-base-content/70 font-semibold border-b border-base-200">
-                <th className="rounded-r-xl">الكتاب والمستند</th>
-                <th>التصنيف</th>
-                <th>الأجزاء المتجهة</th>
-                <th>الحجم</th>
-                <th>تاريخ الرفع</th>
-                <th>حالة الفهرسة</th>
-                <th className="rounded-l-xl text-center">الإجراءات</th>
+              <tr className="bg-base-200/70 dark:bg-slate-800/80 text-base-content/80 font-bold border-b border-base-300 dark:border-slate-800 text-xs sm:text-sm font-1">
+                <th className="py-4 px-4">الكتاب والمعلومات</th>
+                <th className="py-4 px-4">التصنيف والمعالجة</th>
+                <th className="py-4 px-4">مرحلة المعالجة</th>
+                <th className="py-4 px-4">الصفحات / الوحدات</th>
+                <th className="py-4 px-4">حالة النشر</th>
+                <th className="text-center py-4 px-4">الإجراءات</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-base-200/70 dark:divide-slate-800/70 text-xs sm:text-sm">
               {filteredDocs.map((doc) => {
-                const isProcessing = doc.status === "جاري الفهرسة";
-                const isFailed = doc.status === "فشل الفهرسة";
+                const bookId = doc.bookId ?? doc.id;
+                const status = doc.processingStatus || doc.status || "Pending";
+                const isPublished = !!doc.isPublished;
+                const isActivelyProcessing = ACTIVE_PROCESSING_STATUSES.has(status);
+                const isReady = status === "Ready";
+                const isFailed = status === "Failed";
+                const cfg = STATUS_CONFIG[status] || {
+                  label: status,
+                  badge: "badge-ghost",
+                  icon: "⚙️",
+                };
 
                 return (
-                  <tr key={doc.id} className="hover:bg-base-200/40 transition-colors border-b border-base-200">
-                    {/* Title & File Name */}
-                    <td>
+                  <tr
+                    key={bookId}
+                    className="hover:bg-base-200/40 dark:hover:bg-slate-800/40 transition-colors"
+                  >
+                    {/* Title & Author */}
+                    <td className="font-medium max-w-[220px] sm:max-w-[280px] py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-lg shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-cyan-700/10 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 flex items-center justify-center text-base shrink-0 font-bold shadow-xs">
                           <HiOutlineDocumentText />
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm text-base-content font-1">{doc.title}</span>
-                          <span className="text-[11px] text-base-content/50 truncate max-w-xs">{doc.fileName}</span>
+                        <div className="truncate">
+                          <p className="font-bold text-sm sm:text-base text-base-content truncate font-1">
+                            {doc.title}
+                          </p>
+                          <p className="text-xs sm:text-sm text-base-content/70 truncate mt-0.5 font-2">
+                            {doc.author ? `المؤلف: ${doc.author}` : `رقم الكتاب: #${bookId}`}
+                          </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* Category */}
-                    <td>
-                      <span className="badge badge-ghost font-medium text-xs px-2.5 py-1 rounded-lg">
-                        {doc.category || "عام"}
-                      </span>
-                    </td>
-
-                    {/* Chunks Count */}
-                    <td>
-                      <span className="font-bold text-cyan-800 dark:text-cyan-400">
-                        {(doc.chunkCount || 0).toLocaleString("ar-EG")} شريحة
-                      </span>
-                    </td>
-
-                    {/* File Size */}
-                    <td className="text-base-content/70 font-mono text-[11px]">
-                      {doc.fileSize}
-                    </td>
-
-                    {/* Date */}
-                    <td className="text-base-content/70">
-                      {doc.uploadedAt}
-                    </td>
-
-                    {/* Status Badge */}
-                    <td>
-                      {isProcessing ? (
-                        <span className="badge badge-warning gap-1 font-bold text-xs px-2.5 py-1 text-amber-950">
-                          <span className="loading loading-spinner loading-xs" />
-                          <span>جاري الفهرسة</span>
+                    {/* Book Type & Profile */}
+                    <td className="py-4 px-4">
+                      <div className="space-y-1">
+                        <span className="badge badge-sm sm:badge-md bg-base-200 dark:bg-slate-800 font-medium text-xs rounded-xl">
+                          {doc.bookType || "HadithCollection"}
                         </span>
-                      ) : isFailed ? (
-                        <span className="badge badge-error text-white font-bold text-xs px-2.5 py-1">
-                          فشل الفهرسة
+                        <span className="block text-xs text-base-content/60 font-mono">
+                          {doc.processingProfile || "Hadith"}
                         </span>
+                      </div>
+                    </td>
+
+                    {/* Processing Status Badge */}
+                    <td className="py-4 px-4">
+                      <div className="space-y-1">
+                        <span
+                          className={`badge ${cfg.badge} badge-sm sm:badge-md gap-1.5 font-bold text-xs py-2 px-3 rounded-xl`}
+                        >
+                          {isActivelyProcessing && (
+                            <span className="loading loading-spinner loading-xs" />
+                          )}
+                          <span>{cfg.icon}</span>
+                          <span>{cfg.label}</span>
+                        </span>
+
+                        {isFailed && doc.processingError && (
+                          <p
+                            className="text-xs text-error max-w-[160px] truncate font-2 mt-1"
+                            title={doc.processingError}
+                          >
+                            الخطأ: {doc.processingError}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Pages & Chunks Counts */}
+                    <td className="font-mono text-xs sm:text-sm py-4 px-4">
+                      <div className="space-y-0.5">
+                        <p className="text-base-content font-medium">
+                          الصفحات: {doc.pageCount ?? "—"}
+                        </p>
+                        <p className="text-cyan-700 dark:text-cyan-400 font-bold">
+                          Chunks: {doc.chunkCount ?? "—"}
+                        </p>
+                      </div>
+                    </td>
+
+                    {/* Publication State Interactive Toggle Button */}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {isReady ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            isPublished
+                              ? handleUnpublish(bookId)
+                              : handlePublish(bookId)
+                          }
+                          disabled={
+                            actionLoadingId === `publish-${bookId}` ||
+                            actionLoadingId === `unpublish-${bookId}`
+                          }
+                          className={`btn btn-xs sm:btn-sm rounded-xl gap-1.5 font-bold font-2 text-xs transition-all cursor-pointer shadow-xs active:scale-95 whitespace-nowrap ${
+                            isPublished
+                              ? "btn-success text-white"
+                              : "btn-outline border-base-300 dark:border-slate-700 text-base-content/60 hover:text-base-content hover:bg-base-200"
+                          }`}
+                          title={
+                            isPublished
+                              ? "انقر لإلغاء النشر وإخفاء الكتاب من البحث"
+                              : "انقر لنشر الكتاب في البحث والمحادثة"
+                          }
+                        >
+                          {actionLoadingId === `publish-${bookId}` ||
+                          actionLoadingId === `unpublish-${bookId}` ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : isPublished ? (
+                            <HiOutlineEye className="text-sm shrink-0" />
+                          ) : (
+                            <HiOutlineEyeSlash className="text-sm shrink-0" />
+                          )}
+                          <span>{isPublished ? "منشور" : "غير منشور"}</span>
+                        </button>
                       ) : (
-                        <span className="badge bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-bold text-xs px-2.5 py-1">
-                          مفهرس بنجاح
+                        <span className="badge badge-ghost badge-sm sm:badge-md text-base-content/50 text-xs rounded-xl px-3 py-1 whitespace-nowrap inline-flex items-center gap-1.5">
+                          <HiOutlineEyeSlash className="text-xs shrink-0" />
+                          <span>غير جاهز للنشر</span>
                         </span>
                       )}
                     </td>
 
-                    {/* Actions */}
-                    <td>
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteConfirm(doc.id)}
-                          disabled={deletingId === doc.id}
-                          className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
-                          title="حذف الكتاب من قاعدة المعرفة"
-                        >
-                          {deletingId === doc.id ? (
-                            <span className="loading loading-spinner loading-xs" />
-                          ) : (
-                            <HiOutlineTrash className="text-base" />
-                          )}
-                        </button>
+                    {/* Action Buttons */}
+                    <td className="text-center py-4 px-4 whitespace-nowrap">
+                      <div className="inline-flex items-center justify-center gap-1.5 flex-nowrap">
+                        {/* 1. Reprocess Option */}
+                        {isReady && (
+                          <button
+                            type="button"
+                            onClick={() => handleReprocess(bookId)}
+                            disabled={actionLoadingId === `reprocess-${bookId}`}
+                            className="btn btn-xs sm:btn-sm btn-ghost text-base-content/70 hover:text-base-content font-medium rounded-xl gap-1 text-xs whitespace-nowrap cursor-pointer"
+                            title="إعادة المعالجة وبناء المتجهات"
+                          >
+                            {actionLoadingId === `reprocess-${bookId}` ? (
+                              <span className="loading loading-spinner loading-xs" />
+                            ) : (
+                              <HiOutlineCpuChip className="text-sm shrink-0" />
+                            )}
+                            <span>إعادة معالجة</span>
+                          </button>
+                        )}
+
+                        {/* 2. Retry Button */}
+                        {isFailed && (
+                          <button
+                            type="button"
+                            onClick={() => handleRetry(bookId)}
+                            disabled={actionLoadingId === `retry-${bookId}`}
+                            className="btn btn-xs sm:btn-sm btn-error text-white font-bold rounded-xl gap-1 shadow-xs text-xs whitespace-nowrap cursor-pointer"
+                            title="إعادة محاولة المعالجة"
+                          >
+                            {actionLoadingId === `retry-${bookId}` ? (
+                              <span className="loading loading-spinner loading-xs" />
+                            ) : (
+                              <HiOutlineArrowPath className="text-sm shrink-0" />
+                            )}
+                            <span>إعادة المحاولة</span>
+                          </button>
+                        )}
+
+                        {/* Processing Status Indicator */}
+                        {isActivelyProcessing && (
+                          <span className="text-xs text-base-content/60 font-medium whitespace-nowrap">
+                            جاري المعالجة...
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -46,6 +46,9 @@ export function translateServerError(rawMsg) {
   if (s.includes("unauthorized") || s.includes("token")) {
     return "انتهت جلسة التسجيل، يرجى إعادة تسجيل الدخول لمتابعة العمل.";
   }
+  if (s.includes("chat model is temporarily unavailable") || s.includes("temporarily unavailable")) {
+    return "نموذج المحادثة الذكي غير متاح مؤقتاً في السيرفر، يرجى المحاولة بعد قليل أو الضغط على إعادة المحاولة.";
+  }
   if (s === "bad request") {
     return "بيانات الطلب غير صحيحة، يرجى مراجعة المدخلات والمحاولة مجدداً.";
   }
