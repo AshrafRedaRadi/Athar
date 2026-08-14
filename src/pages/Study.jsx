@@ -30,7 +30,6 @@ export default function Study() {
   const [isExplanationOpen, setIsExplanationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("text"); // "text" | "video"
   const [isHidden, setIsHidden] = useState(false);
-  const [revealedCount, setRevealedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
@@ -142,49 +141,30 @@ export default function Study() {
   // SignalR Real-Time Speech Recitation Hook
   const {
     spokenWords,
+    canonicalWords,
     extras,
     activeWordIndex,
+    furthestActiveWordIndex,
+    startDetection,
     isListening,
     isConnecting,
-    recitationStopped,
     completedSummary,
     errorMsg: recitationError,
     startListening,
     stopListening,
+    requestHint,
     resetRecitation,
   } = useRecitation();
 
-  // Automatically switch to revealed mode (isHidden = false) ONLY when recitation completes with summary
-  useEffect(() => {
-    if (completedSummary) {
-      setIsHidden(false);
-    }
-  }, [completedSummary]);
-
-  // Check conditions and show congratulations toast when recitation finishes
+  // The backend owns scoring and hint eligibility. The page only adds the fact that
+  // this particular attempt started with the Hadith hidden.
   useEffect(() => {
     if (!completedSummary || memorizeCalledRef.current) return;
+    const backendQualified = completedSummary.qualifiesAsMemorized
+      ?? completedSummary.QualifiesAsMemorized
+      ?? false;
 
-    // Extract accuracy and coverage from summary
-    const extractVal = (obj, ...keys) => {
-      for (const key of keys) {
-        if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
-        if (obj?.metrics && obj.metrics[key] !== undefined && obj.metrics[key] !== null) return obj.metrics[key];
-        if (obj?.Metrics && obj.Metrics[key] !== undefined && obj.Metrics[key] !== null) return obj.Metrics[key];
-      }
-      return undefined;
-    };
-    let rawAcc = extractVal(completedSummary, "accuracy", "Accuracy", "accuracyPercentage", "AccuracyPercentage", "accuracyPercent", "AccuracyPercent", "score", "Score") ?? 0;
-    if (typeof rawAcc === "number" && rawAcc > 0 && rawAcc <= 1) rawAcc = rawAcc * 100;
-    const accuracyValue = Number(rawAcc) || 0;
-
-    let rawCov = extractVal(completedSummary, "coverage", "Coverage", "coveragePercentage", "CoveragePercentage", "coveragePercent", "CoveragePercent") ?? 0;
-    if (typeof rawCov === "number" && rawCov > 0 && rawCov <= 1) rawCov = rawCov * 100;
-    const coverageValue = Number(rawCov) || 0;
-
-    const meetsConditions = wasHiddenWhenStartedRef.current && accuracyValue >= 80 && coverageValue >= 90;
-
-    if (meetsConditions && currentHadith?.id) {
+    if (wasHiddenWhenStartedRef.current && backendQualified && currentHadith?.id) {
       memorizeCalledRef.current = true;
       setShowCongrats(true);
       setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 2 }));
@@ -207,90 +187,29 @@ export default function Study() {
     setShowCongrats(false);
   }, [currentHadith?.id]);
 
-  // Reset step-by-step revealed words count when hadith changes or when isHidden is turned off
-  useEffect(() => {
-    setRevealedCount(0);
-  }, [currentHadith?.id, isHidden]);
-
-  // Calculate current recitation cursor position in the hadith
-  const getRecitationCurrentIndex = () => {
-    let maxIdx = 0;
-    if (activeWordIndex !== undefined && activeWordIndex !== null && activeWordIndex >= 0) {
-      maxIdx = Math.max(maxIdx, activeWordIndex);
-    }
-    if (Array.isArray(spokenWords)) {
-      spokenWords.forEach((item, idx) => {
-        if (item && item.state && item.state !== "Pending") {
-          maxIdx = Math.max(maxIdx, idx + 1);
-        }
-      });
-    }
-    return maxIdx;
-  };
-
-  // Reveal next single word hint (<) starting from the user's current recitation position
-  const handleRevealNextWord = () => {
-    if (!currentHadith?.text) return;
-    const words = currentHadith.text.trim().split(/\s+/);
-    const recitationIdx = getRecitationCurrentIndex();
-
-    setRevealedCount((prev) => {
-      const baseIndex = Math.max(prev, recitationIdx);
-      const next = baseIndex + 1;
-      return next > words.length ? words.length : next;
-    });
-  };
-
-  // Reveal next sentence / phrase hint (<<) starting from the user's current recitation position
-  const handleRevealNextSentence = () => {
-    if (!currentHadith?.text) return;
-    const words = currentHadith.text.trim().split(/\s+/);
-    const recitationIdx = getRecitationCurrentIndex();
-
-    setRevealedCount((prev) => {
-      const baseIndex = Math.max(prev, recitationIdx);
-      if (baseIndex >= words.length) return words.length;
-
-      let nextEnd = baseIndex + 1;
-      while (nextEnd < words.length) {
-        const word = words[nextEnd - 1];
-        if ((/[،,.:؛!؟]/.test(word) && nextEnd - baseIndex >= 2) || nextEnd - baseIndex >= 5) {
-          break;
-        }
-        nextEnd++;
-      }
-      return Math.min(nextEnd, words.length);
-    });
-  };
+  const handleRevealNextWord = () => requestHint(1);
+  const handleRevealNextSentence = () => requestHint(3);
 
   // Render reusable hint pill container with circular arrow buttons
   const renderHintPill = () => (
-    <div className="flex items-center gap-1 bg-base-100/95 dark:bg-slate-800/95 backdrop-blur-md border border-base-300 dark:border-slate-700 rounded-full p-1 shadow-md z-50">
+    <div className="flex items-center gap-1 bg-base-100/95 backdrop-blur-md border border-base-300 rounded-full p-1 shadow-md">
       <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleRevealNextWord();
-        }}
-        className="w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-slate-700 text-cyan-700 dark:text-cyan-400 flex items-center justify-center transition-all hover:scale-110 active:scale-90 shrink-0 shadow-xs cursor-pointer"
+        onClick={handleRevealNextWord}
+        disabled={!isListening}
+        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
         title="كشف الكلمة التالية"
         aria-label="كشف الكلمة التالية"
       >
-        <FiChevronLeft className="text-base" />
+        <FiChevronLeft className="text-sm font-bold stroke-[2.5]" />
       </button>
       <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleRevealNextSentence();
-        }}
-        className="w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-slate-700 text-cyan-700 dark:text-cyan-400 flex items-center justify-center transition-all hover:scale-110 active:scale-90 shrink-0 shadow-xs cursor-pointer"
+        onClick={handleRevealNextSentence}
+        disabled={!isListening}
+        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
         title="كشف الجملة التالية"
         aria-label="كشف الجملة التالية"
       >
-        <FiChevronsLeft className="text-base" />
+        <FiChevronsLeft className="text-sm font-bold stroke-[2.5]" />
       </button>
     </div>
   );
@@ -435,9 +354,11 @@ export default function Study() {
                     source={currentHadith.source}
                     mode={isListening ? "reciting" : "reading"}
                     spokenWords={spokenWords}
+                    canonicalWords={canonicalWords}
                     activeWordIndex={activeWordIndex}
+                    furthestActiveWordIndex={furthestActiveWordIndex}
+                    startDetection={startDetection}
                     isHidden={isHidden}
-                    revealedCount={revealedCount}
                     onToggleHide={() => setIsHidden(!isHidden)}
                   />
                 </div>

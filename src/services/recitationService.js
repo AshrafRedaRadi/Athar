@@ -64,6 +64,16 @@ export const recitationService = {
   },
 
   /**
+   * Ask the backend to reveal and permanently mark one or three words as hinted.
+   * @param {signalR.HubConnection} connection
+   * @param {string} sessionId
+   * @param {number} wordCount
+   */
+  async requestHint(connection, sessionId, wordCount) {
+    return await connection.invoke("RequestHint", sessionId, Number(wordCount));
+  },
+
+  /**
    * Invoke FinishRecitation when user completes recitation
    * @param {signalR.HubConnection} connection 
    * @param {string} sessionId 

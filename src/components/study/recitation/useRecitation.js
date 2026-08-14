@@ -1,86 +1,88 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
 import { recitationService } from "../../../services/recitationService";
-import { playMicOnSound, playMicOffSound } from "./micSounds";
 
 /**
- * Custom React Hook for Athar Real-time Speech Recitation via SignalR.
- *
- * Manages:
- * - SignalR connection lifecycle (MessagePack protocol)
- * - Microphone capture & AudioWorklet PCM16 resampling
- * - Client-to-server audio streaming via signalR.Subject
- * - Real-time word updates (RecitationUpdated)
- * - Sequential active word blue highlight stepping without skipping words
- * - Mic start/stop audio feedback
+ * Play a gentle Web Audio API beep for mic on / off
+ */
+function playMicOnSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  } catch {}
+}
+
+function playMicOffSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(784, ctx.currentTime); // G5
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.12); // A4
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  } catch {}
+}
+
+/**
+ * Map word state string from server to canonical state name
+ */
+function mapWordState(rawState) {
+  if (!rawState) return "Pending";
+  const s = String(rawState).toLowerCase();
+  if (s === "correct") return "Correct";
+  if (s === "incorrect") return "Incorrect";
+  return "Pending";
+}
+
+/**
+ * Custom hook for real-time speech recitation via SignalR.
  */
 export function useRecitation() {
   const [isListening, setIsListening] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [recitationStopped, setRecitationStopped] = useState(false);
   const [spokenWords, setSpokenWords] = useState([]);
+  const [canonicalWords, setCanonicalWords] = useState([]);
   const [extras, setExtras] = useState([]);
   const [transcript, setTranscript] = useState("");
   const [completedSummary, setCompletedSummary] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [furthestActiveWordIndex, setFurthestActiveWordIndex] = useState(-1);
   const [startDetection, setStartDetection] = useState(null);
 
-  // References to preserve state across lifecycle
+  // Refs for managing active connections, streams, and timers
   const connectionRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const mediaStreamRef = useRef(null);
-  const workletNodeRef = useRef(null);
+  const sessionIdRef = useRef(null);
   const audioSubjectRef = useRef(null);
   const streamingPromiseRef = useRef(null);
-  const sessionIdRef = useRef(null);
-  const activeWordTimeoutRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const workletNodeRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const completionTimerRef = useRef(null);
+  const extrasTimerRef = useRef(null);
   const isStoppingRef = useRef(false);
   const isConnectingRef = useRef(false);
-  const silenceTimerRef = useRef(null);
-  const extrasTimerRef = useRef(null);
-  const completionTimerRef = useRef(null);
   const stopListeningRef = useRef(null);
-
-  // Word-by-word active blue highlight animation queue refs
-  const highlightQueueRef = useRef([]);
-  const highlightTimerRef = useRef(null);
-  const lastHighlightedIdxRef = useRef(-1);
   const lastUpdateNumberRef = useRef(-1);
   const lastMaxEvaluatedIdxRef = useRef(-1);
-
-  /**
-   * Normalize server word state to a consistent string format
-   */
-  const mapWordState = (serverState) => {
-    const s = String(serverState ?? "").toLowerCase();
-    if (s === "correct" || s === "1") return "Correct";
-    if (s === "uncertain" || s === "2") return "Uncertain";
-    if (s === "incorrect" || s === "3") return "Incorrect";
-    return "Pending";
-  };
-
-  /**
-   * Run sequential active word highlight queue every 180ms
-   */
-  const processHighlightQueue = useCallback(() => {
-    if (highlightTimerRef.current) return;
-
-    const step = () => {
-      if (highlightQueueRef.current.length > 0) {
-        const nextIdx = highlightQueueRef.current.shift();
-        setActiveWordIndex(nextIdx);
-        highlightTimerRef.current = setTimeout(step, 180);
-      } else {
-        highlightTimerRef.current = setTimeout(() => {
-          setActiveWordIndex(-1);
-          highlightTimerRef.current = null;
-        }, 1200);
-      }
-    };
-
-    step();
-  }, []);
 
   /**
    * Reset silence timer for automatic mic shutdown
@@ -100,18 +102,20 @@ export function useRecitation() {
   }, []);
 
   /**
-   * Schedule ExtrasStrip auto-disappear 5 seconds after recitation stops/completes
+   * Schedule automatic hiding of extras after 2.5s of no new extras
    */
   const scheduleExtrasHide = useCallback(() => {
-    if (extrasTimerRef.current) clearTimeout(extrasTimerRef.current);
+    if (extrasTimerRef.current) {
+      clearTimeout(extrasTimerRef.current);
+    }
     extrasTimerRef.current = setTimeout(() => {
       setExtras([]);
       extrasTimerRef.current = null;
-    }, 5000);
+    }, 2500);
   }, []);
 
   /**
-   * Clean up Web Audio API, Microphone tracks, and active timers
+   * Stop local audio hardware tracks & context cleanly
    */
   const cleanupAudioResources = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -122,15 +126,6 @@ export function useRecitation() {
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
     }
-    if (activeWordTimeoutRef.current) {
-      clearTimeout(activeWordTimeoutRef.current);
-      activeWordTimeoutRef.current = null;
-    }
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = null;
-    }
-    highlightQueueRef.current = [];
     setActiveWordIndex(-1);
 
     try {
@@ -154,56 +149,44 @@ export function useRecitation() {
 
   /**
    * Handle real-time RecitationUpdated event from SignalR Hub.
-   * Process RecitationUpdated messages in updateNumber order and apply
-   * complete words snapshot received from server without calculating word positions in frontend.
    */
   const handleRecitationUpdate = useCallback((snapshot) => {
     if (!snapshot) return;
 
-    // Enforce message processing in strict updateNumber order
     const updateNum = snapshot.updateNumber ?? snapshot.UpdateNumber ?? null;
     if (typeof updateNum === "number") {
-      if (updateNum <= lastUpdateNumberRef.current) {
-        return;
-      }
+      if (updateNum <= lastUpdateNumberRef.current) return;
       lastUpdateNumberRef.current = updateNum;
     }
 
     const transcriptVal = snapshot.transcript || snapshot.Transcript || "";
-    if (transcriptVal) {
-      setTranscript(transcriptVal);
-    }
+    if (transcriptVal) setTranscript(transcriptVal);
 
     const rawExtras = Array.isArray(snapshot.extras)
       ? snapshot.extras
       : Array.isArray(snapshot.Extras)
       ? snapshot.Extras
-      : Array.isArray(snapshot.extraWords)
-      ? snapshot.extraWords
-      : Array.isArray(snapshot.ExtraWords)
-      ? snapshot.ExtraWords
       : [];
+    setExtras(rawExtras);
 
-    const rawWords = Array.isArray(snapshot.words)
-      ? snapshot.words
-      : Array.isArray(snapshot.Words)
-      ? snapshot.Words
-      : [];
+    const activeIndex = snapshot.activeWordIndex ?? snapshot.ActiveWordIndex ?? null;
+    setActiveWordIndex(Number.isInteger(activeIndex) ? activeIndex : -1);
+    if (Number.isInteger(activeIndex)) {
+      setFurthestActiveWordIndex((previous) => Math.max(previous, activeIndex));
+    }
 
     const startDetRaw = snapshot.startDetection || snapshot.StartDetection || null;
     let detectedStartIndex = null;
-
+    let detectionStatus = "Searching";
     if (startDetRaw) {
-      const status = startDetRaw.status || startDetRaw.Status || "Disabled";
-      const idxVal = startDetRaw.startWordIndex ?? startDetRaw.StartWordIndex ?? null;
-
-      if (status === "Detected" && typeof idxVal === "number") {
-        detectedStartIndex = idxVal;
+      detectionStatus = startDetRaw.status || startDetRaw.Status || "Searching";
+      const startIndex = startDetRaw.startWordIndex ?? startDetRaw.StartWordIndex ?? null;
+      if (detectionStatus === "Detected" && Number.isInteger(startIndex)) {
+        detectedStartIndex = startIndex;
       }
-
       setStartDetection({
-        status,
-        startWordIndex: idxVal,
+        status: detectionStatus,
+        startWordIndex: startIndex,
         confidence: startDetRaw.confidence ?? startDetRaw.Confidence ?? 0,
         runnerUpConfidence: startDetRaw.runnerUpConfidence ?? startDetRaw.RunnerUpConfidence ?? 0,
         probeWordCount: startDetRaw.probeWordCount ?? startDetRaw.ProbeWordCount ?? 0,
@@ -211,105 +194,62 @@ export function useRecitation() {
       });
     }
 
-    if (detectedStartIndex !== null && detectedStartIndex > 0) {
-      if (lastHighlightedIdxRef.current < detectedStartIndex - 1) {
-        lastHighlightedIdxRef.current = detectedStartIndex - 1;
+    const rawWords = Array.isArray(snapshot.words)
+      ? snapshot.words
+      : Array.isArray(snapshot.Words)
+      ? snapshot.Words
+      : [];
+    if (rawWords.length === 0) return;
+
+    const formattedWords = [];
+    let maxEvaluatedIdx = -1;
+    rawWords.forEach((word, fallbackIndex) => {
+      const index = typeof word.index === "number"
+        ? word.index
+        : typeof word.Index === "number"
+        ? word.Index
+        : fallbackIndex;
+      const state = mapWordState(word.state ?? word.State);
+      if (state !== "Pending") maxEvaluatedIdx = Math.max(maxEvaluatedIdx, index);
+
+      formattedWords[index] = {
+        index,
+        word: word.displayText || word.DisplayText || word.word || word.Word || "",
+        state,
+        recognizedText: word.recognizedText ?? word.RecognizedText ?? null,
+        reasonCode: word.reasonCode ?? word.ReasonCode ?? null,
+        similarity: word.similarity ?? word.Similarity ?? null,
+        isFinalized: Boolean(word.isFinalized ?? word.IsFinalized ?? false),
+      };
+    });
+    setSpokenWords(formattedWords);
+
+    const evaluationStart = detectedStartIndex ?? 0;
+    const relevantWords = formattedWords.filter(
+      (word) => word && word.index >= evaluationStart
+    );
+    const detectionReady = detectionStatus === "Detected" || detectionStatus === "Disabled";
+    const allCompleted = detectionReady
+      && relevantWords.length > 0
+      && relevantWords.every((word) => word.state !== "Pending");
+
+    if (allCompleted && maxEvaluatedIdx !== -1) {
+      if (!isStoppingRef.current && !completionTimerRef.current) {
+        completionTimerRef.current = setTimeout(() => {
+          completionTimerRef.current = null;
+          stopListeningRef.current?.();
+        }, 1300);
       }
+    } else if (maxEvaluatedIdx > (lastMaxEvaluatedIdxRef.current || -1)) {
+      lastMaxEvaluatedIdxRef.current = maxEvaluatedIdx;
+      resetSilenceTimer(8000);
     }
-
-    if (rawWords.length > 0) {
-      let maxEvaluatedIdx = -1;
-      let allCompleted = true;
-      const formattedWords = [];
-
-      // First pass: find highest index of evaluated words
-      rawWords.forEach((w, idx) => {
-        const wordIndex = typeof w.index === "number" ? w.index : typeof w.Index === "number" ? w.Index : idx;
-        const stateVal = w.state !== undefined ? w.state : w.State;
-        const stateStr = mapWordState(stateVal);
-        const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
-
-        if (stateStr !== "Pending" && !isBeforeStart) {
-          maxEvaluatedIdx = Math.max(maxEvaluatedIdx, wordIndex);
-        }
-      });
-
-      // Second pass: format words and mark skipped words (Pending before maxEvaluatedIdx) as Incorrect
-      rawWords.forEach((w, idx) => {
-        const wordIndex = typeof w.index === "number" ? w.index : typeof w.Index === "number" ? w.Index : idx;
-        const stateVal = w.state !== undefined ? w.state : w.State;
-        let stateStr = mapWordState(stateVal);
-        const isTurnFinal = Boolean(w.isTurnFinal ?? w.IsTurnFinal ?? false);
-        const isBeforeStart = detectedStartIndex !== null && wordIndex < detectedStartIndex;
-
-        const wordText = w.displayText || w.DisplayText || w.word || w.Word || w.text || w.Text || "";
-        const recognized = w.recognizedText || w.RecognizedText || null;
-
-        // If this word is after start point, before maxEvaluatedIdx, but still Pending -> user SKIPPED it (Incorrect)
-        if (stateStr === "Pending" && !isBeforeStart && maxEvaluatedIdx !== -1 && wordIndex < maxEvaluatedIdx) {
-          stateStr = "Incorrect";
-        }
-
-        if (stateStr === "Pending" && !isBeforeStart) {
-          allCompleted = false;
-        } else if (!isBeforeStart) {
-          if (!highlightQueueRef.current.includes(wordIndex) && wordIndex > lastHighlightedIdxRef.current) {
-            highlightQueueRef.current.push(wordIndex);
-          }
-        }
-
-        const isAct = Boolean(w.isCurrentActive || w.IsCurrentActive || w.isCurrent || w.IsCurrent || w.isActive || w.IsActive);
-        if (isAct && !isBeforeStart) {
-          if (!highlightQueueRef.current.includes(wordIndex)) {
-            highlightQueueRef.current.push(wordIndex);
-          }
-        }
-
-        formattedWords[wordIndex] = {
-          word: wordText,
-          state: isBeforeStart ? "Revealed" : stateStr,
-          isTurnFinal: isTurnFinal,
-          isCurrentActive: isAct && !isBeforeStart,
-          recognizedText: recognized,
-          index: wordIndex,
-        };
-      });
-
-      setSpokenWords(formattedWords);
-      setExtras(rawExtras);
-
-      // Sort highlight queue to step through active words sequentially
-      if (highlightQueueRef.current.length > 0) {
-        highlightQueueRef.current.sort((a, b) => a - b);
-        lastHighlightedIdxRef.current = Math.max(
-          lastHighlightedIdxRef.current,
-          highlightQueueRef.current[highlightQueueRef.current.length - 1]
-        );
-        processHighlightQueue();
-      }
-
-      // Auto-stop gracefully 1.3s after Hadith is 100% completed so blue pulse animation finishes
-      if (allCompleted && maxEvaluatedIdx !== -1) {
-        if (!isStoppingRef.current && !completionTimerRef.current) {
-          console.log("Hadith recitation fully completed. Graceful mic stop in 1300ms.");
-          completionTimerRef.current = setTimeout(() => {
-            completionTimerRef.current = null;
-            stopListeningRef.current?.();
-          }, 1300);
-        }
-      } else if (maxEvaluatedIdx > lastMaxEvaluatedIdxRef.current) {
-        // Reset 5.0s silence timer ONLY when a NEW word is evaluated/spoken!
-        lastMaxEvaluatedIdxRef.current = maxEvaluatedIdx;
-        resetSilenceTimer(5000);
-      }
-    }
-  }, [processHighlightQueue, resetSilenceTimer]);
+  }, [resetSilenceTimer]);
 
   /**
    * Handle RecitationCompleted event from SignalR Hub
    */
   const handleRecitationCompleted = useCallback((result) => {
-    // Ignore completion events while connecting
     if (isConnectingRef.current) {
       console.log("RecitationCompleted ignored during connection setup.");
       return;
@@ -333,9 +273,6 @@ export function useRecitation() {
     setIsListening(false);
     setIsConnecting(false);
     setRecitationStopped(true);
-    if (activeWordTimeoutRef.current) clearTimeout(activeWordTimeoutRef.current);
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-    highlightQueueRef.current = [];
     setActiveWordIndex(-1);
     scheduleExtrasHide();
   }, [cleanupAudioResources, scheduleExtrasHide]);
@@ -391,10 +328,7 @@ export function useRecitation() {
   const handleRecitationError = useCallback((err) => {
     console.warn("RecitationError received:", err);
 
-    // Ignore non-fatal warnings (e.g. NO_SPEECH_DETECTED, LOW_AUDIO_QUALITY)
     if (!err || err.fatal !== true) return;
-
-    // Ignore errors during stopping or starting phases
     if (isStoppingRef.current) return;
 
     const friendlyMsg = translateRecitationError(err);
@@ -405,7 +339,7 @@ export function useRecitation() {
     setIsListening(false);
     setIsConnecting(false);
     setRecitationStopped(true);
-  }, [translateRecitationError]);
+  }, []);
 
   /**
    * Start recitation session
@@ -421,18 +355,15 @@ export function useRecitation() {
       isStoppingRef.current = false;
       setErrorMsg(null);
       setSpokenWords([]);
+      setCanonicalWords([]);
       setTranscript("");
       setCompletedSummary(null);
       setRecitationStopped(false);
+      setStartDetection(null);
       setActiveWordIndex(-1);
-      lastHighlightedIdxRef.current = -1;
+      setFurthestActiveWordIndex(-1);
       lastUpdateNumberRef.current = -1;
       lastMaxEvaluatedIdxRef.current = -1;
-      highlightQueueRef.current = [];
-      if (highlightTimerRef.current) {
-        clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = null;
-      }
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = null;
@@ -494,6 +425,37 @@ export function useRecitation() {
       sessionIdRef.current = started.sessionId;
       localStorage.setItem("recitation_session_id", started.sessionId);
 
+      const startedWords = Array.isArray(started.words)
+        ? started.words
+        : Array.isArray(started.Words)
+        ? started.Words
+        : [];
+      const initialWords = [];
+      const initialCanonicalWords = [];
+      startedWords.forEach((word, fallbackIndex) => {
+        const index = typeof word.index === "number"
+          ? word.index
+          : typeof word.Index === "number"
+          ? word.Index
+          : fallbackIndex;
+        const displayText = word.displayText
+          || word.DisplayText
+          || word.word
+          || word.Word
+          || "";
+        initialCanonicalWords[index] = { index, word: displayText };
+        initialWords[index] = {
+          index,
+          word: displayText,
+          state: "Pending",
+          recognizedText: null,
+          reasonCode: "not-reached",
+          isFinalized: false,
+        };
+      });
+      setCanonicalWords(initialCanonicalWords);
+      setSpokenWords(initialWords);
+
       // 4. Create audio Subject for streaming
       const audioSubject = new signalR.Subject();
       audioSubjectRef.current = audioSubject;
@@ -550,7 +512,7 @@ export function useRecitation() {
       isConnectingRef.current = false;
       setIsConnecting(false);
       setIsListening(true);
-      resetSilenceTimer(10000); // 10-second initial silence window to give user time to start reciting
+      resetSilenceTimer(10000); // 10-second initial silence window
       playMicOnSound();
     } catch (err) {
       console.error("Failed to start recitation:", err);
@@ -566,19 +528,16 @@ export function useRecitation() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [handleRecitationUpdate, handleRecitationCompleted, handleRecitationError, cleanupAudioResources]);
+  }, [handleRecitationUpdate, handleRecitationCompleted, handleRecitationError, cleanupAudioResources, resetSilenceTimer]);
 
   /**
    * Stop recitation session gracefully and send FinishRecitation.
-   * Captures local refs at start to prevent race conditions with rapid stop+start.
    */
   const stopListening = useCallback(async () => {
     stopListeningRef.current = stopListening;
     if (isStoppingRef.current) return;
     isStoppingRef.current = true;
 
-    // Capture references NOW before any async work — prevents race condition
-    // where startListening replaces connectionRef while we're still stopping.
     const conn = connectionRef.current;
     const sid = sessionIdRef.current;
     const subject = audioSubjectRef.current;
@@ -586,7 +545,6 @@ export function useRecitation() {
 
     playMicOffSound();
 
-    // Immediately stop local microphone hardware tracks & AudioContext
     cleanupAudioResources();
     setIsListening(false);
     setIsConnecting(false);
@@ -598,26 +556,22 @@ export function useRecitation() {
         workletNodeRef.current.port.postMessage("FLUSH");
       }
 
-      // Complete the audio subject stream
       if (subject) {
         subject.complete();
         audioSubjectRef.current = null;
       }
 
-      // Await streaming promise to finish
       if (streamPromise) {
         await streamPromise.catch(() => {});
         streamingPromiseRef.current = null;
       }
 
-      // Invoke FinishRecitation(sessionId)
       if (conn && sid) {
         await recitationService.finishRecitation(conn, sid).catch(() => {});
       }
     } catch (err) {
       console.warn("Error stopping recitation session:", err);
     } finally {
-      // Only close the connection we captured, not a potentially new one
       if (conn) {
         await recitationService.stopConnection(conn).catch(() => {});
         if (connectionRef.current === conn) {
@@ -636,6 +590,23 @@ export function useRecitation() {
   useEffect(() => {
     stopListeningRef.current = stopListening;
   }, [stopListening]);
+
+  /**
+   * Request hint from backend
+   */
+  const requestHint = useCallback(async (wordCount) => {
+    const connection = connectionRef.current;
+    const sessionId = sessionIdRef.current;
+    if (!connection || !sessionId || !isListening) return null;
+
+    try {
+      return await recitationService.requestHint(connection, sessionId, wordCount);
+    } catch (error) {
+      console.warn("RequestHint failed:", error);
+      setErrorMsg("تعذر إظهار التلميح الآن، يرجى المحاولة مرة أخرى.");
+      return null;
+    }
+  }, [isListening]);
 
   /**
    * Cancel recitation session without saving
@@ -676,6 +647,7 @@ export function useRecitation() {
    */
   const resetRecitation = useCallback(() => {
     setSpokenWords([]);
+    setCanonicalWords([]);
     setExtras([]);
     setStartDetection(null);
     if (extrasTimerRef.current) {
@@ -687,13 +659,10 @@ export function useRecitation() {
     setErrorMsg(null);
     setRecitationStopped(false);
     setActiveWordIndex(-1);
-    lastHighlightedIdxRef.current = -1;
+    setFurthestActiveWordIndex(-1);
     lastUpdateNumberRef.current = -1;
-    highlightQueueRef.current = [];
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = null;
-    }
+    lastMaxEvaluatedIdxRef.current = -1;
+
     if (completionTimerRef.current) {
       clearTimeout(completionTimerRef.current);
       completionTimerRef.current = null;
@@ -715,14 +684,17 @@ export function useRecitation() {
     isConnecting,
     recitationStopped,
     spokenWords,
+    canonicalWords,
     extras,
     transcript,
     completedSummary,
     errorMsg,
     activeWordIndex,
+    furthestActiveWordIndex,
     startDetection,
     startListening,
     stopListening,
+    requestHint,
     cancelRecitation,
     resetRecitation,
   };

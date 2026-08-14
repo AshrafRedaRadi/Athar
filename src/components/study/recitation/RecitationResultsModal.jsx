@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { IoClose } from "react-icons/io5";
-import { FiCheckCircle, FiAlertTriangle, FiXCircle, FiStar, FiAward } from "react-icons/fi";
-import { hadithsService } from "../../../services/hadithsService";
+import { FiCheckCircle, FiAlertTriangle, FiXCircle } from "react-icons/fi";
 
 /**
  * RecitationResultsModal — Displays recitation performance results:
@@ -10,14 +9,10 @@ import { hadithsService } from "../../../services/hadithsService";
  * - Recitation errors list with side-by-side format: الخطأ ➔ الصحيح
  * - Extra / Out-of-context words list at the bottom
  * - Smooth entrance and exit animations (animate-modalIn / animate-modalOut)
- * - Auto-marks hadith as memorized (status 2) when accuracy >= 80%
  */
-export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [], hadithId = null, wasHidden = false }) {
+export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [] }) {
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
-  const [memorizedStatus, setMemorizedStatus] = useState(null); // null | "pending" | "success" | "error"
-  const [showCongrats, setShowCongrats] = useState(false);
-  const memorizedCalledRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,57 +27,6 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
-  // Auto-mark as memorized (status 2) when accuracy >= 80%, coverage >= 90%, and text was hidden
-  useEffect(() => {
-    if (!isOpen || !summary || !hadithId || memorizedCalledRef.current) return;
-
-    // Compute accuracy and coverage inline
-    const extractVal = (obj, ...keys) => {
-      for (const key of keys) {
-        if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
-        if (obj?.metrics && obj.metrics[key] !== undefined && obj.metrics[key] !== null) return obj.metrics[key];
-        if (obj?.Metrics && obj.Metrics[key] !== undefined && obj.Metrics[key] !== null) return obj.Metrics[key];
-      }
-      return undefined;
-    };
-
-    let rawAcc = extractVal(summary, "accuracy", "Accuracy", "accuracyPercentage", "AccuracyPercentage", "accuracyPercent", "AccuracyPercent", "score", "Score") ?? 0;
-    if (typeof rawAcc === "number" && rawAcc > 0 && rawAcc <= 1) rawAcc = rawAcc * 100;
-    const accuracyValue = Number(rawAcc) || 0;
-
-    let rawCov = extractVal(summary, "coverage", "Coverage", "coveragePercentage", "CoveragePercentage", "coveragePercent", "CoveragePercent") ?? 0;
-    if (typeof rawCov === "number" && rawCov > 0 && rawCov <= 1) rawCov = rawCov * 100;
-    const coverageValue = Number(rawCov) || 0;
-
-    const meetsConditions = wasHidden && accuracyValue >= 80 && coverageValue >= 90;
-
-    if (meetsConditions) {
-      memorizedCalledRef.current = true;
-      setMemorizedStatus("pending");
-      setShowCongrats(true);
-      hadithsService.updateHadithProgress(hadithId, 2)
-        .then(() => setMemorizedStatus("success"))
-        .catch((err) => {
-          console.warn("Could not mark hadith as memorized:", err?.message);
-          setMemorizedStatus("error");
-        });
-    }
-  }, [isOpen, summary, hadithId, wasHidden]);
-
-  // Reset on each new session (new hadithId or new summary)
-  useEffect(() => {
-    memorizedCalledRef.current = false;
-    setMemorizedStatus(null);
-    setShowCongrats(false);
-  }, [hadithId, summary]);
-
-  // Auto-dismiss congratulation banner after 4 seconds
-  useEffect(() => {
-    if (!showCongrats) return;
-    const timer = setTimeout(() => setShowCongrats(false), 4000);
-    return () => clearTimeout(timer);
-  }, [showCongrats]);
 
   const handleClose = useCallback(() => {
     if (isClosing) return;
@@ -153,162 +97,68 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
       if (type.includes("extra")) return true;
       if (issue.isExtra || issue.IsExtra) return true;
       const str = Object.values(issue).join(" ").toLowerCase();
-      if (str.includes("extra")) return true;
+      if (str.includes("extra") || str.includes("زائدة") || str.includes("غير موجودة")) return true;
     }
     return false;
   };
 
-  // 1. Filter out extra words from main issues list
-  const filteredIssues = rawIssues.filter((item) => !isExtraItem(item));
+  // Split issues into main errors vs extra words
+  const extraWordsFromIssues = [];
+  const filteredIssues = [];
 
-  // 2. Extract clean word text from extra issue items
-  const cleanExtraText = (item) => {
-    if (typeof item === "string") {
-      return item.replace(/extra/gi, "").replace(/\d+/g, "").replace(/[-_:]/g, " ").trim();
+  rawIssues.forEach((issue) => {
+    if (isExtraItem(issue)) {
+      const word =
+        (typeof issue === "object" && issue !== null)
+          ? issue.actual || issue.Actual || issue.spoken || issue.Spoken || issue.word || issue.Word || issue.text || issue.Text || issue.message || issue.Message
+          : String(issue);
+      if (word) extraWordsFromIssues.push(word);
+    } else {
+      filteredIssues.push(issue);
     }
-    const val =
-      item?.actual ||
-      item?.Actual ||
-      item?.word ||
-      item?.Word ||
-      item?.text ||
-      item?.Text ||
-      item?.spoken ||
-      item?.Spoken ||
-      item?.recognizedText ||
-      item?.RecognizedText ||
-      "";
-    if (val) return String(val).replace(/extra/gi, "").replace(/\d+/g, "").replace(/[-_:]/g, " ").trim();
-    return Object.values(item)
-      .filter((v) => typeof v === "string" || typeof v === "number")
-      .join(" ")
-      .replace(/extra/gi, "")
-      .replace(/\d+/g, "")
-      .replace(/[-_:]/g, " ")
-      .trim();
-  };
+  });
 
-  // Combine extras prop + extra items from issues list
-  const extraWordsFromIssues = rawIssues.filter(isExtraItem).map(cleanExtraText).filter(Boolean);
-  const extraWordsFromProp = extras.map(cleanExtraText).filter(Boolean);
+  // Combine extras from stream and issues list
+  const combinedExtras = Array.from(new Set([...(extras || []), ...extraWordsFromIssues])).filter(Boolean);
 
-  const combinedExtras = Array.from(new Set([...extraWordsFromProp, ...extraWordsFromIssues])).filter(Boolean);
-
-  // Parser for issue items into expected (correct) and actual (wrong spoken) words
-  const parseIssue = (issue) => {
-    if (typeof issue === "string") {
-      const parts = issue
-        .replace(/extra/gi, "")
-        .replace(/\d+/g, "")
-        .split(/[-─➔>:]/)
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      if (parts.length >= 2) {
-        return { expected: parts[0], actual: parts[1] };
-      } else if (parts.length === 1) {
-        return { expected: parts[0], actual: "" };
-      }
-      return { expected: "", actual: "", message: issue };
-    }
-
-    if (typeof issue === "object" && issue !== null) {
-      const expected =
-        issue.expected ||
-        issue.Expected ||
-        issue.expectedWord ||
-        issue.ExpectedWord ||
-        issue.expectedText ||
-        issue.ExpectedText ||
-        "";
-
-      let actual =
-        issue.actual ||
-        issue.Actual ||
-        issue.actualWord ||
-        issue.ActualWord ||
-        issue.actualText ||
-        issue.ActualText ||
-        issue.spoken ||
-        issue.Spoken ||
-        issue.spokenWord ||
-        issue.SpokenWord ||
-        issue.spokenText ||
-        issue.SpokenText ||
-        issue.recognized ||
-        issue.Recognized ||
-        issue.recognizedText ||
-        issue.RecognizedText ||
-        issue.userWord ||
-        issue.UserWord ||
-        issue.userText ||
-        issue.UserText ||
-        issue.said ||
-        issue.Said ||
-        issue.got ||
-        issue.Got ||
-        issue.input ||
-        issue.Input ||
-        "";
-
-      const message =
-        issue.message ||
-        issue.Message ||
-        issue.description ||
-        issue.Description ||
-        issue.detail ||
-        issue.Detail ||
-        issue.text ||
-        issue.Text ||
-        "";
-
-      if (!actual && message) {
-        const parts = message
-          .replace(/extra/gi, "")
-          .replace(/\d+/g, "")
-          .split(/[-─➔>:]/)
-          .map((p) => p.trim())
-          .filter(Boolean);
-        if (parts.length >= 2) {
-          actual = parts[1];
-        }
-      }
-
-      return { expected, actual, message };
-    }
-
-    return { expected: "", actual: "", message: String(issue) };
-  };
-
-  // Grade based on accuracy
-  const getGrade = (pct) => {
-    if (pct >= 90) return { label: "ممتاز", color: "text-emerald-500", bg: "bg-emerald-500" };
-    if (pct >= 75) return { label: "جيد جداً", color: "text-cyan-500", bg: "bg-cyan-500" };
-    if (pct >= 60) return { label: "جيد", color: "text-amber-500", bg: "bg-amber-500" };
-    return { label: "يحتاج مراجعة", color: "text-red-500", bg: "bg-red-500" };
+  // Grade determination
+  const getGrade = (acc) => {
+    if (acc >= 90) return { label: "ممتاز", color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-700 dark:bg-emerald-400" };
+    if (acc >= 75) return { label: "جيد جداً", color: "text-teal-700 dark:text-teal-400", bg: "bg-teal-700 dark:bg-teal-400" };
+    if (acc >= 60) return { label: "جيد", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-700 dark:bg-amber-400" };
+    return { label: "يحتاج تدريب", color: "text-red-700 dark:text-red-400", bg: "bg-red-700 dark:bg-red-400" };
   };
 
   const grade = getGrade(accuracy);
 
-  // SVG circular progress
-  const radius = 54;
+  // Circular progress calculations
+  const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (Math.min(100, Math.max(0, accuracy)) / 100) * circumference;
 
+  // Helper to parse each issue format
+  const parseIssue = (issue) => {
+    if (typeof issue === "string") {
+      return { message: issue };
+    }
+    return {
+      expected: issue.expected || issue.Expected || issue.correct || issue.Correct || issue.expectedWord || issue.ExpectedWord || null,
+      actual: issue.actual || issue.Actual || issue.spoken || issue.Spoken || issue.recognized || issue.Recognized || null,
+      message: issue.message || issue.Message || issue.description || issue.Description || null,
+    };
+  };
+
   return (
     <div
-      className={`fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 ${
-        isClosing ? "animate-backdropOut" : "animate-backdropIn"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-200 ${
+        isClosing ? "opacity-0" : "opacity-100"
       }`}
-      onClick={handleClose}
       dir="rtl"
     >
-
       <div
-        className={`bg-base-100 rounded-3xl shadow-2xl border border-base-300 w-full max-w-sm overflow-hidden ${
-          isClosing ? "animate-modalOut" : "animate-modalIn"
+        className={`bg-base-100 dark:bg-base-900 border border-base-300 dark:border-base-700 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-transform duration-200 ${
+          isClosing ? "scale-95 animate-modalOut" : "scale-100 animate-modalIn"
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-gradient-to-l from-cyan-600 to-teal-700 px-5 py-4 flex items-center justify-between">
@@ -484,26 +334,6 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
             )}
           </div>
 
-          {/* Memorized Status Indicator */}
-          {memorizedStatus === "pending" && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="loading loading-spinner loading-xs text-emerald-500" />
-              <span className="font-2 text-xs text-base-content/60">جاري تحديث حالة الحفظ...</span>
-            </div>
-          )}
-          {memorizedStatus === "success" && (
-            <div className="flex items-center justify-center gap-2 pt-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl px-4 py-2.5 border border-emerald-200/60 dark:border-emerald-900/40">
-              <FiStar className="text-emerald-500 text-sm shrink-0" />
-              <span className="font-2 text-xs text-emerald-700 dark:text-emerald-400 font-bold">
-                تم تحديث الحديث إلى "تم الحفظ" ✓
-              </span>
-            </div>
-          )}
-          {memorizedStatus === "error" && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="font-2 text-xs text-red-500/70">تعذر تحديث حالة الحفظ، تحقق من الاتصال</span>
-            </div>
-          )}
         </div>
       </div>
     </div>
