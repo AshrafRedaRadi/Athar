@@ -63,8 +63,8 @@ const DailyGoal = ({ onChange }) => {
           {/* 1. New Memorization Goal */}
           <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 bg-base-100 dark:bg-slate-800/80 rounded-2xl border border-base-200 dark:border-slate-700 shadow-[0_2px_10px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_14px_rgba(6,182,212,0.12)] transition-shadow">
             <div className="text-right">
-              <h4 className="font-bold text-base-content text-sm sm:text-base">أحاديث جديدة في اليوم</h4>
-              <p className="text-xs text-base-content/60 mt-0.5">مقدار الحفظ اليومي الجديد</p>
+              <h4 className="font-bold text-base-content text-sm sm:text-base">مقدار الحفظ اليومي</h4>
+              <p className="text-xs text-base-content/60 mt-0.5">أحاديث جديدة في اليوم</p>
             </div>
             <div className="flex items-center bg-base-200/60 dark:bg-slate-900 border border-base-300/80 dark:border-slate-700 rounded-xl p-1 gap-1 shrink-0 shadow-xs">
               <button 
@@ -90,7 +90,7 @@ const DailyGoal = ({ onChange }) => {
           {/* 2. Daily Revision Goal */}
           <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 bg-base-100 dark:bg-slate-800/80 rounded-2xl border border-base-200 dark:border-slate-700 shadow-[0_2px_10px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_14px_rgba(6,182,212,0.12)] transition-shadow">
             <div className="text-right">
-              <h4 className="font-bold text-base-content text-sm sm:text-base">مقدار المراجعة في اليوم</h4>
+              <h4 className="font-bold text-base-content text-sm sm:text-base">مقدار المراجعة اليومية</h4>
               <p className="text-xs text-base-content/60 mt-0.5">مراجعة وتكرار ما سبق حفظه</p>
             </div>
             <div className="flex items-center bg-base-200/60 dark:bg-slate-900 border border-base-300/80 dark:border-slate-700 rounded-xl p-1 gap-1 shrink-0 shadow-xs">
