@@ -24,7 +24,15 @@ export default function RecordButton({
   const touchStartedRef = useRef(false);
 
   useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setShowOptions(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
     return () => {
+      window.removeEventListener("resize", handleResize);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
@@ -193,10 +201,20 @@ export default function RecordButton({
         >
           {isConnecting ? (
             <span className="loading loading-spinner loading-md text-white"></span>
-          ) : showOptions ? (
-            <IoClose className="text-3xl text-white transition-transform duration-300" />
           ) : isRecording ? (
-            <BsStopFill className="text-3xl lg:text-3xl" />
+            <>
+              {/* Mobile (< lg): Stop square */}
+              <BsStopFill className="text-3xl lg:hidden" />
+              {/* Desktop (>= lg): Always regular Mic */}
+              <BsMicFill className="text-3xl hidden lg:block" />
+            </>
+          ) : showOptions ? (
+            <>
+              {/* Mobile (< lg): Close X */}
+              <IoClose className="text-3xl text-white lg:hidden transition-transform duration-300" />
+              {/* Desktop (>= lg): Always regular Mic */}
+              <BsMicFill className="text-3xl hidden lg:block" />
+            </>
           ) : (
             <>
               {/* Mobile (< lg): show Play/Pause icon if listening mode active */}
@@ -208,7 +226,7 @@ export default function RecordButton({
                 <BsMicFill className="text-3xl lg:hidden" />
               )}
 
-              {/* Desktop (>= lg): ALWAYS show Mic icon */}
+              {/* Desktop (>= lg): ALWAYS show regular Mic icon */}
               <BsMicFill className="text-3xl hidden lg:block" />
             </>
           )}
