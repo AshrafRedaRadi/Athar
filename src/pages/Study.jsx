@@ -190,11 +190,25 @@ export default function Study() {
 
     if (wasHiddenWhenStartedRef.current && backendQualified && currentHadith?.id) {
       memorizeCalledRef.current = true;
+      const wasAlreadyMemorized = progressMap[currentHadith.id] === 2;
       setShowCongrats(true);
       setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 2 }));
       hadithsService.updateHadithProgress(currentHadith.id, 2).catch((err) => {
         console.warn("Could not mark hadith as memorized:", err?.message);
       });
+
+      // If it was already memorized, this recitation counts as a successful review
+      if (wasAlreadyMemorized) {
+        try {
+          const reviews = JSON.parse(localStorage.getItem("athar_hadith_reviews") || "{}");
+          const prevCount = reviews[currentHadith.id]?.count || 0;
+          reviews[currentHadith.id] = {
+            count: prevCount + 1,
+            lastReviewedAt: new Date().toISOString(),
+          };
+          localStorage.setItem("athar_hadith_reviews", JSON.stringify(reviews));
+        } catch {}
+      }
     }
   }, [completedSummary, currentHadith?.id]);
 

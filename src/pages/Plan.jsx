@@ -5,9 +5,9 @@ import Navbar from '../components/shared/Navbar';
 import ProgressCard from '../components/plan/ProgressCard';
 import QuickActions from '../components/plan/QuickActions';
 import DaysTarget from '../components/plan/DaysTarget';
-import AdvancedSettings from '../components/plan/AdvancedSettings';
 import DailyGoal from '../components/plan/DailyGoal';
-import SelectedTrack from '../components/plan/SelectedTrack';
+import RecentlyMemorized from '../components/plan/RecentlyMemorized';
+import RecentlyReviewed from '../components/plan/RecentlyReviewed';
 
 export default function Plan() {
   const [isSaving, setIsSaving] = useState(false);
@@ -58,9 +58,14 @@ export default function Plan() {
             <h3>خطة الحفظ والمراجعة</h3>
           </div>
 
-          <SelectedTrack />
+          {/* Section 1: المقدار اليومي */}
           <DailyGoal />
-          <AdvancedSettings />
+
+          {/* Section 2: آخر ما تم حفظه (الأحدث أولاً) */}
+          <RecentlyMemorized />
+
+          {/* Section 3: آخر ما تمت مراجعته (الأقدم أولاً) */}
+          <RecentlyReviewed />
         </div>
 
         <div className="mt-6 flex justify-start px-1 mb-6">

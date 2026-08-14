@@ -1,93 +1,127 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { HiOutlineAdjustmentsVertical } from "react-icons/hi2";
+import { FiPlus, FiMinus } from "react-icons/fi";
 
-const DailyGoal = () => {
-  const [newAhadith, setNewAhadith] = useState(2);
-  const [fixationCount, setFixationCount] = useState(5);
-  const [revisionCount, setRevisionCount] = useState(10);
+const STORAGE_KEY = "athar_daily_goals";
+
+const DailyGoal = ({ onChange }) => {
+  const [newAhadith, setNewAhadith] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.newAhadith ?? 2;
+      }
+    } catch {}
+    return 2;
+  });
+
+  const [revisionCount, setRevisionCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.revisionCount ?? 5;
+      }
+    } catch {}
+    return 5;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ newAhadith, revisionCount })
+      );
+      window.dispatchEvent(
+        new CustomEvent("athar_daily_goals_changed", {
+          detail: { newAhadith, revisionCount }
+        })
+      );
+      if (onChange) onChange({ newAhadith, revisionCount });
+    } catch {}
+  }, [newAhadith, revisionCount, onChange]);
 
   return (
-    <div className="bg-base-100 dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-base-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.09)] transition-all duration-300 w-full h-full flex flex-col justify-between space-y-4 font-2" dir="rtl">
+    <div className="bg-base-100 dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-base-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all duration-300 w-full h-full flex flex-col justify-between space-y-4 font-2" dir="rtl">
       <div>
-        <div className="flex items-center justify-start gap-2.5 text-base-content font-bold font-1 text-lg mb-4">
-          <svg className="w-6 h-6 text-cyan-700 dark:text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-          <span>المقدار اليومي</span>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-base-200/70 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 text-base-content font-bold font-1 text-base sm:text-lg">
+            <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/50 flex items-center justify-center text-cyan-700 dark:text-cyan-400">
+              <HiOutlineAdjustmentsVertical className="w-5 h-5 shrink-0" />
+            </div>
+            <span>المقدار اليومي</span>
+          </div>
+          <span className="badge badge-sm bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 font-bold border-0 px-2.5 py-1">
+            مخصص
+          </span>
         </div>
 
+        {/* Goal Items */}
         <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 bg-base-200/40 rounded-xl border border-base-200/60">
+          {/* 1. New Memorization Goal */}
+          <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 bg-base-100 dark:bg-slate-800/80 rounded-2xl border border-base-200 dark:border-slate-700 shadow-[0_2px_10px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_14px_rgba(6,182,212,0.12)] transition-shadow">
             <div className="text-right">
-              <h4 className="font-bold text-base-content text-sm">أحاديث جديدة في اليوم</h4>
-              <p className="text-xs text-base-content/60 mt-0.5">مقدار الحفظ الجديد</p>
+              <h4 className="font-bold text-base-content text-sm sm:text-base">أحاديث جديدة في اليوم</h4>
+              <p className="text-xs text-base-content/60 mt-0.5">مقدار الحفظ اليومي الجديد</p>
             </div>
-            <div className="flex items-center bg-base-100 border border-base-300/60 rounded-xl p-1 gap-1 shrink-0">
+            <div className="flex items-center bg-base-200/60 dark:bg-slate-900 border border-base-300/80 dark:border-slate-700 rounded-xl p-1 gap-1 shrink-0 shadow-xs">
               <button 
-                onClick={() => setNewAhadith(newAhadith + 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
+                onClick={() => setNewAhadith((prev) => prev + 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 hover:text-white dark:hover:bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-base-content transition active:scale-95 cursor-pointer text-sm shadow-xs"
+                aria-label="زيادة مقدار الحفظ"
               >
-                +
+                <FiPlus className="text-sm" />
               </button>
-              <span className="w-7 sm:w-8 text-center font-bold text-base-content text-sm sm:text-base">
+              <span className="w-7 sm:w-8 text-center font-bold font-mono text-base-content text-sm sm:text-base">
                 {newAhadith}
               </span>
               <button 
-                onClick={() => setNewAhadith(Math.max(0, newAhadith - 1))}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
+                onClick={() => setNewAhadith((prev) => Math.max(1, prev - 1))}
+                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 hover:text-white dark:hover:bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-base-content transition active:scale-95 cursor-pointer text-sm shadow-xs"
+                aria-label="إنقاص مقدار الحفظ"
               >
-                -
+                <FiMinus className="text-sm" />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 bg-base-200/40 rounded-xl border border-base-200/60">
+          {/* 2. Daily Revision Goal */}
+          <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 bg-base-100 dark:bg-slate-800/80 rounded-2xl border border-base-200 dark:border-slate-700 shadow-[0_2px_10px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_14px_rgba(6,182,212,0.12)] transition-shadow">
             <div className="text-right">
-              <h4 className="font-bold text-base-content text-sm">مقدار التثبيت</h4>
-              <p className="text-xs text-base-content/60 mt-0.5">تكرار الحفظ الجديد</p>
+              <h4 className="font-bold text-base-content text-sm sm:text-base">مقدار المراجعة في اليوم</h4>
+              <p className="text-xs text-base-content/60 mt-0.5">مراجعة وتكرار ما سبق حفظه</p>
             </div>
-            <div className="flex items-center bg-base-100 border border-base-300/60 rounded-xl p-1 gap-1 shrink-0">
+            <div className="flex items-center bg-base-200/60 dark:bg-slate-900 border border-base-300/80 dark:border-slate-700 rounded-xl p-1 gap-1 shrink-0 shadow-xs">
               <button 
-                onClick={() => setFixationCount(fixationCount + 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
+                onClick={() => setRevisionCount((prev) => prev + 1)}
+                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 hover:text-white dark:hover:bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-base-content transition active:scale-95 cursor-pointer text-sm shadow-xs"
+                aria-label="زيادة مقدار المراجعة"
               >
-                +
+                <FiPlus className="text-sm" />
               </button>
-              <span className="w-7 sm:w-8 text-center font-bold text-base-content text-sm sm:text-base">
-                {fixationCount}
-              </span>
-              <button 
-                onClick={() => setFixationCount(Math.max(0, fixationCount - 1))}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
-              >
-                -
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 bg-base-200/40 rounded-xl border border-base-200/60">
-            <div className="text-right">
-              <h4 className="font-bold text-base-content text-sm">مقدار المراجعة في اليوم</h4>
-              <p className="text-xs text-base-content/60 mt-0.5">مراجعة ما سبق حفظه</p>
-            </div>
-            <div className="flex items-center bg-base-100 border border-base-300/60 rounded-xl p-1 gap-1 shrink-0">
-              <button 
-                onClick={() => setRevisionCount(revisionCount + 1)}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
-              >
-                +
-              </button>
-              <span className="w-7 sm:w-8 text-center font-bold text-base-content text-sm sm:text-base">
+              <span className="w-7 sm:w-8 text-center font-mono font-bold text-base-content text-sm sm:text-base">
                 {revisionCount}
               </span>
               <button 
-                onClick={() => setRevisionCount(Math.max(0, revisionCount - 1))}
-                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-200/80 hover:bg-cyan-700 hover:text-white rounded-lg flex items-center justify-center font-bold text-base-content transition cursor-pointer text-sm"
+                onClick={() => setRevisionCount((prev) => Math.max(1, prev - 1))}
+                className="w-7 h-7 sm:w-8 sm:h-8 bg-base-100 dark:bg-slate-800 hover:bg-cyan-700 hover:text-white dark:hover:bg-cyan-600 rounded-lg flex items-center justify-center font-bold text-base-content transition active:scale-95 cursor-pointer text-sm shadow-xs"
+                aria-label="إنقاص مقدار المراجعة"
               >
-                -
+                <FiMinus className="text-sm" />
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Summary Footer */}
+      <div className="pt-2 border-t border-base-200/60 dark:border-slate-800 flex items-center justify-between text-xs text-base-content/70">
+        <span>إجمالي الورد اليومي:</span>
+        <span className="font-bold text-cyan-700 dark:text-cyan-400 font-mono text-sm">
+          {newAhadith + revisionCount} أحاديث
+        </span>
       </div>
     </div>
   );
