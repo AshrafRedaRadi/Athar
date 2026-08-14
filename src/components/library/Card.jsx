@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX } from "react-icons/fi";
 import { IoBookOutline } from "react-icons/io5";
+import { HiOutlineArrowLeft } from "react-icons/hi2";
 
 // Difficulty badge colour map
 const LEVEL_STYLES = {
@@ -150,16 +151,18 @@ export default function Card({
                     </p>
                   </div>
 
-                  <div className="pt-2 flex items-center">
+                  <div className="pt-3 flex justify-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsExpanded(false);
                         onClick?.(e);
                       }}
-                      className="btn bg-cyan-700 hover:bg-cyan-800 text-white font-2 w-full rounded-xl text-xs sm:text-sm shadow-md"
+                      className="group w-full max-w-[270px] sm:max-w-[300px] bg-gradient-to-r from-cyan-700 to-cyan-800 hover:from-cyan-800 hover:to-cyan-900 text-white font-2 font-bold py-2.5 sm:py-3 px-6 rounded-2xl text-xs sm:text-sm shadow-md hover:shadow-lg hover:shadow-cyan-700/25 border border-cyan-500/30 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      عرض الفهرس
+                      <IoBookOutline className="text-base shrink-0" />
+                      <span>عرض الفهرس</span>
+                      <HiOutlineArrowLeft className="text-xs group-hover:-translate-x-1 transition-transform duration-200" />
                     </button>
                   </div>
                 </motion.div>
