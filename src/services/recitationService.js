@@ -12,26 +12,34 @@ export const recitationService = {
    * Build and start a new SignalR hub connection configured with MessagePack protocol
    */
   async buildConnection({ onUpdated, onCompleted, onError }) {
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl(RECITATION_HUB_URL, {
-        accessTokenFactory: () => localStorage.getItem("token") || "",
-      })
-      .withHubProtocol(new MessagePackHubProtocol())
-      .withAutomaticReconnect([0, 2000, 5000, 10000])
-      .build();
+    const createConnection = () => {
+      const conn = new signalR.HubConnectionBuilder()
+        .withUrl(RECITATION_HUB_URL, {
+          accessTokenFactory: () => localStorage.getItem("token") || "",
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        })
+        .withHubProtocol(new MessagePackHubProtocol())
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
 
-    if (onUpdated) {
-      connection.on("RecitationUpdated", onUpdated);
-    }
-    if (onCompleted) {
-      connection.on("RecitationCompleted", onCompleted);
-    }
-    if (onError) {
-      connection.on("RecitationError", onError);
-    }
+      if (onUpdated) conn.on("RecitationUpdated", onUpdated);
+      if (onCompleted) conn.on("RecitationCompleted", onCompleted);
+      if (onError) conn.on("RecitationError", onError);
+      return conn;
+    };
 
-    await connection.start();
-    return connection;
+    let connection = createConnection();
+    try {
+      await connection.start();
+      return connection;
+    } catch (firstErr) {
+      console.warn("SignalR connection attempt 1 failed, retrying in 350ms...", firstErr?.message);
+      await new Promise((r) => setTimeout(r, 350));
+      connection = createConnection();
+      await connection.start();
+      return connection;
+    }
   },
 
   /**

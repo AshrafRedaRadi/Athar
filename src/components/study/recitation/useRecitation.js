@@ -84,15 +84,18 @@ export function useRecitation() {
 
   /**
    * Reset silence timer for automatic mic shutdown
-   * @param {number} durationMs - timeout duration in milliseconds (default 5000ms = 5s)
+   * @param {number} durationMs - timeout duration in milliseconds (default 8000ms = 8s)
    */
-  const resetSilenceTimer = useCallback((durationMs = 5000) => {
+  const resetSilenceTimer = useCallback((durationMs = 8000) => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
     }
     silenceTimerRef.current = setTimeout(() => {
-      console.log(`Recitation auto-stopped after ${durationMs / 1000}s silence.`);
-      stopListeningRef.current?.();
+      if (!isStoppingRef.current) {
+        console.log(`Recitation auto-stopped after ${durationMs / 1000}s silence.`);
+        stopListeningRef.current?.();
+      }
     }, durationMs);
   }, []);
 
@@ -527,7 +530,12 @@ export function useRecitation() {
         if (!data) return;
         const chunk = data.chunk || (data instanceof Uint8Array ? data : null);
 
-        if (chunk && audioSubjectRef.current) {
+        if (
+          chunk &&
+          audioSubjectRef.current &&
+          connectionRef.current &&
+          connectionRef.current.state === signalR.HubConnectionState.Connected
+        ) {
           audioSubjectRef.current.next(chunk);
         }
       };
@@ -542,7 +550,7 @@ export function useRecitation() {
       isConnectingRef.current = false;
       setIsConnecting(false);
       setIsListening(true);
-      resetSilenceTimer(6000); // Initial 6-second silence window
+      resetSilenceTimer(10000); // 10-second initial silence window to give user time to start reciting
       playMicOnSound();
     } catch (err) {
       console.error("Failed to start recitation:", err);
@@ -620,6 +628,7 @@ export function useRecitation() {
         sessionIdRef.current = null;
       }
       localStorage.removeItem("recitation_session_id");
+      isStoppingRef.current = false;
     }
   }, [cleanupAudioResources, scheduleExtrasHide]);
 
@@ -658,6 +667,7 @@ export function useRecitation() {
       sessionIdRef.current = null;
       localStorage.removeItem("recitation_session_id");
       setRecitationStopped(true);
+      isStoppingRef.current = false;
     }
   }, [cleanupAudioResources]);
 
