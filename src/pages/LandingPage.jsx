@@ -15,6 +15,10 @@ import {
   IoArrowBack
 } from 'react-icons/io5';
 import logoImg from '../assets/logo.png';
+import mosqueSvg from '../assets/mosque.svg';
+import { booksService } from '../services/booksService';
+import { hadithsService } from '../services/hadithsService';
+import { usersService } from '../services/usersService';
 
 /* ─────────────────────────────────────────────
    Islamic Star Pattern Background
@@ -110,55 +114,20 @@ function Reveal({ children, delay = 0, className = '' }) {
 }
 
 /* ─────────────────────────────────────────────
-   Mosque Skyline SVG
+   Mosque Background (AI Vector Illustration)
 ───────────────────────────────────────────────── */
-function MosqueSkyline({ fill = '#1a3f52' }) {
+function MosqueBackground({ className = '' }) {
   return (
-    <svg viewBox="0 0 1200 160" preserveAspectRatio="none" className="w-full block pointer-events-none">
-      <rect x="0" y="130" width="1200" height="30" fill={fill} />
-      <rect x="60" y="80" width="14" height="50" fill={fill} />
-      <path d="M67,80 L60,65 L74,65 Z" fill={fill} />
-      <rect x="63" y="55" width="8" height="12" fill={fill} />
-      <rect x="120" y="95" width="140" height="35" fill={fill} />
-      <path d="M140,95 C140,55 175,35 190,32 C205,35 240,55 240,95 Z" fill={fill} />
-      <rect x="188" y="20" width="4" height="14" fill={fill} />
-      <circle cx="190" cy="17" r="3" fill={fill} />
-      <path d="M122,95 C122,75 138,62 148,60 C158,62 174,75 174,95 Z" fill={fill} />
-      <path d="M210,95 C210,75 226,62 236,60 C246,62 262,75 262,95 Z" fill={fill} />
-      <rect x="104" y="50" width="18" height="80" fill={fill} />
-      <path d="M113,50 L104,32 L122,32 Z" fill={fill} />
-      <rect x="108" y="22" width="10" height="12" fill={fill} />
-      <circle cx="113" cy="18" r="2.5" fill={fill} />
-      <rect x="380" y="100" width="440" height="30" fill={fill} />
-      <path d="M490,100 C490,42 555,10 600,6 C645,10 710,42 710,100 Z" fill={fill} />
-      <rect x="598" y="-4" width="4" height="12" fill={fill} />
-      <path d="M604,-4 A8,8,0,1,0,604,-20 A6,6,0,1,1,604,-4 Z" fill={fill} />
-      <path d="M410,100 C410,68 440,48 460,46 C480,48 510,68 510,100 Z" fill={fill} />
-      <path d="M690,100 C690,68 720,48 740,46 C760,48 790,68 790,100 Z" fill={fill} />
-      <path d="M382,100 C382,82 396,72 404,70 C412,72 426,82 426,100 Z" fill={fill} />
-      <path d="M774,100 C774,82 788,72 796,70 C804,72 818,82 818,100 Z" fill={fill} />
-      <rect x="375" y="40" width="20" height="90" fill={fill} />
-      <path d="M385,40 L375,20 L395,20 Z" fill={fill} />
-      <rect x="379" y="10" width="12" height="12" fill={fill} />
-      <circle cx="385" cy="6" r="3" fill={fill} />
-      <rect x="805" y="40" width="20" height="90" fill={fill} />
-      <path d="M815,40 L805,20 L825,20 Z" fill={fill} />
-      <rect x="809" y="10" width="12" height="12" fill={fill} />
-      <circle cx="815" cy="6" r="3" fill={fill} />
-      <rect x="880" y="95" width="150" height="35" fill={fill} />
-      <path d="M900,95 C900,55 935,35 955,32 C975,35 1010,55 1010,95 Z" fill={fill} />
-      <rect x="953" y="20" width="4" height="14" fill={fill} />
-      <circle cx="955" cy="17" r="3" fill={fill} />
-      <path d="M882,95 C882,75 898,62 908,60 C918,62 934,75 934,95 Z" fill={fill} />
-      <path d="M974,95 C974,75 990,62 1000,60 C1010,62 1026,75 1026,95 Z" fill={fill} />
-      <rect x="1068" y="50" width="18" height="80" fill={fill} />
-      <path d="M1077,50 L1068,32 L1086,32 Z" fill={fill} />
-      <rect x="1072" y="22" width="10" height="12" fill={fill} />
-      <circle cx="1077" cy="18" r="2.5" fill={fill} />
-      <rect x="1126" y="80" width="14" height="50" fill={fill} />
-      <path d="M1133,80 L1126,65 L1140,65 Z" fill={fill} />
-      <rect x="1129" y="55" width="8" height="12" fill={fill} />
-    </svg>
+    <div className={`w-full overflow-hidden pointer-events-none leading-none select-none flex items-end justify-center ${className}`}>
+      <img
+        src={mosqueSvg}
+        alt=""
+        className="w-full h-[220px] sm:h-[300px] md:h-[400px] lg:h-[480px] object-cover object-bottom block select-none pointer-events-none"
+        style={{
+          transform: 'translateY(2px)',
+        }}
+      />
+    </div>
   );
 }
 
@@ -637,14 +606,8 @@ function FAQSection() {
 }
 
 /* ─────────────────────────────────────────────
-   Stats & Features Data
+   Features Data
 ───────────────────────────────────────────────── */
-const STATS = [
-  { value: 5000, suffix: '+', label: 'حديث نبوي شريف' },
-  { value: 20,   suffix: '+', label: 'كتاب حديث' },
-  { value: 3,    suffix: '',  label: 'محركات تسميع ذكية' },
-  { value: 100,  suffix: '%', label: 'مجاني للبدء' },
-];
 
 const FEATURES = [
   {
@@ -743,8 +706,52 @@ export default function LandingPage() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
 
+  const [hadithsCount, setHadithsCount] = useState(42);
+  const [booksCount, setBooksCount] = useState(1);
+  const [studentsCount, setStudentsCount] = useState(1240);
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDynamicCounts() {
+      try {
+        const [hCount, bCount, sCount] = await Promise.all([
+          hadithsService.getHadithsCount(),
+          booksService.getBooksCount(),
+          usersService.getStudentsCount(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (typeof hCount === 'number' && hCount > 0) {
+          setHadithsCount(hCount);
+        }
+        if (typeof bCount === 'number' && bCount > 0) {
+          setBooksCount(bCount);
+        }
+        if (typeof sCount === 'number' && sCount > 0) {
+          setStudentsCount(sCount);
+        }
+      } catch (err) {
+        console.warn('Could not load dynamic stats for landing page:', err);
+      }
+    }
+
+    loadDynamicCounts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const statsList = [
+    { value: hadithsCount,  suffix: '',  label: 'حديث نبوي شريف' },
+    { value: booksCount,    suffix: '',  label: 'كتاب حديث' },
+    { value: studentsCount, suffix: '+', label: 'الطلاب' },
+    { value: 100,           suffix: '%', label: 'مجاني للبدء' },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -953,8 +960,8 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 inset-x-0 z-0 pointer-events-none">
-          <MosqueSkyline fill="#0f2633" />
+        <div className="absolute bottom-0 inset-x-0 z-0 pointer-events-none w-full">
+          <MosqueBackground />
         </div>
       </section>
 
@@ -964,7 +971,7 @@ export default function LandingPage() {
         <IslamicStarPattern opacity={0.04} color="#C9953A" size={70} />
         <div className="relative z-10 max-w-4xl mx-auto px-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
-            {STATS.map((s, i) => (
+            {statsList.map((s, i) => (
               <Reveal key={i} delay={i * 0.1}>
                 <StatCard {...s} inView={statsInView} />
               </Reveal>
@@ -1128,8 +1135,8 @@ export default function LandingPage() {
             </Reveal>
           </div>
 
-          <div className="relative z-0 -mb-1 pointer-events-none">
-            <MosqueSkyline fill="#0f2633" />
+          <div className="relative z-0 -mb-1 pointer-events-none w-full">
+            <MosqueBackground />
           </div>
         </div>
       </section>
