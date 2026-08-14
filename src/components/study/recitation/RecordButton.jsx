@@ -202,17 +202,13 @@ export default function RecordButton({
           {isConnecting ? (
             <span className="loading loading-spinner loading-md text-white"></span>
           ) : isRecording ? (
-            <>
-              {/* Mobile (< lg): Stop square */}
-              <BsStopFill className="text-3xl lg:hidden" />
-              {/* Desktop (>= lg): Always regular Mic */}
-              <BsMicFill className="text-3xl hidden lg:block" />
-            </>
+            /* While reciting: show Stop Square on both Desktop & Mobile */
+            <BsStopFill className="text-3xl" />
           ) : showOptions ? (
             <>
               {/* Mobile (< lg): Close X */}
               <IoClose className="text-3xl text-white lg:hidden transition-transform duration-300" />
-              {/* Desktop (>= lg): Always regular Mic */}
+              {/* Desktop (>= lg): Regular Mic */}
               <BsMicFill className="text-3xl hidden lg:block" />
             </>
           ) : (
@@ -226,7 +222,7 @@ export default function RecordButton({
                 <BsMicFill className="text-3xl lg:hidden" />
               )}
 
-              {/* Desktop (>= lg): ALWAYS show regular Mic icon */}
+              {/* Desktop (>= lg): ALWAYS show Mic icon */}
               <BsMicFill className="text-3xl hidden lg:block" />
             </>
           )}
