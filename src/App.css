@@ -46,8 +46,8 @@ a,
 
 @font-face {
   font-family: "UthmanicHafs";
-  src: url("/fonts/UthmanicHafs.woff2") format("woff2"),
-       url("https://raw.githubusercontent.com/mustafa0x/qpc-fonts/f93bf5f3/various-woff2/UthmanicHafs1%20Ver09.woff2") format("woff2");
+  src: url("/fonts/UthmanTN.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/mustafa0x/qpc-fonts/master/various-woff2/UthmanTN1%20Ver10.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;

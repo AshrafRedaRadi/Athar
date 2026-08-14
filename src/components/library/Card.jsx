@@ -150,24 +150,14 @@ export default function Card({
                     </p>
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAdd?.(e);
-                        setIsExpanded(false);
-                      }}
-                      className="btn bg-cyan-700 hover:bg-cyan-800 text-white font-2 flex-1 rounded-xl text-xs sm:text-sm shadow-md"
-                    >
-                      إضافة المتن للخطة
-                    </button>
+                  <div className="pt-2 flex items-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsExpanded(false);
                         onClick?.(e);
                       }}
-                      className="btn btn-outline border-cyan-700 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 flex-1 rounded-xl text-xs sm:text-sm"
+                      className="btn bg-cyan-700 hover:bg-cyan-800 text-white font-2 w-full rounded-xl text-xs sm:text-sm shadow-md"
                     >
                       عرض الفهرس
                     </button>
