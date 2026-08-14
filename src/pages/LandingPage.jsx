@@ -15,7 +15,7 @@ import {
   IoArrowBack
 } from 'react-icons/io5';
 import logoImg from '../assets/logo.png';
-import mosqueSvg from '../assets/mosque.svg';
+import mosqueSvg from '../assets/Mosque.svg';
 import { booksService } from '../services/booksService';
 import { hadithsService } from '../services/hadithsService';
 import { usersService } from '../services/usersService';
