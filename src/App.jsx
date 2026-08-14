@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import GuestRoute from './components/auth/GuestRoute';
-
+import RecitationVideoSimulator from './components/landing/RecitationVideoSimulator';
 import AdminRoute from './components/auth/AdminRoute';
 
 import Home from './pages/Home';
