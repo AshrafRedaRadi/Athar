@@ -374,9 +374,12 @@ export function useRecitation() {
       }
       setIsConnecting(true);
 
-      // If an existing connection exists, ensure cleanup first
+      // If a previous stop operation is finishing or connection exists, wait & clean up
+      if (isStoppingRef.current) {
+        await new Promise((r) => setTimeout(r, 350));
+      }
       if (connectionRef.current) {
-        await recitationService.stopConnection(connectionRef.current);
+        await recitationService.stopConnection(connectionRef.current).catch(() => {});
         connectionRef.current = null;
       }
 
@@ -392,17 +395,24 @@ export function useRecitation() {
       localStorage.removeItem("recitation_session_id");
       sessionIdRef.current = null;
 
-      // 2. Invoke StartRecitation(hadithId) with auto-recovery for ACTIVE_SESSION_EXISTS
+      // 2. Invoke StartRecitation(hadithId) with auto-recovery for ACTIVE_SESSION_EXISTS or rapid reconnects
       let started = null;
       try {
         started = await recitationService.startRecitation(connection, hadithId);
       } catch (startErr) {
         const errStr = String(startErr?.message || startErr || "").toLowerCase();
-        if (errStr.includes("active_session_exists") || errStr.includes("session")) {
-          console.warn("Active session exists, reconnecting and retrying...");
+        if (
+          errStr.includes("active_session_exists") ||
+          errStr.includes("session") ||
+          errStr.includes("canceled") ||
+          errStr.includes("closed") ||
+          errStr.includes("invocation") ||
+          errStr.includes("stopped")
+        ) {
+          console.warn("Connection or session recovery triggered, reconnecting...", startErr?.message);
           try {
             await recitationService.stopConnection(connection).catch(() => {});
-            await new Promise((r) => setTimeout(r, 250));
+            await new Promise((r) => setTimeout(r, 350));
             connection = await recitationService.buildConnection({
               onUpdated: handleRecitationUpdate,
               onCompleted: handleRecitationCompleted,

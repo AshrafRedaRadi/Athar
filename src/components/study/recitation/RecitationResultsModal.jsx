@@ -121,18 +121,18 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
   // Combine extras from stream and issues list
   const combinedExtras = Array.from(new Set([...(extras || []), ...extraWordsFromIssues])).filter(Boolean);
 
-  // Grade determination
+  // Grade determination with elegant cyan-blue color palette
   const getGrade = (acc) => {
-    if (acc >= 90) return { label: "ممتاز", color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-700 dark:bg-emerald-400" };
-    if (acc >= 75) return { label: "جيد جداً", color: "text-teal-700 dark:text-teal-400", bg: "bg-teal-700 dark:bg-teal-400" };
-    if (acc >= 60) return { label: "جيد", color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-700 dark:bg-amber-400" };
-    return { label: "يحتاج تدريب", color: "text-red-700 dark:text-red-400", bg: "bg-red-700 dark:bg-red-400" };
+    if (acc >= 90) return { label: "ممتاز", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-600 dark:bg-cyan-400" };
+    if (acc >= 75) return { label: "جيد جداً", color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-600 dark:bg-sky-400" };
+    if (acc >= 60) return { label: "جيد", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-600 dark:bg-teal-400" };
+    return { label: "يحتاج تدريب", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-600 dark:bg-rose-400" };
   };
 
   const grade = getGrade(accuracy);
 
   // Circular progress calculations
-  const radius = 45;
+  const radius = 48;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (Math.min(100, Math.max(0, accuracy)) / 100) * circumference;
 
@@ -150,15 +150,17 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-200 ${
         isClosing ? "opacity-0" : "opacity-100"
       }`}
       dir="rtl"
+      onClick={handleClose}
     >
       <div
-        className={`bg-base-100 dark:bg-base-900 border border-base-300 dark:border-base-700 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-transform duration-200 ${
+        className={`bg-base-100 dark:bg-base-900 border border-base-300 dark:border-base-700 rounded-3xl shadow-2xl w-full max-w-[360px] sm:max-w-[390px] overflow-hidden transform transition-transform duration-200 ${
           isClosing ? "scale-95 animate-modalOut" : "scale-100 animate-modalIn"
         }`}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-gradient-to-l from-cyan-600 to-teal-700 px-5 py-4 flex items-center justify-between">
@@ -167,7 +169,7 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
           </h3>
           <button
             onClick={handleClose}
-            className="btn btn-circle btn-ghost btn-sm text-white/80 hover:text-white"
+            className="btn btn-circle btn-ghost btn-sm text-white/80 hover:text-white cursor-pointer"
           >
             <IoClose className="text-xl" />
           </button>
@@ -177,7 +179,7 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
         <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           {/* Accuracy Circle */}
           <div className="flex flex-col items-center gap-2">
-            <div className="relative w-32 h-32">
+            <div className="relative w-36 h-36">
               <svg
                 className="w-full h-full -rotate-90"
                 viewBox="0 0 120 120"
@@ -188,8 +190,8 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
                   r={radius}
                   fill="none"
                   stroke="currentColor"
-                  className="text-base-300"
-                  strokeWidth="8"
+                  className="text-base-300 dark:text-base-700"
+                  strokeWidth="7"
                 />
                 <circle
                   cx="60"
@@ -198,20 +200,20 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
                   fill="none"
                   stroke="currentColor"
                   className={grade.color}
-                  strokeWidth="8"
+                  strokeWidth="7"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={offset}
                   style={{ transition: "stroke-dashoffset 1s ease-out" }}
                 />
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span
-                  className={`font-1 text-3xl font-bold ${grade.color}`}
+                  className={`font-1 text-2xl font-bold tracking-tight ${grade.color} leading-none mb-1`}
                 >
                   {Math.round(accuracy)}%
                 </span>
-                <span className="font-2 text-xs text-base-content/60">
+                <span className="font-2 text-xs text-base-content/60 leading-none">
                   الدقة
                 </span>
               </div>
@@ -224,8 +226,8 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
           {/* Coverage Bar */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="font-2 text-sm text-base-content/70">
-                التغطية
+              <span className="font-2 text-xs sm:text-sm text-base-content/80 font-medium">
+                التغطية <span className="text-[11px] text-base-content/50 font-normal">(ما تم تسميعه من الحديث)</span>
               </span>
               <span className="font-2 text-sm font-semibold text-base-content">
                 {Math.round(coverage)}%
@@ -293,9 +295,9 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl px-4 py-3">
-              <FiCheckCircle className="text-emerald-500 text-lg" />
-              <span className="font-2 text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+            <div className="flex items-center gap-2 bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200/60 dark:border-cyan-900/60 rounded-xl px-4 py-3">
+              <FiCheckCircle className="text-cyan-600 dark:text-cyan-400 text-lg" />
+              <span className="font-2 text-sm text-cyan-700 dark:text-cyan-300 font-medium">
                 لا توجد أخطاء تسميع — أداء ممتاز!
               </span>
             </div>
@@ -323,7 +325,7 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
           {/* Saved Status */}
           <div className="flex items-center justify-center gap-2 pt-1">
             {saved ? (
-              <span className="font-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
+              <span className="font-2 text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-1 font-medium">
                 <FiCheckCircle className="text-sm" />
                 تم حفظ المحاولة
               </span>

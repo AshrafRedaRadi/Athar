@@ -156,6 +156,30 @@ export default function Study() {
     resetRecitation,
   } = useRecitation();
 
+  // Live recitation duration timer
+  const [recitationSeconds, setRecitationSeconds] = useState(0);
+
+  useEffect(() => {
+    let interval = null;
+    if (isListening) {
+      setRecitationSeconds(0);
+      interval = setInterval(() => {
+        setRecitationSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setRecitationSeconds(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isListening]);
+
+  const formatRecitationTime = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
   // The backend owns scoring and hint eligibility. The page only adds the fact that
   // this particular attempt started with the Hadith hidden.
   useEffect(() => {
@@ -461,6 +485,43 @@ export default function Study() {
                     <BsStars className="text-base" />
                   </button>
                 </div>
+
+                {/* ── Mobile Live Recitation Timer (Floating above left action bar icons) ── */}
+                {(isListening || isConnecting) && (
+                  <div
+                    className="fixed z-45 bottom-[124px] left-2 flex items-center gap-1.5 bg-base-100/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 py-1 rounded-full border border-base-300 shadow-sm animate-fadeIn lg:hidden"
+                    dir="rtl"
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 transition-colors duration-300 ${
+                        isConnecting ? "bg-amber-400" : "bg-red-500"
+                      }`}
+                    />
+                    <span className="font-mono text-[11px] font-bold text-base-content tracking-wider leading-none" dir="ltr">
+                      {formatRecitationTime(recitationSeconds)}
+                    </span>
+                  </div>
+                )}
+
+                {/* ── Desktop Live Recitation Timer (Floating on bottom left) ── */}
+                {(isListening || isConnecting) && (
+                  <div
+                    className="hidden lg:flex items-center gap-2.5 bg-base-100/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-base-300 shadow-sm animate-fadeIn fixed z-45 bottom-5 left-5"
+                    dir="rtl"
+                  >
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 transition-colors duration-300 ${
+                        isConnecting ? "bg-amber-400" : "bg-red-500"
+                      }`}
+                    />
+                    <span className="text-xs font-bold font-2 text-base-content/80">
+                      {isConnecting ? "جاري الاتصال بالمايك..." : "مدة التسميع:"}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 tracking-wider" dir="ltr">
+                      {formatRecitationTime(recitationSeconds)}
+                    </span>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
