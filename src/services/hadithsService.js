@@ -305,4 +305,29 @@ export const hadithsService = {
       method: "DELETE",
     });
   },
+
+  /**
+   * Fetch total Hadiths count via GET /api/Hadiths
+   */
+  async getHadithsCount() {
+    try {
+      const data = await apiFetch("/api/Hadiths");
+      console.log("📜 [Hadiths API Data]:", data);
+      if (Array.isArray(data)) {
+        return data.length;
+      }
+      if (data && typeof data === "object") {
+        if (typeof data.totalCount === "number") return data.totalCount;
+        if (typeof data.total === "number") return data.total;
+        if (typeof data.count === "number") return data.count;
+        if (Array.isArray(data.items)) return data.items.length;
+        if (Array.isArray(data.data)) return data.data.length;
+        if (Array.isArray(data.hadiths)) return data.hadiths.length;
+      }
+      return 0;
+    } catch (err) {
+      console.warn("Could not fetch hadiths count:", err.message);
+      return null;
+    }
+  },
 };

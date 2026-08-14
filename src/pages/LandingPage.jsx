@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { 
-  IoMic, 
+import {
+  IoMic,
   IoSquare,
-  IoCheckmarkCircle, 
+  IoCheckmarkCircle,
   IoLibraryOutline,
   IoMenuOutline,
   IoCloseOutline,
@@ -183,7 +183,7 @@ function RecitationVideoSimulator() {
   const [cursorPos, setCursorPos] = useState({ x: '70%', y: '85%' });
   const [showBanner, setShowBanner] = useState(false);
   const [bannerText, setBannerText] = useState('');
-  
+
   const totalDuration = 14500;
   const requestRef = useRef();
   const startTimeRef = useRef();
@@ -257,10 +257,10 @@ function RecitationVideoSimulator() {
   return (
     <div className="w-full max-w-xl mx-auto my-6 font-2 select-none" dir="rtl">
       <div className="relative rounded-[2.5rem] bg-[#0c1f2a] p-3 sm:p-4 shadow-2xl border border-[#337fa1]/30 overflow-hidden">
-        
+
         {/* Screen Content */}
         <div className="relative rounded-[2rem] bg-[#faf7f0] text-slate-800 p-4 sm:p-6 min-h-[390px] flex flex-col justify-between overflow-hidden shadow-inner border border-[#e8e2d2]">
-          
+
           {/* Header */}
           <div className="relative z-10 flex items-center justify-between pb-3 border-b border-[#e8e2d2]">
             <span className="flex items-center gap-1 text-xs font-bold text-[#286a89] bg-[#286a89]/10 px-2.5 py-1 rounded-lg">
@@ -289,17 +289,16 @@ function RecitationVideoSimulator() {
                 return (
                   <div key={idx} className="relative inline-flex flex-col items-center">
                     <span
-                      className={`text-xl sm:text-2xl font-bold px-2.5 py-0.5 rounded-lg transition-all duration-300 ${
-                        isHiddenWord
+                      className={`text-xl sm:text-2xl font-bold px-2.5 py-0.5 rounded-lg transition-all duration-300 ${isHiddenWord
                           ? 'bg-slate-300/80 text-transparent select-none rounded-md blur-[2px]'
                           : isCurrent
-                          ? 'scale-110 bg-[#286a89] text-white shadow-md'
-                          : isCorrect
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : isError
-                          ? 'bg-rose-100 text-rose-800 border border-rose-300 line-through'
-                          : 'text-slate-700 opacity-60'
-                      }`}
+                            ? 'scale-110 bg-[#286a89] text-white shadow-md'
+                            : isCorrect
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : isError
+                                ? 'bg-rose-100 text-rose-800 border border-rose-300 line-through'
+                                : 'text-slate-700 opacity-60'
+                        }`}
                     >
                       {item.text}
                     </span>
@@ -328,7 +327,7 @@ function RecitationVideoSimulator() {
           {/* لوحة التحكم السفلية */}
           <div className="relative z-10 flex flex-col items-center justify-center pt-2 border-t border-[#e8e2d2]">
             <div className="relative flex items-center justify-center gap-3">
-              
+
               {/* زر المايك */}
               <div className="relative flex items-center justify-center">
                 {isMicActive && (
@@ -338,9 +337,8 @@ function RecitationVideoSimulator() {
                   </>
                 )}
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 ${
-                    isMicActive ? 'bg-rose-600 scale-105' : 'bg-[#286a89]'
-                  }`}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 ${isMicActive ? 'bg-rose-600 scale-105' : 'bg-[#286a89]'
+                    }`}
                 >
                   {isMicActive ? <IoSquare className="text-base" /> : <IoMic className="text-xl" />}
                 </div>
@@ -348,11 +346,10 @@ function RecitationVideoSimulator() {
 
               {/* زر العين بجانب المايك */}
               <div
-                className={`w-9 h-9 rounded-full border shadow-sm flex items-center justify-center transition-all duration-300 ${
-                  isHidden
+                className={`w-9 h-9 rounded-full border shadow-sm flex items-center justify-center transition-all duration-300 ${isHidden
                     ? 'bg-[#286a89] border-[#286a89] text-white shadow-md scale-105'
                     : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
-                }`}
+                  }`}
                 title={isHidden ? 'إظهار النص' : 'إخفاء النص غيباً'}
               >
                 {isHidden ? <IoEyeOffOutline className="text-lg" /> : <IoEyeOutline className="text-lg" />}
@@ -472,14 +469,14 @@ function FeaturedBooksSection() {
           {FEATURED_BOOKS.map((book, idx) => (
             <Reveal key={book.id} delay={idx * 0.1}>
               <div className="group relative rounded-3xl bg-white/[0.03] border border-white/10 hover:border-[#C9953A]/50 p-5 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex flex-col justify-between h-full overflow-hidden">
-                
+
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ background: 'radial-gradient(circle at top right, rgba(201,149,58,0.15), transparent 70%)' }} />
 
                 <div>
                   {/* غلاف الكتاب المصغر */}
                   <div className={`relative h-44 w-full rounded-2xl bg-gradient-to-br ${book.gradient} p-4 shadow-lg border border-white/15 flex flex-col justify-between overflow-hidden mb-5 transition-transform duration-500 group-hover:scale-[1.02]`}>
-                    
+
                     <div className="absolute -right-6 -bottom-6 w-28 h-28 opacity-10 pointer-events-none">
                       <svg viewBox="0 0 100 100" className="w-full h-full fill-white">
                         <polygon points="50,2 92,25 98,70 70,98 30,98 2,70 8,25" />
@@ -539,21 +536,21 @@ function FeaturedBooksSection() {
 function FAQSection() {
   const [openIndex, setOpenIndex] = useState(null);
   const faqs = [
-    { 
-      q: "كيف يعمل نظام التسميع بالذكاء الاصطناعي؟", 
-      a: "يقوم النظام بتحليل نطقك الصوتي ومقارنته بالمتن الصحيح للحديث لحظياً، وتنبيهك لأي خطأ في الكلمات أو التشكيل فور النطق." 
+    {
+      q: "كيف يعمل نظام التسميع بالذكاء الاصطناعي؟",
+      a: "يقوم النظام بتحليل نطقك الصوتي ومقارنته بالمتن الصحيح للحديث لحظياً، وتنبيهك لأي خطأ في الكلمات أو التشكيل فور النطق."
     },
-    { 
-      q: "هل يمكنني اختبار حفظي مع إخفاء الكلمات تماماً؟", 
-      a: "نعم! يمكنك الضغط على زر العين بجانب المايكروفون لطمس النص بالكامل، وتبدأ الكلمات بالظهور والتكشف تلقائياً فقط عند نطقها الصحيح لتتأكد من إتقانك." 
+    {
+      q: "هل يمكنني اختبار حفظي مع إخفاء الكلمات تماماً؟",
+      a: "نعم! يمكنك الضغط على زر العين بجانب المايكروفون لطمس النص بالكامل، وتبدأ الكلمات بالظهور والتكشف تلقائياً فقط عند نطقها الصحيح لتتأكد من إتقانك."
     },
-    { 
-      q: "هل المنصة مجانية للاستخدام؟", 
-      a: "نعم، يمكنك إنشاء حساب والبدء في حفظ الأحاديث الشريفة ومراجعتها وتسميعها مجاناً بالكامل." 
+    {
+      q: "هل المنصة مجانية للاستخدام؟",
+      a: "نعم، يمكنك إنشاء حساب والبدء في حفظ الأحاديث الشريفة ومراجعتها وتسميعها مجاناً بالكامل."
     },
-    { 
-      q: "ما هي كتب الحديث المتوفرة حالياً في المنصة؟", 
-      a: "تشمل المنصة الأربعين النووية، صحيح البخاري، صحيح مسلم، ورياض الصالحين، مع إضافة مستمرة لكتب السنة الأخرى." 
+    {
+      q: "ما هي كتب الحديث المتوفرة حالياً في المنصة؟",
+      a: "تشمل المنصة الأربعين النووية، صحيح البخاري، صحيح مسلم، ورياض الصالحين، مع إضافة مستمرة لكتب السنة الأخرى."
     },
   ];
 
@@ -627,7 +624,7 @@ const FEATURES = [
         <circle cx="20" cy="20" r="18" stroke="#C9953A" strokeWidth="1.5" />
         <rect x="12" y="14" width="16" height="2" rx="1" fill="#C9953A" />
         <rect x="12" y="19" width="12" height="2" rx="1" fill="#C9953A" opacity="0.7" />
-        <rect x="12" y="24" width="9"  height="2" rx="1" fill="#C9953A" opacity="0.4" />
+        <rect x="12" y="24" width="9" height="2" rx="1" fill="#C9953A" opacity="0.4" />
         <path d="M30,26 L34,30" stroke="#C9953A" strokeWidth="2" strokeLinecap="round" />
         <circle cx="29" cy="25" r="4" stroke="#C9953A" strokeWidth="1.5" />
       </svg>
@@ -719,9 +716,9 @@ export default function LandingPage() {
     async function loadDynamicCounts() {
       try {
         const [hCount, bCount, sCount] = await Promise.all([
-          hadithsService.getHadithsCount(),
-          booksService.getBooksCount(),
-          usersService.getStudentsCount(),
+          typeof hadithsService?.getHadithsCount === 'function' ? hadithsService.getHadithsCount() : Promise.resolve(null),
+          typeof booksService?.getBooksCount === 'function' ? booksService.getBooksCount() : Promise.resolve(null),
+          typeof usersService?.getStudentsCount === 'function' ? usersService.getStudentsCount() : Promise.resolve(null),
         ]);
 
         if (!isMounted) return;
@@ -747,10 +744,10 @@ export default function LandingPage() {
   }, []);
 
   const statsList = [
-    { value: hadithsCount,  suffix: '',  label: 'حديث نبوي شريف' },
-    { value: booksCount,    suffix: '',  label: 'كتاب حديث' },
+    { value: hadithsCount, suffix: '', label: 'حديث نبوي شريف' },
+    { value: booksCount, suffix: '', label: 'كتاب حديث' },
     { value: studentsCount, suffix: '+', label: 'الطلاب' },
-    { value: 100,           suffix: '%', label: 'مجاني للبدء' },
+    { value: 100, suffix: '%', label: 'مجاني للبدء' },
   ];
 
   useEffect(() => {
@@ -802,15 +799,14 @@ export default function LandingPage() {
 
       {/* ─── NAVBAR ─── */}
       <nav
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 px-5 md:px-10 ${
-          isScrolled
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 px-5 md:px-10 ${isScrolled
             ? 'py-2.5 bg-[#0f2633]/90 backdrop-blur-md shadow-lg border-b border-white/10'
             : 'py-4 bg-transparent'
-        }`}
+          }`}
         style={!isScrolled ? { background: 'linear-gradient(to bottom, rgba(15,38,51,0.95) 0%, transparent 100%)' } : {}}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          
+
           <a
             href="#top"
             onClick={scrollToTop}
@@ -939,7 +935,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="relative z-30 flex items-center gap-4 flex-wrap justify-center mt-2"
           >
-            <Link 
+            <Link
               to="/signup"
               className="group relative px-8 py-3.5 rounded-full text-base font-bold font-2 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden flex items-center gap-2 shadow-[0_4px_20px_rgba(201,149,58,0.25)] hover:shadow-[0_4px_25px_rgba(201,149,58,0.4)]"
               style={{ background: 'linear-gradient(to left, #C9953A, #e4b25e)', color: '#0f2633' }}
@@ -949,7 +945,7 @@ export default function LandingPage() {
               <span className="relative z-10 transition-transform duration-300 group-hover:-translate-x-1">←</span>
             </Link>
 
-            <a 
+            <a
               href="#demo"
               onClick={(e) => scrollToSection(e, '#demo')}
               className="group px-7 py-3.5 rounded-full text-base font-semibold font-2 border border-white/15 bg-white/[0.03] text-white hover:bg-[#286a89]/20 hover:border-[#337fa1]/50 transition-all duration-300 flex items-center gap-2.5 backdrop-blur-sm"
@@ -991,7 +987,7 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto text-center mb-8">
           <Reveal>
             <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold border border-[#C9953A]/40 text-[#e4b25e] bg-[#C9953A]/10 mb-3">
-              شاهد كيف يعمل 
+              شاهد كيف يعمل
             </span>
           </Reveal>
           <Reveal delay={0.1}>
