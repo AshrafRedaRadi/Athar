@@ -7,13 +7,11 @@ import ConfirmEmailAlertModal from '../components/auth/ConfirmEmailAlertModal';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
-/* ── Shared styling helpers ── */
 const inputClass =
-  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
+  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden';
 
 const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
-
-/* ── Password strength helpers ── */
+// Password strength helpers 
 function checkReqs(pass) {
   return {
     length: pass.length >= 8,
@@ -49,7 +47,6 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordTouched, setIsPasswordTouched] = useState(false);
 
-  // 👁️ حالات إظهار/إخفاء كلمات المرور
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -75,7 +72,7 @@ export default function Signup() {
     }
   };
 
-  /* ── Registration submit ── */
+  // Registration submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsPasswordTouched(true);
@@ -128,7 +125,6 @@ export default function Signup() {
           </button>
         </div>
 
-        {/* ── Form content container ── */}
         <div className="overflow-y-visible md:overflow-y-auto pr-0 md:pr-[3px] h-auto md:h-full md:flex-1 flex flex-col justify-start max-h-none md:max-h-[calc(100%-80px)]">
           <h2 className="font-1 text-[1.3rem] font-bold mb-2 mt-0 text-center">
             إنشاء حساب
@@ -146,7 +142,7 @@ export default function Signup() {
             </div>
           )}
 
-          {/* ═══════════════════════════════════════ SIGNUP FORM ═══════════════════════════════════════ */}
+          {/* sign up*/}
           <form onSubmit={handleSubmit} className="h-auto md:h-full flex-1 flex flex-col justify-start gap-1.5 animate-[fadeIn_0.3s_ease]">
             <div className="flex flex-col gap-1.5">
               {/* Full Name */}

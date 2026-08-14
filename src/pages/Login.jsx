@@ -6,8 +6,9 @@ import AuthCard from '../components/auth/AuthCard';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
+// تم إضافة [&::-ms-reveal]:hidden لإخفاء زر المتصفح الافتراضي
 const inputClass =
-  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2';
+  'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden';
 
 const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
 
@@ -153,7 +154,6 @@ export default function Login() {
               <hr className="flex-1 border-white/20" />
             </div>
 
-            {/* تم تمرير width={280} كـ Number مباشر لكي تظهر الأيقونة فوراً دون مساحة فارغة */}
             <div className="w-full flex justify-center my-1 items-center min-h-[40px]">
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
@@ -176,7 +176,7 @@ export default function Login() {
               to="/signup"
               className="text-white font-bold no-underline hover:underline font-2"
             >
-               انشاء حساب 
+              انشاء حساب
             </Link>
           </div>
 
