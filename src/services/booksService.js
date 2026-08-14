@@ -79,6 +79,31 @@ export const booksService = {
   },
 
   /**
+   * Fetch total Hadith books count via GET /api/HadithBooks
+   */
+  async getBooksCount() {
+    try {
+      const data = await apiFetch("/api/HadithBooks");
+      console.log("📚 [Hadith Books API Data]:", data);
+      if (Array.isArray(data)) {
+        return data.length;
+      }
+      if (data && typeof data === "object") {
+        if (typeof data.totalCount === "number") return data.totalCount;
+        if (typeof data.total === "number") return data.total;
+        if (typeof data.count === "number") return data.count;
+        if (Array.isArray(data.items)) return data.items.length;
+        if (Array.isArray(data.data)) return data.data.length;
+        if (Array.isArray(data.books)) return data.books.length;
+      }
+      return 0;
+    } catch (err) {
+      console.warn("Could not fetch hadith books count:", err.message);
+      return null;
+    }
+  },
+
+  /**
    * Fetch total explanation books count via GET /api/ExplanationBooks
    */
   async getExplanationBooksCount() {

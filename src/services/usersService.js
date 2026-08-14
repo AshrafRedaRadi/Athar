@@ -126,7 +126,7 @@ export const usersService = {
    */
   async getStudentsCount() {
     try {
-      const data = await apiFetch('/api/Admin/users?Role=Student&IsActive=true');
+      const data = await apiFetch('/api/Admin/users?Role=Students&IsActive=true');
       console.log("👥 [Active Students API Data]:", data);
       if (Array.isArray(data)) {
         return data.length;
