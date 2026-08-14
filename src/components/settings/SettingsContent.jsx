@@ -81,14 +81,14 @@ function SettingsContent() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home")}
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
             title="الرجوع للصفحة الرئيسية"
             aria-label="الرجوع للصفحة الرئيسية"
           >
             <HiChevronRight className="text-xl" />
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
             إعدادات الملف الشخصي
           </h1>
         </div>
