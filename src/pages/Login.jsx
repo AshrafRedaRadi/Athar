@@ -52,6 +52,8 @@ export default function Login() {
 
   return (
     <AuthLayout>
+     
+
       <AuthCard>
         <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
           <button
@@ -127,14 +129,35 @@ export default function Login() {
             </div>
 
             <div className="flex items-center justify-between my-1">
-              <label className="flex items-center gap-1.5 text-white/80 text-[0.75rem] font-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-white/20 text-[#4A90A4] focus:ring-0 focus:ring-offset-0 bg-black/20 cursor-pointer w-3.5 h-3.5"
-                />
-                <span>تذكرني</span>
+              <label className="flex items-center gap-2 text-white/80 text-[0.75rem] font-2 cursor-pointer select-none group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${
+                      rememberMe
+                        ? 'bg-[#4A90A4] border-[#4A90A4] shadow-[0_0_8px_rgba(74,144,164,0.6)] scale-105'
+                        : 'bg-black/25 border-white/20 group-hover:border-white/50 group-hover:bg-black/35'
+                    }`}
+                  >
+                    <svg
+                      className={`w-2.5 h-2.5 text-white transition-all duration-300 transform ${
+                        rememberMe ? 'scale-100 opacity-100 rotate-0' : 'scale-50 opacity-0 -rotate-12'
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <span className="group-hover:text-white transition-colors duration-200">تذكرني</span>
               </label>
 
               <button
