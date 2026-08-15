@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  HiOutlineUsers, 
-  HiOutlineAcademicCap, 
-  HiOutlineBookOpen, 
+import {
+  HiOutlineUsers,
+  HiOutlineAcademicCap,
+  HiOutlineBookOpen,
   HiOutlineViewGrid,
   HiOutlineCalendar,
   HiOutlineDownload,
@@ -97,203 +97,186 @@ function ControlPanel() {
     loadStats();
   }, []);
 
-  // KPI Cards Data
+  // KPI Cards Data (matching Stat.jsx circular icon & layout)
   const statsData = [
     {
       id: "teachers",
       title: "المعلمون",
       value: "120",
-      change: "+5%",
-      changeType: "increase",
-      icon: <HiOutlineUsers className="text-2xl text-white" />,
-      iconBg: "bg-cyan-700",
+      icon: <HiOutlineUsers className="text-cyan-700 dark:text-cyan-400 text-base sm:text-lg md:text-xl" />,
+      iconBg: "bg-cyan-100 dark:bg-cyan-950/40",
     },
     {
       id: "students",
       title: "الطلاب",
       value: isLoadingStudents ? "..." : (studentsCount !== null ? studentsCount.toLocaleString('en-US') : "0"),
-      change: null,
-      changeType: "increase",
-      icon: <HiOutlineAcademicCap className="text-2xl text-cyan-800" />,
-      iconBg: "bg-cyan-100",
+      icon: <HiOutlineAcademicCap className="text-teal-700 dark:text-teal-400 text-base sm:text-lg md:text-xl" />,
+      iconBg: "bg-teal-100 dark:bg-teal-950/40",
     },
     {
       id: "books",
       title: "الكتب والمتون",
       value: isLoadingBooks ? "..." : (booksCount !== null ? booksCount.toLocaleString('en-US') : "0"),
-      change: null,
-      icon: <HiOutlineBookOpen className="text-2xl text-amber-800" />,
-      iconBg: "bg-amber-100",
+      icon: <HiOutlineBookOpen className="text-amber-700 dark:text-amber-400 text-base sm:text-lg md:text-xl" />,
+      iconBg: "bg-amber-100 dark:bg-amber-950/40",
     },
     {
       id: "sessions",
       title: "الحلقات النشطة",
       value: "320",
-      change: null,
-      icon: <HiOutlineViewGrid className="text-2xl text-slate-700" />,
-      iconBg: "bg-slate-200",
+      icon: <HiOutlineViewGrid className="text-indigo-700 dark:text-indigo-400 text-base sm:text-lg md:text-xl" />,
+      iconBg: "bg-indigo-100 dark:bg-indigo-950/40",
     },
   ];
-
-
 
   return (
     <div dir="rtl" className="min-h-screen bg-base-200 text-base-content font-2">
       <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
         {/* Top Navbar with Admin Dock for Mobile/Tablet */}
         <Navbar
-        drawerId="admin-sidebar-drawer"
-        activePage="dashboard"
-        isAdmin={true}
-        showSidebar={true}
-        showDock={true}
-      />
+          drawerId="admin-sidebar-drawer"
+          activePage="dashboard"
+          isAdmin={true}
+          showSidebar={true}
+          showDock={true}
+        />
 
-      {/* Top Bar / Header below Navbar */}
-      <header className="flex items-center justify-between mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
-        <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
-          نظرة عامة
-        </h1>
+        {/* Top Bar / Header below Navbar */}
+        <header className="flex items-center justify-between mb-4 pb-2 border-b border-base-200 mt-4 sm:mt-6">
+          <h1 className="text-2xl sm:text-3xl font-bold font-1 text-base-content">
+            نظرة عامة
+          </h1>
 
-        {/* Filter / Date selector button */}
-        <button
-          type="button"
-          className="btn btn-outline border-base-300 text-base-content hover:bg-base-200 hover:text-base-content rounded-xl gap-2 font-normal text-sm"
-        >
-          <HiOutlineCalendar className="text-lg text-base-content/70" />
-          <span>هذا الشهر</span>
-        </button>
-      </header>
-
-      {/* KPI Cards Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {statsData.map((stat) => (
-          <div
-            key={stat.id}
-            className="bg-base-100 border border-base-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between"
+          {/* Filter / Date selector button */}
+          <button
+            type="button"
+            className="btn btn-outline border-base-300 text-base-content hover:bg-base-200 hover:text-base-content rounded-xl gap-2 font-normal text-sm"
           >
-            <div className="flex items-center gap-4">
-              {/* Icon Circle (Right in RTL) */}
+            <HiOutlineCalendar className="text-lg text-base-content/70" />
+            <span>هذا الشهر</span>
+          </button>
+        </header>
+
+        {/* KPI Cards Grid (4 side-by-side in a single row) */}
+        <section className="grid grid-cols-4 gap-1.5 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+          {statsData.map((stat) => (
+            <div
+              key={stat.id}
+              className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-xl sm:rounded-2xl shadow-xs p-2 sm:p-3.5 md:p-4 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-1 sm:gap-2.5 md:gap-3 min-w-0 hover:shadow-md transition-shadow relative"
+            >
+              {/* Circular Icon */}
               <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${stat.iconBg}`}
+                className={`w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 ${stat.iconBg}`}
               >
                 {stat.icon}
               </div>
 
-              {/* Label and Value */}
-              <div>
-                <p className="text-xs text-base-content/60 font-normal mb-1">
+              {/* Label & Value */}
+              <div className="text-center md:text-right min-w-0 flex-1 truncate">
+                <p className="text-[10px] sm:text-xs md:text-sm text-base-content/90 font-2 leading-tight truncate">
                   {stat.title}
                 </p>
-                <h2 className="text-2xl md:text-3xl font-bold font-1 text-base-content tracking-tight">
+                <h2 className="text-xs sm:text-base md:text-xl lg:text-2xl font-bold font-1 text-base-content mt-0.5 truncate">
                   {stat.value}
                 </h2>
               </div>
             </div>
+          ))}
+        </section>
 
-            {/* Change trend badge (if present, on the left in RTL) */}
-            {stat.change && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shrink-0">
-                {stat.change} ~
-              </span>
-            )}
+        {/* Main Content Grid: Activity Feed & Chart Area */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Recent Activities (4 cols on lg) */}
+          <div className="lg:col-span-4 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold font-1 text-base-content">
+                  آخر النشاطات
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => navigate("/admin/users")}
+                  className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition-colors cursor-pointer"
+                >
+                  عرض الكل
+                </button>
+              </div>
+
+              {/* Activity List */}
+              <div className="space-y-5">
+                {isLoadingActivities ? (
+                  Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="flex items-center gap-3 animate-pulse">
+                      <div className="w-10 h-10 rounded-full bg-base-300/60 shrink-0" />
+                      <div className="space-y-1 flex-1">
+                        <div className="h-4 w-3/4 bg-base-300/60 rounded" />
+                        <div className="h-3 w-1/3 bg-base-300/40 rounded" />
+                      </div>
+                    </div>
+                  ))
+                ) : activities.length === 0 ? (
+                  <p className="text-xs text-base-content/50 text-center py-4">لا توجد نشاطات حالياً</p>
+                ) : (
+                  activities.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between pb-4 border-b border-base-200 last:border-b-0 last:pb-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        {item.avatar ? (
+                          <img
+                            src={item.avatar}
+                            alt={item.user}
+                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.avatarBg}`}
+                          >
+                            {item.icon}
+                          </div>
+                        )}
+                        <div className="text-sm">
+                          <p className="font-semibold text-base-content">
+                            {item.user ? `${item.user} ` : ""}
+                            <span className="font-normal text-base-content/80">
+                              {item.action}
+                            </span>
+                          </p>
+                          <p className="text-xs text-base-content/50 mt-0.5">
+                            {item.time}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-        ))}
-      </section>
 
-      {/* Main Content Grid: Activity Feed & Chart Area */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Recent Activities (4 cols on lg) */}
-        <div className="lg:col-span-4 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-          <div>
+          {/* Right Column: Weekly Memorization Stats / Chart Placeholder (8 cols on lg) */}
+          <div className="lg:col-span-8 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold font-1 text-base-content">
-                آخر النشاطات
+                إحصائيات الحفظ الأسبوعية
               </h2>
               <button
                 type="button"
-                onClick={() => navigate("/admin/users")}
-                className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition-colors cursor-pointer"
+                className="btn btn-ghost btn-xs text-cyan-600 hover:bg-cyan-50 font-normal gap-1 rounded-lg"
               >
-                عرض الكل
+                <HiOutlineDownload className="text-sm" />
+                <span>تصدير</span>
               </button>
             </div>
 
-            {/* Activity List */}
-            <div className="space-y-5">
-              {isLoadingActivities ? (
-                Array.from({ length: 4 }).map((_, idx) => (
-                  <div key={idx} className="flex items-center gap-3 animate-pulse">
-                    <div className="w-10 h-10 rounded-full bg-base-300/60 shrink-0" />
-                    <div className="space-y-1 flex-1">
-                      <div className="h-4 w-3/4 bg-base-300/60 rounded" />
-                      <div className="h-3 w-1/3 bg-base-300/40 rounded" />
-                    </div>
-                  </div>
-                ))
-              ) : activities.length === 0 ? (
-                <p className="text-xs text-base-content/50 text-center py-4">لا توجد نشاطات حالياً</p>
-              ) : (
-                activities.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between pb-4 border-b border-base-200 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      {item.avatar ? (
-                        <img
-                          src={item.avatar}
-                          alt={item.user}
-                          className="w-10 h-10 rounded-full object-cover shrink-0"
-                        />
-                      ) : (
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.avatarBg}`}
-                        >
-                          {item.icon}
-                        </div>
-                      )}
-                      <div className="text-sm">
-                        <p className="font-semibold text-base-content">
-                          {item.user ? `${item.user} ` : ""}
-                          <span className="font-normal text-base-content/80">
-                            {item.action}
-                          </span>
-                        </p>
-                        <p className="text-xs text-base-content/50 mt-0.5">
-                          {item.time}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            {/* Interactive Chart Placeholder Area */}
+            <div className="flex-1 min-h-[300px] border-2 border-dashed border-base-300 rounded-2xl flex flex-col items-center justify-center p-8 bg-base-200/40 text-base-content/40">
+              <HiOutlineChartBar className="text-4xl mb-3 opacity-60" />
+              <p className="text-sm font-medium">مساحة الرسم البياني التفاعلي</p>
             </div>
           </div>
-        </div>
-
-        {/* Right Column: Weekly Memorization Stats / Chart Placeholder (8 cols on lg) */}
-        <div className="lg:col-span-8 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold font-1 text-base-content">
-              إحصائيات الحفظ الأسبوعية
-            </h2>
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs text-cyan-600 hover:bg-cyan-50 font-normal gap-1 rounded-lg"
-            >
-              <HiOutlineDownload className="text-sm" />
-              <span>تصدير</span>
-            </button>
-          </div>
-
-          {/* Interactive Chart Placeholder Area */}
-          <div className="flex-1 min-h-[300px] border-2 border-dashed border-base-300 rounded-2xl flex flex-col items-center justify-center p-8 bg-base-200/40 text-base-content/40">
-            <HiOutlineChartBar className="text-4xl mb-3 opacity-60" />
-            <p className="text-sm font-medium">مساحة الرسم البياني التفاعلي</p>
-          </div>
-        </div>
-      </section>
+        </section>
       </main>
     </div>
   );
