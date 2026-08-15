@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { HiOutlineCalendar } from "react-icons/hi";
 import { HiCheckBadge } from "react-icons/hi2";
 import Navbar from '../components/shared/Navbar';
-import ProgressCard from '../components/plan/ProgressCard';
-import QuickActions from '../components/plan/QuickActions';
 import DaysTarget from '../components/plan/DaysTarget';
 import DailyGoal from '../components/plan/DailyGoal';
 import DueReviewsToday from '../components/plan/DueReviewsToday';
@@ -94,22 +92,9 @@ export default function Plan() {
           </p>
         </header>
 
-        {/* Top Progress & Roadmap Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 bg-base-100 dark:bg-slate-900 p-3 sm:p-5 rounded-3xl shadow-sm border border-base-300 dark:border-slate-800">
-          <div className="col-span-1 lg:col-span-2 w-full">
-            <ProgressCard
-              completedCount={overview?.memorizedHadithCount}
-              totalCount={overview?.totalHadithCount}
-              streakDaysCount={overview?.studyStreakDays}
-            />
-          </div>
-          <div className="col-span-1 lg:col-span-1 w-full">
-            <QuickActions />
-          </div>
-
-          <div className="col-span-1 lg:col-span-3 order-3 w-full my-1">
-            <DaysTarget weekData={overview?.week} />
-          </div>
+        {/* Weekly Roadmap Section */}
+        <div className="mb-6">
+          <DaysTarget weekData={overview?.week} />
         </div>
 
         {/* Main Plan Sections Container */}
