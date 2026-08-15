@@ -1,7 +1,8 @@
 /* Fonts & Tailwind v4 Config */
 @import "tailwindcss";
+
 @plugin "daisyui" {
-  themes: all;
+    themes: all;
 }
 
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *, [data-theme="synthwave"], [data-theme="synthwave"] *, [data-theme="halloween"], [data-theme="halloween"] *, [data-theme="forest"], [data-theme="forest"] *, [data-theme="black"], [data-theme="black"] *, [data-theme="luxury"], [data-theme="luxury"] *, [data-theme="dracula"], [data-theme="dracula"] *, [data-theme="business"], [data-theme="business"] *, [data-theme="night"], [data-theme="night"] *, [data-theme="coffee"], [data-theme="coffee"] *, [data-theme="dim"], [data-theme="dim"] *, [data-theme="sunset"], [data-theme="sunset"] *, [data-theme="abyss"], [data-theme="abyss"] *));
@@ -36,47 +37,47 @@ a,
 }
 
 @font-face {
-  font-family: "DigitalKhatt";
-  src: url("/fonts/DigitalKhattV2.otf") format("opentype"),
-       url("https://static-cdn.tarteel.ai/qul/fonts/dk/DigitalKhattV2.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+    font-family: "DigitalKhatt";
+    src: url("/fonts/DigitalKhattV2.otf") format("opentype"),
+        url("https://static-cdn.tarteel.ai/qul/fonts/dk/DigitalKhattV2.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: "UthmanicHafs";
-  src: url("/fonts/UthmanTN.woff2") format("woff2"),
-       url("https://raw.githubusercontent.com/mustafa0x/qpc-fonts/master/various-woff2/UthmanTN1%20Ver10.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+    font-family: "UthmanicHafs";
+    src: url("/fonts/UthmanTN.woff2") format("woff2"),
+        url("https://raw.githubusercontent.com/mustafa0x/qpc-fonts/master/various-woff2/UthmanTN1%20Ver10.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
 }
 
 :root {
-  --hadith-font-family: "DigitalKhatt", "UthmanicHafs", "Amiri", serif;
+    --hadith-font-family: "Amiri", serif;
 }
 
 [data-hadith-font="DigitalKhatt"],
 body[data-hadith-font="DigitalKhatt"],
 html[data-hadith-font="DigitalKhatt"] {
-  --hadith-font-family: "DigitalKhatt", "Amiri", serif;
+    --hadith-font-family: "DigitalKhatt", "Amiri", serif;
 }
 
 [data-hadith-font="UthmanicHafs"],
 body[data-hadith-font="UthmanicHafs"],
 html[data-hadith-font="UthmanicHafs"] {
-  --hadith-font-family: "UthmanicHafs", "DigitalKhatt", serif;
+    --hadith-font-family: "UthmanicHafs", "DigitalKhatt", serif;
 }
 
 [data-hadith-font="Amiri"],
 body[data-hadith-font="Amiri"],
 html[data-hadith-font="Amiri"] {
-  --hadith-font-family: "Amiri Quran", "Amiri", serif;
+    --hadith-font-family: "Amiri", serif;
 }
 
 .font-4 {
-    font-family: var(--hadith-font-family, "DigitalKhatt"), "Amiri", serif !important;
+    font-family: var(--hadith-font-family, "Amiri"), "Amiri", serif !important;
 }
 
 .font-digitalkhatt {
@@ -88,7 +89,7 @@ html[data-hadith-font="Amiri"] {
 }
 
 .font-amiri {
-    font-family: "Amiri Quran", "Amiri", serif !important;
+    font-family: "Amiri", serif !important;
 }
 
 /* Background Colors */
@@ -192,6 +193,7 @@ html {
         opacity: 0;
         transform: scale(0.92) translateY(12px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -203,6 +205,7 @@ html {
         opacity: 1;
         transform: scale(1) translateY(0);
     }
+
     to {
         opacity: 0;
         transform: scale(0.92) translateY(12px);
@@ -210,13 +213,23 @@ html {
 }
 
 @keyframes backdropFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes backdropFadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 .animate-modalIn {
@@ -240,6 +253,7 @@ html {
         opacity: 0;
         transform: translateY(-12px) scale(0.96);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);

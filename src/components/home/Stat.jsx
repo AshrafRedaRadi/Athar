@@ -7,39 +7,39 @@ export default function Stat(props) {
     <div dir="rtl" className="mt-4 sm:mt-6">
       <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6">
 
-        {/* Days */}
-        <div className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-2xl shadow-xs p-3.5 sm:p-5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
-            <FaFire className="text-orange-500 text-base sm:text-lg md:text-xl" />
+        {/* Days Streak */}
+        <div className="bg-base-100 dark:bg-slate-900 border border-base-300/70 dark:border-slate-800 rounded-2xl shadow-xs p-2.5 sm:p-3.5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-3 transition-all">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+            <FaFire className="text-orange-500 text-sm sm:text-base md:text-lg" />
           </div>
 
-          <div className="text-center md:text-right">
-            <p className="text-[11px] sm:text-xs md:text-sm text-base-content/90 font-2">سلسلة الأيام</p>
-            <h2 className="text-base sm:text-xl md:text-2xl font-bold font-1">{props.days} <span className="text-xs sm:text-sm font-normal">يوم</span></h2>
+          <div className="text-center md:text-right min-w-0">
+            <p className="text-[11px] sm:text-xs text-base-content/80 font-2 font-medium truncate">سلسلة الأيام</p>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold font-1 text-base-content">{props.days} <span className="text-[10px] sm:text-xs font-normal">يوم</span></h2>
           </div>
         </div>
 
-        {/* Hadith */}
-        <div className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-2xl shadow-xs p-3.5 sm:p-5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-cyan-100 dark:bg-cyan-950/40 flex items-center justify-center shrink-0">
-            <GiOpenBook className="text-cyan-700 dark:text-cyan-400 text-base sm:text-lg md:text-xl" />
+        {/* Hadith Memorized */}
+        <div className="bg-base-100 dark:bg-slate-900 border border-base-300/70 dark:border-slate-800 rounded-2xl shadow-xs p-2.5 sm:p-3.5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-3 transition-all">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-100 dark:bg-cyan-950/40 flex items-center justify-center shrink-0">
+            <GiOpenBook className="text-cyan-700 dark:text-cyan-400 text-sm sm:text-base md:text-lg" />
           </div>
 
-          <div className="text-center md:text-right">
-            <p className="text-[11px] sm:text-xs md:text-sm text-base-content/90 font-2">الأحاديث المحفوظة</p>
-            <h2 className="text-base sm:text-xl md:text-2xl font-bold font-1">{props.hadith} <span className="text-xs sm:text-sm font-normal">حديث</span></h2>
+          <div className="text-center md:text-right min-w-0">
+            <p className="text-[11px] sm:text-xs text-base-content/80 font-2 font-medium truncate">الأحاديث المحفوظة</p>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold font-1 text-base-content">{props.hadith} <span className="text-[10px] sm:text-xs font-normal">حديث</span></h2>
           </div>
         </div>
 
         {/* In-Progress Hadith */}
-        <div className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-2xl shadow-xs p-3.5 sm:p-5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-green-100 dark:bg-green-950/40 flex items-center justify-center shrink-0">
-            <FaPencilAlt className="text-green-700 dark:text-green-400 text-base sm:text-lg md:text-xl" />
+        <div className="bg-base-100 dark:bg-slate-900 border border-base-300/70 dark:border-slate-800 rounded-2xl shadow-xs p-2.5 sm:p-3.5 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-2 sm:gap-3 transition-all">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
+            <FaPencilAlt className="text-emerald-700 dark:text-emerald-400 text-sm sm:text-base md:text-lg" />
           </div>
 
-          <div className="text-center md:text-right">
-            <p className="text-[11px] sm:text-xs md:text-sm text-base-content/90 font-2">الأحاديث قيد الحفظ</p>
-            <h2 className="text-base sm:text-2xl md:text-3xl font-bold font-1">{props.inProgressHadithCount ?? props.inProgress ?? 0} <span className="text-xs sm:text-base font-normal">حديث</span></h2>
+          <div className="text-center md:text-right min-w-0">
+            <p className="text-[11px] sm:text-xs text-base-content/80 font-2 font-medium truncate">الأحاديث قيد الحفظ</p>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold font-1 text-base-content">{props.inProgressHadithCount ?? props.inProgress ?? 0} <span className="text-[10px] sm:text-xs font-normal">حديث</span></h2>
           </div>
         </div>
 

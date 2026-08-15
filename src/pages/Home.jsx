@@ -7,11 +7,13 @@ import { useAuth } from "../context/AuthContext";
 import { dashboardService } from "../services/dashboardService";
 import { hadithsService } from "../services/hadithsService";
 import { activityService, computeCurrentStreak } from "../services/activityService";
+import { studyPlanService } from "../services/studyPlanService";
 
 function Home() {
   const { isAuthenticated } = useAuth();
 
   const [summaryData, setSummaryData] = useState(null);
+  const [planOverview, setPlanOverview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [calendarDays, setCalendarDays] = useState([]);
   const [realMemorizedCount, setRealMemorizedCount] = useState(null);
@@ -26,15 +28,17 @@ function Home() {
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // 1-indexed
 
-        // Fetch dashboard summary and activity calendar in parallel
-        const [data, calendarResult] = await Promise.all([
-          dashboardService.getSummary(),
-          activityService.getCalendar(year, month),
+        // Fetch dashboard summary, activity calendar, and study plan in parallel
+        const [data, calendarResult, planData] = await Promise.all([
+          dashboardService.getSummary().catch(() => null),
+          activityService.getCalendar(year, month).catch(() => []),
+          studyPlanService.getOverview().catch(() => null),
         ]);
 
         console.log("🏠 [Home Component Dashboard Summary Data]:", data);
         setSummaryData(data);
         setCalendarDays(calendarResult);
+        setPlanOverview(planData);
       } catch (err) {
         console.warn("Could not fetch dashboard summary from API:", err.message);
       } finally {
@@ -203,7 +207,14 @@ function Home() {
               resumeHadithId={resumeHadithId}
               resumeSectionId={resumeSectionId}
             />
-            <Tasks summary={summaryData} />
+            <Tasks
+              summary={summaryData}
+              planOverview={planOverview}
+              bookId={currentBookId}
+              resumeHadithId={resumeHadithId}
+              resumeSectionId={resumeSectionId}
+              bookTitle={currentBookTitle}
+            />
           </>
         )}
       </main>
