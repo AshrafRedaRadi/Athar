@@ -92,9 +92,9 @@ export default function Plan() {
           </p>
         </header>
 
-        {/* Weekly Roadmap Section */}
+        {/* Weekly Roadmap Section (Connected to active goals) */}
         <div className="mb-6">
-          <DaysTarget weekData={overview?.week} />
+          <DaysTarget weekData={overview?.week} goals={activeGoals} />
         </div>
 
         {/* Main Plan Sections Container */}
