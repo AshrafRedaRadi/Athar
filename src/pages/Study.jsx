@@ -35,10 +35,12 @@ export default function Study() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
+  const [congratsMessage, setCongratsMessage] = useState("تم حفظ الحديث، بارك الله فيك استمر!");
   const [progressMap, setProgressMap] = useState({});
   const audioControlRef = useRef(null);
   const wasHiddenWhenStartedRef = useRef(false); // tracks if text was hidden when recitation began
   const memorizeCalledRef = useRef(false); // prevents duplicate API calls per session
+  const recitationActiveHadithIndexRef = useRef(null); // locks to the hadith where recitation was initiated
 
   const handleAudioToggle = () => {
     if (audioControlRef.current && audioControlRef.current.togglePlay) {
@@ -111,31 +113,33 @@ export default function Study() {
 
   // Automatically update progress & last opened hadith when viewing a Hadith on Study page
   useEffect(() => {
-    if (currentHadith?.id) {
-      hadithsService.updateLastOpenedHadith(currentHadith.id).catch((err) => {
-        console.warn("Auto update last opened hadith error:", err.message);
+    if (!currentHadith?.id) return;
+
+    // 1. Debounce last-opened-hadith to avoid parallel concurrency conflicts with Identity
+    const timer = setTimeout(() => {
+      hadithsService.updateLastOpenedHadith(currentHadith.id).catch(() => {});
+    }, 450);
+
+    // 2. Only update to status 1 ("جاري الحفظ") if current status is 0
+    const currentStatus = progressMap[currentHadith.id];
+    if (currentStatus !== 2 && currentStatus !== 1) {
+      hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
+        console.warn("Auto update hadith progress error:", err.message);
+      });
+      setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 1 }));
+    }
+
+    // 3. Fetch explanations
+    setBackendExplanations(null);
+    hadithsService.getHadithExplanations(currentHadith.id)
+      .then((data) => {
+        if (data) setBackendExplanations(data);
+      })
+      .catch((err) => {
+        console.warn("Fetch explanations error:", err.message);
       });
 
-      // Only update to status 1 ("جاري الحفظ") if current status is NOT already 2 ("تم الحفظ")
-      const currentStatus = progressMap[currentHadith.id];
-      if (currentStatus !== 2) {
-        hadithsService.updateHadithProgress(currentHadith.id, 1).catch((err) => {
-          console.warn("Auto update hadith progress error:", err.message);
-        });
-        setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 1 }));
-      }
-    }
-
-    if (currentHadith?.id) {
-      setBackendExplanations(null);
-      hadithsService.getHadithExplanations(currentHadith.id)
-        .then((data) => {
-          if (data) setBackendExplanations(data);
-        })
-        .catch((err) => {
-          console.warn("Fetch explanations error:", err.message);
-        });
-    }
+    return () => clearTimeout(timer);
   }, [currentHadith?.id]);
 
   // SignalR Real-Time Speech Recitation Hook
@@ -143,6 +147,7 @@ export default function Study() {
     spokenWords,
     canonicalWords,
     extras,
+    transcript,
     activeWordIndex,
     furthestActiveWordIndex,
     startDetection,
@@ -190,18 +195,24 @@ export default function Study() {
 
     if (wasHiddenWhenStartedRef.current && backendQualified && currentHadith?.id) {
       memorizeCalledRef.current = true;
+      const isFirstTimeMemorized = progressMap[currentHadith.id] !== 2;
+      if (isFirstTimeMemorized) {
+        setCongratsMessage("تم حفظ الحديث، بارك الله فيك استمر!");
+      } else {
+        setCongratsMessage("تمت مراجعة الحديث بنجاح، بارك الله فيك استمر!");
+      }
       setShowCongrats(true);
       setProgressMap((prev) => ({ ...prev, [currentHadith.id]: 2 }));
       hadithsService.updateHadithProgress(currentHadith.id, 2).catch((err) => {
         console.warn("Could not mark hadith as memorized:", err?.message);
       });
     }
-  }, [completedSummary, currentHadith?.id]);
+  }, [completedSummary, currentHadith?.id, progressMap]);
 
-  // Auto-dismiss congratulations toast after 5 seconds
+  // Auto-dismiss congratulations toast after 4 seconds
   useEffect(() => {
     if (!showCongrats) return;
-    const timer = setTimeout(() => setShowCongrats(false), 5000);
+    const timer = setTimeout(() => setShowCongrats(false), 4000);
     return () => clearTimeout(timer);
   }, [showCongrats]);
 
@@ -242,26 +253,101 @@ export default function Study() {
   const handleRecordToggle = () => {
     if (isListening) {
       stopListening();
+      recitationActiveHadithIndexRef.current = null;
     } else {
+      recitationActiveHadithIndexRef.current = currentHadithIndex;
       wasHiddenWhenStartedRef.current = isHidden; // capture hide state at recitation start
       startListening(currentHadith?.id);
     }
   };
 
+  const recitationBaselineWhenNavigatedRef = useRef({
+    evaluatedCount: 0,
+    transcriptLength: 0,
+    activeWordIndex: -1,
+  });
+
+  const recordNavigatedBaseline = () => {
+    const evaluatedCount = Array.isArray(spokenWords)
+      ? spokenWords.filter((w) => w && w.state !== "Pending").length
+      : 0;
+    recitationBaselineWhenNavigatedRef.current = {
+      evaluatedCount,
+      transcriptLength: (transcript || "").length,
+      activeWordIndex: activeWordIndex ?? -1,
+    };
+  };
+
   // Navigate hadiths
   const goToPrev = () => {
     if (currentHadithIndex > 0) {
+      if (isListening && recitationActiveHadithIndexRef.current !== null) {
+        recordNavigatedBaseline();
+      }
       setCurrentHadithIndex(currentHadithIndex - 1);
-      resetRecitation();
+      if (!isListening) {
+        resetRecitation();
+      }
     }
   };
 
   const goToNext = () => {
     if (currentHadithIndex < hadithsList.length - 1) {
+      if (isListening && recitationActiveHadithIndexRef.current !== null) {
+        recordNavigatedBaseline();
+      }
       setCurrentHadithIndex(currentHadithIndex + 1);
-      resetRecitation();
+      if (!isListening) {
+        resetRecitation();
+      }
     }
   };
+
+  // Automatically return to the reciting Hadith ONLY when NEW words are spoken after navigating away
+  useEffect(() => {
+    if (
+      isListening &&
+      recitationActiveHadithIndexRef.current !== null &&
+      currentHadithIndex !== recitationActiveHadithIndexRef.current
+    ) {
+      const currentEvaluatedCount = Array.isArray(spokenWords)
+        ? spokenWords.filter((w) => w && w.state !== "Pending").length
+        : 0;
+      const currentTranscriptLength = (transcript || "").length;
+      const currentWordIdx = activeWordIndex ?? -1;
+
+      const baseline = recitationBaselineWhenNavigatedRef.current;
+
+      const hasNewSpeechActivity =
+        currentEvaluatedCount > baseline.evaluatedCount ||
+        currentTranscriptLength > baseline.transcriptLength + 2 ||
+        (currentWordIdx >= 0 && currentWordIdx > baseline.activeWordIndex) ||
+        completedSummary !== null;
+
+      if (hasNewSpeechActivity) {
+        setCurrentHadithIndex(recitationActiveHadithIndexRef.current);
+      }
+    }
+  }, [
+    isListening,
+    spokenWords,
+    transcript,
+    activeWordIndex,
+    completedSummary,
+    currentHadithIndex,
+  ]);
+
+  // Clear recitation lock when listening stops
+  useEffect(() => {
+    if (!isListening) {
+      recitationActiveHadithIndexRef.current = null;
+      recitationBaselineWhenNavigatedRef.current = {
+        evaluatedCount: 0,
+        transcriptLength: 0,
+        activeWordIndex: -1,
+      };
+    }
+  }, [isListening]);
 
   return (
     <div className="h-screen bg-base-200 overflow-hidden flex">
@@ -269,17 +355,16 @@ export default function Study() {
       {/* ── Congratulations Toast Banner ── */}
       {showCongrats && (
         <div
-          className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] animate-cardIn pointer-events-none w-11/12 max-w-sm"
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] animate-cardIn pointer-events-none w-auto max-w-[94vw]"
           dir="rtl"
         >
-          <div className="bg-cyan-950/95 dark:bg-cyan-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-cyan-500/50 px-4 py-3.5 flex items-center justify-center gap-3.5 text-right">
-            <div className="w-10 h-10 rounded-xl bg-cyan-700/60 border border-cyan-400/40 flex items-center justify-center shrink-0 shadow-inner">
-              <FiAward className="text-cyan-200 text-2xl" />
+          <div className="bg-cyan-950/95 dark:bg-cyan-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-cyan-500/50 px-4 py-3 flex items-center justify-center gap-3 text-right">
+            <div className="w-8 h-8 rounded-xl bg-cyan-700/60 border border-cyan-400/40 flex items-center justify-center shrink-0 shadow-inner">
+              <FiAward className="text-cyan-200 text-lg" />
             </div>
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="font-1 font-bold text-sm text-cyan-100 leading-tight">أحسنت! 🎉</span>
-              <span className="font-2 text-xs text-cyan-200/90 leading-normal whitespace-nowrap">لقد قمت بحفظ الحديث بنجاح</span>
-            </div>
+            <span className="font-2 font-bold text-xs sm:text-sm text-cyan-100 whitespace-nowrap">
+              {congratsMessage}
+            </span>
           </div>
         </div>
       )}

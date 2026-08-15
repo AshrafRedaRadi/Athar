@@ -194,14 +194,17 @@ export const hadithsService = {
   /**
    * Update last opened hadith on account
    */
-  async updateLastOpenedHadith(hadithId) {
+  async updateLastOpenedHadith(hadithId, retryCount = 1) {
     if (!hadithId) return null;
     try {
       return await apiFetch(`/api/Account/last-opened-hadith/${hadithId}`, {
         method: "PUT",
       });
     } catch (err) {
-      console.warn("Could not update last opened hadith:", err.message);
+      if (retryCount > 0 && err?.message?.toLowerCase().includes("concurrency")) {
+        await new Promise((res) => setTimeout(res, 350));
+        return this.updateLastOpenedHadith(hadithId, retryCount - 1);
+      }
       return null;
     }
   },

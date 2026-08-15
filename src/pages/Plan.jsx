@@ -7,12 +7,14 @@ import DailyGoal from '../components/plan/DailyGoal';
 import DueReviewsToday from '../components/plan/DueReviewsToday';
 import RecentlyReviewed from '../components/plan/RecentlyReviewed';
 import RecentlyMemorized from '../components/plan/RecentlyMemorized';
+import PlanOnboardingModal from '../components/plan/PlanOnboardingModal';
 import { studyPlanService } from '../services/studyPlanService';
 
 export default function Plan() {
   const [overview, setOverview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [activeGoals, setActiveGoals] = useState({
     newHadithsPerDay: 2,
@@ -28,15 +30,21 @@ export default function Plan() {
       const data = await studyPlanService.getOverview();
       if (data) {
         setOverview(data);
-        if (data.settings) {
+        if (data.settings && (data.settings.newHadithsPerDay > 0 || data.settings.reviewsPerDay > 0)) {
           setActiveGoals({
-            newHadithsPerDay: data.settings.newHadithsPerDay ?? 2,
-            reviewsPerDay: data.settings.reviewsPerDay ?? 3,
+            newHadithsPerDay: data.settings.newHadithsPerDay,
+            reviewsPerDay: data.settings.reviewsPerDay,
           });
+        } else {
+          // If user has no active saved settings in backend, launch onboarding
+          setShowOnboarding(true);
         }
+      } else {
+        setShowOnboarding(true);
       }
     } catch (err) {
       console.warn("Could not load study plan overview:", err);
+      setShowOnboarding(true);
     } finally {
       setIsLoading(false);
     }
@@ -51,6 +59,56 @@ export default function Plan() {
       ...prev,
       ...newGoals,
     }));
+  };
+
+  const handleConfirmOnboarding = async (chosenGoals) => {
+    setIsSaving(true);
+    try {
+      // 1. Save directly to backend
+      await studyPlanService.updatePlanSettings({
+        newHadithsPerDay: chosenGoals.newHadithsPerDay,
+        reviewsPerDay: chosenGoals.reviewsPerDay,
+      });
+
+      // 2. Initialize today's session with newly configured targets
+      await studyPlanService.initializeToday();
+
+      // 3. Refresh live overview
+      const data = await studyPlanService.getOverview();
+      if (data) {
+        setOverview(data);
+      }
+
+      setActiveGoals(chosenGoals);
+      localStorage.setItem("athar_plan_onboarded", "true");
+      localStorage.setItem(
+        "athar_daily_goals",
+        JSON.stringify({
+          newAhadith: chosenGoals.newHadithsPerDay,
+          revisionCount: chosenGoals.reviewsPerDay,
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent("athar_daily_goals_changed", {
+          detail: {
+            newHadithsPerDay: chosenGoals.newHadithsPerDay,
+            reviewsPerDay: chosenGoals.reviewsPerDay,
+            newAhadith: chosenGoals.newHadithsPerDay,
+            revisionCount: chosenGoals.reviewsPerDay,
+          },
+        })
+      );
+
+      setShowOnboarding(false);
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 4000);
+    } catch (err) {
+      console.error("Failed to save study plan settings from onboarding:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSavePlan = async () => {
@@ -83,13 +141,24 @@ export default function Plan() {
       <main className="px-3 sm:px-8 py-8 pt-3 pb-28 sm:pb-32 lg:pb-8" dir="rtl">
         <Navbar activePage="review" />
 
-        <header className="text-start space-y-1 mt-4 sm:mt-6">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
-            إدارة خطة الحفظ والمراجعة
-          </h1>
-          <p className="text-sm md:text-base text-base-content/60 font-normal mt-2 mb-5">
-            تحكم في مسارك التعليمي وتابع تقدمك اليومي بمرونة وفعالية
-          </p>
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-start mt-4 sm:mt-6 mb-5">
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
+              إدارة خطة الحفظ والمراجعة
+            </h1>
+            <p className="text-sm md:text-base text-base-content/60 font-normal">
+              تحكم في مسارك التعليمي وتابع تقدمك اليومي بمرونة وفعالية
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowOnboarding(true)}
+            className="self-start sm:self-center px-3.5 py-2 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 text-cyan-700 dark:text-cyan-400 font-2 text-xs sm:text-sm font-bold shadow-xs hover:border-cyan-500 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+            title="إعادة تشغيل مرشد إعداد الخطة"
+          >
+            <span>مرشد إعداد الخطة ✨</span>
+          </button>
         </header>
 
         {/* Weekly Roadmap Section (Connected to active goals) */}
@@ -141,10 +210,17 @@ export default function Plan() {
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/30 border border-cyan-400/40 flex items-center justify-center shrink-0">
                 <HiCheckBadge className="text-cyan-300 text-lg sm:text-xl" />
               </div>
-              <span className="whitespace-nowrap">تم حفظ إعدادات الخطة بنجاح في النظام! 🎉</span>
+              <span className="whitespace-nowrap">تم حفظ إعدادات الخطة بنجاح!</span>
             </div>
           </div>
         )}
+
+        {/* Plan Onboarding Wizard Modal */}
+        <PlanOnboardingModal
+          isOpen={showOnboarding}
+          onConfirm={handleConfirmOnboarding}
+          isSaving={isSaving}
+        />
 
       </main>
     </div>

@@ -1,7 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { IoIosNotificationsOutline } from "react-icons/io";
-import { IoSettingsOutline } from "react-icons/io5";
 import { useTheme } from "../../hooks/useTheme";
 
 /* ── Sun / Moon SVGs (DaisyUI swap-rotate pattern) ──────────────── */
@@ -18,10 +15,8 @@ const MoonIcon = () => (
 );
 
 /**
- * HeaderActions — top-bar action icons rendered in PageHeader across all screen sizes:
+ * HeaderActions — top-bar action icons rendered in Navbar across all screen sizes:
  *  - Theme toggle (Sun/Moon)
- *  - Notifications icon
- *  - Settings icon
  */
 export default function HeaderActions({ className = "", buttonClassName = "" }) {
   const { isDark, toggleTheme } = useTheme();
@@ -38,15 +33,6 @@ export default function HeaderActions({ className = "", buttonClassName = "" }) 
         <SunIcon />
         <MoonIcon />
       </label>
-
-      {/* Notifications Icon */}
-      <button
-        aria-label="الإشعارات"
-        title="الإشعارات"
-        className={baseBtnClass}
-      >
-        <IoIosNotificationsOutline className="text-xl" />
-      </button>
     </div>
   );
 }
