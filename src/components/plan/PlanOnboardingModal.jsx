@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   HiOutlineSparkles,
   HiOutlineBookOpen,
@@ -8,7 +8,7 @@ import {
   HiOutlineLightBulb,
 } from "react-icons/hi2";
 import { FiPlus, FiMinus } from "react-icons/fi";
-import { IoFlameOutline, IoSparkles } from "react-icons/io5";
+import { IoFlameOutline, IoSparkles, IoClose } from "react-icons/io5";
 
 // Preset Configurations
 const PRESETS = [
@@ -44,12 +44,42 @@ const PRESETS = [
   },
 ];
 
-export default function PlanOnboardingModal({ isOpen, onConfirm, isSaving = false }) {
+export default function PlanOnboardingModal({
+  isOpen,
+  onConfirm,
+  onClose,
+  canClose = false,
+  isSaving = false,
+}) {
   const [selectedPreset, setSelectedPreset] = useState("balanced");
   const [newHadiths, setNewHadiths] = useState(2);
   const [reviewsCount, setReviewsCount] = useState(3);
 
-  if (!isOpen) return null;
+  // Smooth enter & exit transition state
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    let timeoutId;
+    if (isOpen) {
+      setIsRendered(true);
+      // Double RAF guarantees the browser has rendered the initial state before transitioning
+      const rAf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+      return () => cancelAnimationFrame(rAf);
+    } else {
+      setIsVisible(false);
+      timeoutId = setTimeout(() => {
+        setIsRendered(false);
+      }, 300);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isOpen]);
+
+  if (!isRendered) return null;
 
   const handleSelectPreset = (preset) => {
     setSelectedPreset(preset.id);
@@ -77,13 +107,31 @@ export default function PlanOnboardingModal({ isOpen, onConfirm, isSaving = fals
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-md transition-all duration-300 animate-fadeIn"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-md transition-all duration-300 ease-out ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
       dir="rtl"
+      onClick={canClose ? onClose : undefined}
     >
       <div
-        className="bg-base-100 dark:bg-slate-900 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl border border-base-300 dark:border-slate-800 p-4 sm:p-6 font-2 text-base-content relative animate-cardIn [scrollbar-width:thin]"
+        className={`bg-base-100 dark:bg-slate-900 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl border border-base-300 dark:border-slate-800 p-4 sm:p-6 font-2 text-base-content relative [scrollbar-width:thin] transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform ${
+          isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-[0.93] translate-y-5"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close Button (only visible when opened manually, hidden for new user first time) */}
+        {canClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3.5 left-3.5 sm:top-4 sm:left-4 z-20 w-8 h-8 rounded-full bg-base-200/80 hover:bg-base-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-base-content/70 hover:text-base-content flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+            aria-label="إغلاق"
+            title="إغلاق النافذة"
+          >
+            <IoClose className="text-xl" />
+          </button>
+        )}
+
         {/* Decorative background glow */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 

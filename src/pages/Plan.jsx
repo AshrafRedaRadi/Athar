@@ -15,6 +15,7 @@ export default function Plan() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isFirstTimeOnboarding, setIsFirstTimeOnboarding] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [activeGoals, setActiveGoals] = useState({
     newHadithsPerDay: 2,
@@ -36,14 +37,17 @@ export default function Plan() {
             reviewsPerDay: data.settings.reviewsPerDay,
           });
         } else {
-          // If user has no active saved settings in backend, launch onboarding
+          // If user has no active saved settings in backend, launch required onboarding
+          setIsFirstTimeOnboarding(true);
           setShowOnboarding(true);
         }
       } else {
+        setIsFirstTimeOnboarding(true);
         setShowOnboarding(true);
       }
     } catch (err) {
       console.warn("Could not load study plan overview:", err);
+      setIsFirstTimeOnboarding(true);
       setShowOnboarding(true);
     } finally {
       setIsLoading(false);
@@ -153,7 +157,10 @@ export default function Plan() {
 
           <button
             type="button"
-            onClick={() => setShowOnboarding(true)}
+            onClick={() => {
+              setIsFirstTimeOnboarding(false);
+              setShowOnboarding(true);
+            }}
             className="self-start sm:self-center px-3.5 py-2 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 text-cyan-700 dark:text-cyan-400 font-2 text-xs sm:text-sm font-bold shadow-xs hover:border-cyan-500 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
             title="إعادة تشغيل مرشد إعداد الخطة"
           >
@@ -218,6 +225,8 @@ export default function Plan() {
         {/* Plan Onboarding Wizard Modal */}
         <PlanOnboardingModal
           isOpen={showOnboarding}
+          canClose={!isFirstTimeOnboarding}
+          onClose={() => setShowOnboarding(false)}
           onConfirm={handleConfirmOnboarding}
           isSaving={isSaving}
         />
