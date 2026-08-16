@@ -1,15 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { MAIN_NAV_ITEMS } from "./mainNavConfig";
 import defaultAvatar from "../../assets/user.png";
 import logoImg from "../../assets/logo.png";
+import useAxiosGet from "../../hooks/useAxiosGet";
 
 /**
  * Sidebar component with pure Tailwind CSS slide transition from the right.
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
 function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar, drawerId = "sidebar-drawer", onOpenSettings }) {
+    const {data} = useAxiosGet("/api/Account/profile");
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const drawerRef = useRef(null);
@@ -92,7 +95,7 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
             {/* User Avatar (Right in RTL) */}
             <div className="avatar shrink-0">
               <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 group-hover:ring-cyan-600 ring-offset-2 overflow-hidden transition-all">
-                <img src={userAvatar} alt={userName} />
+                <img src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} alt={userName} />
               </div>
             </div>
             {/* Welcome Text + Username */}

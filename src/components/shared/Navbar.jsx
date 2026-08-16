@@ -1,5 +1,4 @@
-import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { HiOutlineMenuAlt3, HiOutlineHome, HiOutlineCog } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
@@ -9,6 +8,7 @@ import AdminSidebar from "../admin/AdminSidebar";
 import AdminDock from "../admin/AdminDock";
 import { useAuth } from "../../context/AuthContext";
 import defaultAvatar from "../../assets/user.png";
+import useAxiosGet from "../../hooks/useAxiosGet";
 
 /**
  * Unified Navbar component for Athar platform.
@@ -25,6 +25,7 @@ export default function Navbar({
   isAdmin = false,
   onOpenSettings,
 }) {
+    const {data} = useAxiosGet("/api/Account/profile");
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -123,7 +124,7 @@ export default function Navbar({
             className="shrink-0 hidden lg:block cursor-pointer transition-transform hover:scale-105"
             title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
-            <Avatar src={userAvatar} size="w-10" />
+            <Avatar src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} size="w-10" />
           </div>
 
           {/* Mobile / Tablet Profile avatar (<lg) */}
@@ -132,7 +133,7 @@ export default function Navbar({
             className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
             title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
-            <Avatar src={userAvatar} size="w-10" />
+            <Avatar src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} size="w-10" />
           </div>
         </div>
       </header>
@@ -140,3 +141,5 @@ export default function Navbar({
   );
 }
 
+
+  

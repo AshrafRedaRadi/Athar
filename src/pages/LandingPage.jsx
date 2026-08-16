@@ -23,39 +23,184 @@ import { usersService } from '../services/usersService';
 /* ─────────────────────────────────────────────
    Islamic Star Pattern Background
 ───────────────────────────────────────────────── */
-function IslamicStarPattern({ opacity = 0.06, color = '#ffffff', size = 80 }) {
-  const star = `
-    M ${size / 2},0
-    L ${size * 0.59},${size * 0.35}
-    L ${size},${size * 0.15}
-    L ${size * 0.73},${size * 0.46}
-    L ${size},${size / 2}
-    L ${size * 0.73},${size * 0.54}
-    L ${size},${size * 0.85}
-    L ${size * 0.59},${size * 0.65}
-    L ${size / 2},${size}
-    L ${size * 0.41},${size * 0.65}
-    L 0,${size * 0.85}
-    L ${size * 0.27},${size * 0.54}
-    L 0,${size / 2}
-    L ${size * 0.27},${size * 0.46}
-    L 0,${size * 0.15}
-    L ${size * 0.41},${size * 0.35}
-    Z
-  `;
-  const id = `star-pattern-${size}`;
+import React, { useId } from "react";
+
+function IslamicStarPattern({
+  opacity = 0.06,
+  color = "#ffffff",
+  size = 80,
+  accentColor,
+}) {
+  const uid = useId().replace(/:/g, "");
+
+  const symbolId = `star8-${uid}`;
+  const octId = `oct-${uid}`;
+  const patternId = `star-pattern-${uid}`;
+
+  const acc = accentColor || color;
+
+  // حجم النجمة الكبيرة
+  const big = size * 1.15;
+
+  // حجم الشكل الثماني الصغير
+  const small = size * 0.5;
+
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{ opacity }}
+      xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <defs>
-        <pattern id={id} x="0" y="0" width={size} height={size} patternUnits="userSpaceOnUse">
-          <path d={star} fill={color} />
+
+        {/* =========================
+            النجمة الكبيرة
+        ========================= */}
+        <symbol
+          id={symbolId}
+          viewBox="0 0 200 200"
+        >
+          <path
+            d="
+              M 100 12
+              L 128.28 71.72
+              L 188 100
+              L 128.28 128.28
+              L 100 188
+              L 71.72 128.28
+              L 12 100
+              L 71.72 71.72
+              Z
+            "
+            stroke="currentColor"
+            strokeWidth="13"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="none"
+          />
+
+          <path
+            d="
+              M 162.23 37.77
+              L 140 100
+              L 162.23 162.23
+              L 100 140
+              L 37.77 162.23
+              L 60 100
+              L 37.77 37.77
+              L 100 60
+              Z
+            "
+            stroke="currentColor"
+            strokeWidth="13"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </symbol>
+
+
+        {/* =========================
+            الشكل الثماني الصغير
+        ========================= */}
+        <symbol
+          id={octId}
+          viewBox="0 0 200 200"
+        >
+          <path
+            d="
+              M 100 12
+              L 162.2 37.8
+              L 188 100
+              L 162.2 162.2
+              L 100 188
+              L 37.8 162.2
+              L 12 100
+              L 37.8 37.8
+              Z
+            "
+            stroke="currentColor"
+            strokeWidth="13"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </symbol>
+
+
+        {/* =========================
+            Pattern
+        ========================= */}
+        <pattern
+          id={patternId}
+          width={size}
+          height={size}
+          patternUnits="userSpaceOnUse"
+        >
+
+          {/* النجوم الكبيرة عند التقاطعات */}
+          <g
+            color={acc}
+            opacity="0.55"
+          >
+            <use
+              href={`#${symbolId}`}
+              x={-big / 2}
+              y={-big / 2}
+              width={big}
+              height={big}
+            />
+
+            <use
+              href={`#${symbolId}`}
+              x={size - big / 2}
+              y={-big / 2}
+              width={big}
+              height={big}
+            />
+
+            <use
+              href={`#${symbolId}`}
+              x={-big / 2}
+              y={size - big / 2}
+              width={big}
+              height={big}
+            />
+
+            <use
+              href={`#${symbolId}`}
+              x={size - big / 2}
+              y={size - big / 2}
+              width={big}
+              height={big}
+            />
+          </g>
+
+
+          {/* الشكل الثماني الصغير */}
+          <g color={color}>
+            <use
+              href={`#${octId}`}
+              x={(size - small) / 2}
+              y={(size - small) / 2}
+              width={small}
+              height={small}
+            />
+          </g>
+
         </pattern>
+
       </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} />
+
+
+      {/* رسم الـ Pattern على الشاشة */}
+      <rect
+        width="100%"
+        height="100%"
+        fill={`url(#${patternId})`}
+      />
+
     </svg>
   );
 }
@@ -66,11 +211,11 @@ function IslamicStarPattern({ opacity = 0.06, color = '#ffffff', size = 80 }) {
 function ArabesqueDivider({ color = '#C9953A' }) {
   return (
     <div className="flex items-center justify-center gap-3 my-2">
-      <div className="h-px flex-1 max-w-[80px]" style={{ background: `linear-gradient(to left, transparent, ${color})` }} />
+      <div className="h-px flex-1 max-w-20" style={{ background: `linear-gradient(to left, transparent, ${color})` }} />
       <svg width="32" height="16" viewBox="0 0 32 16" fill={color}>
         <path d="M16,0 C16,0 28,8 32,8 C28,8 16,16 16,16 C16,16 4,8 0,8 C4,8 16,0 16,0 Z" />
       </svg>
-      <div className="h-px flex-1 max-w-[80px]" style={{ background: `linear-gradient(to right, transparent, ${color})` }} />
+      <div className="h-px flex-1 max-w-20" style={{ background: `linear-gradient(to right, transparent, ${color})` }} />
     </div>
   );
 }

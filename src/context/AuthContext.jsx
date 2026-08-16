@@ -35,7 +35,9 @@ export function AuthProvider({ children }) {
       if (storedToken) {
         try {
           const profileData = await apiFetch('/api/Account/profile');
+          
           const formatted = formatUserData(profileData);
+          
           setUser(formatted);
           localStorage.setItem('user', JSON.stringify(formatted));
 
