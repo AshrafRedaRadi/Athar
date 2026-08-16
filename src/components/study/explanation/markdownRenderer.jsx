@@ -136,8 +136,8 @@ function parseInlineContent(str, keyRef) {
       );
     } else if (token.startsWith("**") && token.endsWith("**")) {
       const inner = token.slice(2, -2).trim().replace(/\*\*/g, "");
-      // Check if it's a key label (like مسألة: / الجواب: / أولاً:)
-      const isKeyLabel = /^(مسألة|الجواب|تنبيه|فائدة|أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الأول|الثاني|الثالث)[:：]?$/.test(
+      // Check if it's a key label (like مسألة: / الجواب: / الراوي: / التخريج: / أولاً:)
+      const isKeyLabel = /^(مسألة|الجواب|تنبيه|فائدة|أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الأول|الثاني|الثالث|الراوي|التخريج|الموقع في الكتاب|المصدر|القاعدة الكلية|تفصيل الحكم|المثال التطبيقي)[:：]?$/.test(
         inner
       );
 
@@ -146,7 +146,7 @@ function parseInlineContent(str, keyRef) {
           key={`b_${k}`}
           className={
             isKeyLabel
-              ? KEY_LABEL_CLASS
+              ? `${KEY_LABEL_CLASS} ms-0.5`
               : "font-bold text-cyan-900 dark:text-cyan-200"
           }
         >
@@ -197,7 +197,7 @@ export default function renderMarkdownText(rawText) {
 
     // 1. Heading (# / ## / ###)
     if (trimmed.startsWith("#")) {
-      const headingText = trimmed.replace(/^#+\s*/, "").trim();
+      const headingText = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "").trim();
       if (headingText && !/^الشرح\s*[:：]?\s*$/.test(headingText)) {
         blocks.push(
           <h4
@@ -230,7 +230,7 @@ export default function renderMarkdownText(rawText) {
       continue;
     }
 
-    // 3. Numbered List Item (e.g. 1. المرتبة الأولى: ...)
+    // 3. Numbered List Item (e.g. 1. المرتبة الأولى: ... or 1. **القاعدة:** ...)
     if (/^\d+[\.\-\)]\s+/.test(trimmed)) {
       const listItems = [];
       while (i < lines.length && /^\d+[\.\-\)]\s+/.test(lines[i].trim())) {
@@ -254,7 +254,7 @@ export default function renderMarkdownText(rawText) {
       continue;
     }
 
-    // 4. Bullet List Item (e.g. - الجملة الأولى... / * ...)
+    // 4. Bullet List Item (e.g. - الجملة الأولى... / * **الراوي:** ...)
     if (/^[*\-•]\s+/.test(trimmed)) {
       const listItems = [];
       while (i < lines.length && /^[*\-•]\s+/.test(lines[i].trim())) {
@@ -278,13 +278,11 @@ export default function renderMarkdownText(rawText) {
       continue;
     }
 
-    // 5. Full-Line Bold Heading (e.g. **مسألة:** ...)
-    if (
-      trimmed.startsWith("**") &&
-      trimmed.endsWith("**") &&
-      !trimmed.slice(2, -2).includes("**")
-    ) {
-      const inner = trimmed.slice(2, -2).trim();
+    // 5. Full-Line Bold Heading (e.g. **نص الحديث:** / **مسألة:** ... / 💡 **اقتراح للحفظ والمراجعة:**)
+    const boldHeaderMatch = trimmed.match(/^(?:([^\w\s*]+)\s*)?\*\*([^*]+)\*\*[:：]?$/u);
+    if (boldHeaderMatch) {
+      const emojiPrefix = boldHeaderMatch[1] ? `${boldHeaderMatch[1]} ` : "";
+      const inner = `${emojiPrefix}${boldHeaderMatch[2].trim()}`;
       blocks.push(
         <h5
           key={`fh_${keyRef.k++}`}

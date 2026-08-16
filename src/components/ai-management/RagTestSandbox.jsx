@@ -13,6 +13,7 @@ import {
   HiOutlineChevronDown,
 } from "react-icons/hi2";
 import { aiAssistantService } from "../../services/aiAssistantService";
+import renderMarkdownText from "../study/explanation/markdownRenderer";
 
 const SUGGESTED_QUESTIONS = [
   "ما هو الحديث الأول في الأربعين النووية؟",
@@ -31,6 +32,63 @@ export default function RagTestSandbox() {
 
   // ChatGPT-style sidebar toggle on large screens
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Resizable sidebar width (persisted in localStorage, bounded between 240px and 520px)
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("athar_rag_sidebar_width");
+    const parsed = parseInt(saved, 10);
+    return !isNaN(parsed) && parsed >= 240 && parsed <= 520 ? parsed : 320;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const isResizingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(320);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    setIsResizing(true);
+    startXRef.current = e.clientX || e.touches?.[0]?.clientX || 0;
+    startWidthRef.current = sidebarWidth;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizingRef.current) return;
+      const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+      // RTL: dragging left (smaller clientX) increases width
+      const deltaX = startXRef.current - clientX;
+      const newWidth = Math.max(240, Math.min(520, startWidthRef.current + deltaX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingRef.current) {
+        isResizingRef.current = false;
+        setIsResizing(false);
+        document.body.style.userSelect = "";
+        document.body.style.cursor = "";
+        setSidebarWidth((latestWidth) => {
+          localStorage.setItem("athar_rag_sidebar_width", latestWidth.toString());
+          return latestWidth;
+        });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("touchmove", handleMouseMove);
+    window.addEventListener("touchend", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("touchmove", handleMouseMove);
+      window.removeEventListener("touchend", handleMouseUp);
+    };
+  }, []);
 
   // Rich collapsible history drawer on mobile screens
   const [isMobileHistoryOpen, setIsMobileHistoryOpen] = useState(false);
@@ -164,23 +222,31 @@ export default function RagTestSandbox() {
   };
 
   return (
-    <div className="bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 rounded-3xl shadow-sm font-2 overflow-hidden transition-all flex flex-col lg:flex-row min-h-[640px]" dir="rtl">
-      {/* ── Desktop Collapsible Sidebar (ChatGPT Style) ── */}
+    <div className="bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 rounded-3xl shadow-sm font-2 overflow-hidden transition-all flex flex-col lg:flex-row h-[700px] max-h-[85vh] lg:h-[720px]" dir="rtl">
+      {/* ── Desktop Collapsible & Resizable Sidebar (ChatGPT Style) ── */}
       <div
-        className={`hidden lg:flex flex-col justify-between border-l border-base-300 dark:border-slate-800 bg-base-200/40 dark:bg-slate-950/40 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "w-80 p-5 opacity-100 shrink-0" : "w-0 p-0 opacity-0 overflow-hidden border-0 pointer-events-none"
+        style={{
+          width: isSidebarOpen ? `${sidebarWidth}px` : "0px",
+          minWidth: isSidebarOpen ? `${sidebarWidth}px` : "0px",
+        }}
+        className={`hidden lg:flex flex-col justify-between border-l border-base-300 dark:border-slate-800 bg-base-200/40 dark:bg-slate-950/40 relative shrink-0 h-full min-h-0 ${
+          isResizing ? "transition-none" : "transition-all duration-300 ease-in-out"
+        } ${
+          isSidebarOpen
+            ? "p-4 sm:p-5 opacity-100 overflow-visible"
+            : "p-0 opacity-0 overflow-hidden border-0 pointer-events-none"
         }`}
       >
-        <div className="space-y-4">
+        <div className="space-y-3.5 min-w-0 flex flex-col flex-1 min-h-0">
           {/* Top Actions: New Chat Button + Collapse Sidebar Button inside Sidebar */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleStartNewChat}
-              className="btn btn-outline border-cyan-700/50 hover:bg-cyan-700 hover:text-white dark:border-cyan-500/50 text-cyan-700 dark:text-cyan-400 flex-1 rounded-2xl font-bold text-sm sm:text-base gap-2 shadow-xs cursor-pointer active:scale-95 h-11"
+              className="btn btn-outline border-cyan-700/50 hover:bg-cyan-700 hover:text-white dark:border-cyan-500/50 text-cyan-700 dark:text-cyan-400 flex-1 rounded-2xl font-bold text-sm sm:text-base gap-2 shadow-xs cursor-pointer active:scale-95 h-11 truncate"
             >
-              <HiOutlinePlus className="text-lg" />
-              <span>محادثة جديدة</span>
+              <HiOutlinePlus className="text-lg shrink-0" />
+              <span className="truncate">محادثة جديدة</span>
             </button>
 
             <button
@@ -194,7 +260,7 @@ export default function RagTestSandbox() {
           </div>
 
           {/* History Header */}
-          <div className="flex items-center justify-between text-sm text-base-content/80 font-bold px-1 pt-1 font-1">
+          <div className="flex items-center justify-between text-sm text-base-content/80 font-bold px-1 pt-1 font-1 shrink-0">
             <span className="flex items-center gap-2">
               <HiOutlineClock className="text-base text-cyan-700 dark:text-cyan-400" />
               <span>سجل المحادثات السابقة</span>
@@ -205,7 +271,7 @@ export default function RagTestSandbox() {
           </div>
 
           {/* Conversations List */}
-          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+          <div className="space-y-2 flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:thin]">
             {isLoadingHistory ? (
               <div className="py-10 text-center">
                 <span className="loading loading-spinner loading-md text-cyan-700" />
@@ -233,7 +299,7 @@ export default function RagTestSandbox() {
                         isActive ? "text-white" : "text-cyan-700 dark:text-cyan-400"
                       }`}
                     />
-                    <div className="truncate flex-1">
+                    <div className="truncate flex-1 min-w-0">
                       <p className="truncate font-bold text-xs sm:text-sm">
                         {conv.title || `محادثة #${conv.id}`}
                       </p>
@@ -255,19 +321,40 @@ export default function RagTestSandbox() {
         </div>
 
         {/* Sidebar Footer Info */}
-        <div className="p-4 bg-base-100 dark:bg-slate-900 rounded-2xl border border-base-300 dark:border-slate-800 text-xs sm:text-sm text-base-content/80 space-y-1.5 font-2">
+        <div className="p-3.5 bg-base-100 dark:bg-slate-900 rounded-2xl border border-base-300 dark:border-slate-800 text-xs sm:text-sm text-base-content/80 space-y-1 font-2 min-w-0 shrink-0 mt-3">
           <p className="font-bold text-cyan-700 dark:text-cyan-400 flex items-center gap-1.5 font-1">
-            <HiOutlineSparkles className="text-base" />
-            <span>المساعد المعرفي الذكي</span>
+            <HiOutlineSparkles className="text-base shrink-0" />
+            <span className="truncate">المساعد المعرفي الذكي</span>
           </p>
-          <p className="text-xs leading-relaxed text-base-content/70">
+          <p className="text-[11px] sm:text-xs leading-relaxed text-base-content/70">
             يتم البحث والاسترجاع الموثق من كتب ومتون أثر المنشورة بدقة بالغة.
           </p>
         </div>
+
+        {/* ── Resizable Drag Handle on Divider Border ── */}
+        {isSidebarOpen && (
+          <div
+            onMouseDown={startResizing}
+            onTouchStart={startResizing}
+            className={`absolute top-0 -left-2 h-full w-4 z-30 cursor-col-resize group flex items-center justify-center select-none ${
+              isResizing ? "bg-cyan-500/20" : ""
+            }`}
+            title="اسحب لتكبير أو تصغير حجم القائمة الجانبية"
+          >
+            {/* Visual indicator bar on hover or active drag */}
+            <div
+              className={`w-1 rounded-full transition-all duration-200 ${
+                isResizing
+                  ? "bg-cyan-600 dark:bg-cyan-400 w-1.5 h-24 shadow-md shadow-cyan-500/40"
+                  : "h-12 bg-base-300/80 dark:bg-slate-700/80 group-hover:bg-cyan-600 dark:group-hover:bg-cyan-400 group-hover:h-20 group-hover:w-1.5 shadow-2xs"
+              }`}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Main Chat Area ── */}
-      <div className="flex-1 p-5 sm:p-7 flex flex-col justify-between space-y-5 font-2 min-w-0">
+      <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between space-y-4 font-2 min-w-0 h-full min-h-0">
         {/* Chat Header with ChatGPT-style sidebar toggle and Mobile Collapsible History */}
         <div className="flex flex-col gap-3 pb-4 border-b border-base-200 dark:border-slate-800">
           <div className="flex items-center justify-between">
@@ -459,7 +546,13 @@ export default function RagTestSandbox() {
                         : "bg-base-200/90 dark:bg-slate-800 text-base-content rounded-bl-xs border border-base-300 dark:border-slate-700"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap font-2">{msg.content}</p>
+                    {isUser ? (
+                      <p className="whitespace-pre-wrap font-2">{msg.content}</p>
+                    ) : (
+                      <div className="space-y-2 text-base-content dark:text-slate-100 font-2 leading-relaxed">
+                        {renderMarkdownText(msg.content)}
+                      </div>
+                    )}
 
                     {/* Retry Button on 503 / Network Failure */}
                     {msg.isError && msg.failedQuery && (
