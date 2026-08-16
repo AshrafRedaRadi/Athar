@@ -225,10 +225,15 @@ export default function ContentFormModal({
   const handleRemoveSection = (sectionId) => {
     if (formData.sections.length <= 1) return;
     markTouched();
-    setFormData((prev) => ({
-      ...prev,
-      sections: prev.sections.filter((s) => s.id !== sectionId),
-    }));
+    setFormData((prev) => {
+      const secToRemove = prev.sections.find((s) => s.id === sectionId || s._localId === sectionId);
+      const delId = secToRemove?.id && typeof secToRemove.id === "number" && secToRemove.id < 1e9 ? secToRemove.id : null;
+      return {
+        ...prev,
+        deletedHadithIds: delId ? [...(prev.deletedHadithIds || []), delId] : prev.deletedHadithIds,
+        sections: prev.sections.filter((s) => s.id !== sectionId && s._localId !== sectionId),
+      };
+    });
   };
 
   const handleSectionChange = (sectionId, field, value) => {
@@ -282,18 +287,27 @@ export default function ContentFormModal({
 
   const handleRemoveExplanation = (sectionId, expId) => {
     markTouched();
-    setFormData((prev) => ({
-      ...prev,
-      sections: prev.sections.map((s) => {
-        if (s.id === sectionId && s.explanations.length > 1) {
-          return {
-            ...s,
-            explanations: s.explanations.filter((e) => e.id !== expId),
-          };
-        }
-        return s;
-      }),
-    }));
+    setFormData((prev) => {
+      const targetSection = prev.sections.find((s) => s.id === sectionId);
+      const targetExp = targetSection?.explanations?.find((e) => e.id === expId || e._localId === expId);
+      const deletedId = targetExp?.id && typeof targetExp.id === "number" && targetExp.id < 1e9 ? targetExp.id : null;
+
+      return {
+        ...prev,
+        deletedExplanationIds: deletedId
+          ? [...(prev.deletedExplanationIds || []), deletedId]
+          : prev.deletedExplanationIds,
+        sections: prev.sections.map((s) => {
+          if (s.id === sectionId && s.explanations.length > 1) {
+            return {
+              ...s,
+              explanations: s.explanations.filter((e) => (e.id || e._localId) !== expId),
+            };
+          }
+          return s;
+        }),
+      };
+    });
   };
 
   const handleExplanationChange = (sectionId, expId, field, value) => {
@@ -383,10 +397,29 @@ export default function ContentFormModal({
 
   const handleRemoveRootSection = (localId) => {
     markTouched();
-    setFormData((prev) => ({
-      ...prev,
-      hierarchySections: prev.hierarchySections.filter((s) => s._localId !== localId),
-    }));
+    setFormData((prev) => {
+      const rootToDelete = (prev.hierarchySections || []).find((r) => r._localId === localId);
+      const rootDelId = rootToDelete?.id && typeof rootToDelete.id === "number" && rootToDelete.id < 1e9 ? rootToDelete.id : null;
+      const childDelIds = [];
+      const hadithDelIds = [];
+      for (const c of rootToDelete?.children || []) {
+        if (c.id && typeof c.id === "number" && c.id < 1e9) childDelIds.push(c.id);
+        for (const h of c.hadiths || []) {
+          if (h.id && typeof h.id === "number" && h.id < 1e9) hadithDelIds.push(h.id);
+        }
+      }
+
+      return {
+        ...prev,
+        deletedSectionIds: [
+          ...(prev.deletedSectionIds || []),
+          ...(rootDelId ? [rootDelId] : []),
+          ...childDelIds,
+        ],
+        deletedHadithIds: [...(prev.deletedHadithIds || []), ...hadithDelIds],
+        hierarchySections: prev.hierarchySections.filter((s) => s._localId !== localId),
+      };
+    });
   };
 
   const handleRootSectionNameChange = (localId, name) => {
@@ -418,18 +451,42 @@ export default function ContentFormModal({
 
   const handleRemoveChildSection = (rootLocalId, childLocalId) => {
     markTouched();
-    setFormData((prev) => ({
-      ...prev,
-      hierarchySections: prev.hierarchySections.map((root) => {
-        if (root._localId === rootLocalId) {
-          return {
-            ...root,
-            children: root.children.filter((c) => c._localId !== childLocalId),
-          };
+    setFormData((prev) => {
+      let deletedChildId = null;
+      const childHadithDelIds = [];
+      for (const r of prev.hierarchySections || []) {
+        if (r._localId === rootLocalId) {
+          const c = (r.children || []).find((ch) => ch._localId === childLocalId);
+          if (c?.id && typeof c.id === "number" && c.id < 1e9) {
+            deletedChildId = c.id;
+          }
+          for (const h of c?.hadiths || []) {
+            if (h.id && typeof h.id === "number" && h.id < 1e9) {
+              childHadithDelIds.push(h.id);
+            }
+          }
         }
-        return root;
-      }),
-    }));
+      }
+
+      return {
+        ...prev,
+        deletedSectionIds: deletedChildId
+          ? [...(prev.deletedSectionIds || []), deletedChildId]
+          : prev.deletedSectionIds,
+        deletedHadithIds: childHadithDelIds.length > 0
+          ? [...(prev.deletedHadithIds || []), ...childHadithDelIds]
+          : prev.deletedHadithIds,
+        hierarchySections: prev.hierarchySections.map((root) => {
+          if (root._localId === rootLocalId) {
+            return {
+              ...root,
+              children: root.children.filter((c) => c._localId !== childLocalId),
+            };
+          }
+          return root;
+        }),
+      };
+    });
   };
 
   const handleChildSectionNameChange = (rootLocalId, childLocalId, name) => {
@@ -475,26 +532,45 @@ export default function ContentFormModal({
 
   const handleRemoveHadithFromChild = (rootLocalId, childLocalId, hadithLocalId) => {
     markTouched();
-    setFormData((prev) => ({
-      ...prev,
-      hierarchySections: prev.hierarchySections.map((root) => {
-        if (root._localId === rootLocalId) {
-          return {
-            ...root,
-            children: root.children.map((child) => {
-              if (child._localId === childLocalId) {
-                return {
-                  ...child,
-                  hadiths: child.hadiths.filter((h) => h._localId !== hadithLocalId),
-                };
+    setFormData((prev) => {
+      let deletedHadithId = null;
+      for (const r of prev.hierarchySections || []) {
+        if (r._localId === rootLocalId) {
+          for (const c of r.children || []) {
+            if (c._localId === childLocalId) {
+              const h = (c.hadiths || []).find((hd) => hd._localId === hadithLocalId);
+              if (h?.id && typeof h.id === "number" && h.id < 1e9) {
+                deletedHadithId = h.id;
               }
-              return child;
-            }),
-          };
+            }
+          }
         }
-        return root;
-      }),
-    }));
+      }
+
+      return {
+        ...prev,
+        deletedHadithIds: deletedHadithId
+          ? [...(prev.deletedHadithIds || []), deletedHadithId]
+          : prev.deletedHadithIds,
+        hierarchySections: prev.hierarchySections.map((root) => {
+          if (root._localId === rootLocalId) {
+            return {
+              ...root,
+              children: root.children.map((child) => {
+                if (child._localId === childLocalId) {
+                  return {
+                    ...child,
+                    hadiths: child.hadiths.filter((h) => h._localId !== hadithLocalId),
+                  };
+                }
+                return child;
+              }),
+            };
+          }
+          return root;
+        }),
+      };
+    });
   };
 
   const handleHadithFieldChange = (rootLocalId, childLocalId, hadithLocalId, field, value) => {
@@ -1080,8 +1156,14 @@ export default function ContentFormModal({
                                             type="button"
                                             onClick={() => {
                                               markTouched();
+                                              const expToDelete = h.explanations[eIdx];
+                                              const delId = expToDelete?.id && typeof expToDelete.id === "number" && expToDelete.id < 1e9 ? expToDelete.id : null;
+
                                               setFormData((prev) => ({
                                                 ...prev,
+                                                deletedExplanationIds: delId
+                                                  ? [...(prev.deletedExplanationIds || []), delId]
+                                                  : prev.deletedExplanationIds,
                                                 hierarchySections: prev.hierarchySections.map((r) => {
                                                   if (r._localId === root._localId) {
                                                     return {

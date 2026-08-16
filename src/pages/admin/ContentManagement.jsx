@@ -153,36 +153,57 @@ export default function ContentManagement() {
   const handleOpenEditModal = async (book) => {
     setIsLoading(true);
     try {
-      const [sections, realHadiths, allKeyTerms, expBooks, allExplanations] = await Promise.all([
+      const [sections, realHadiths, allKeyTerms, expBooks] = await Promise.all([
         booksService.getBookSections(book.id).catch(() => []),
         hadithsService.getHadithsByBook(book.id).catch(() => []),
         hadithsService.getHadithKeyTerms().catch(() => []),
         hadithsService.getExplanationBooks().catch(() => []),
-        hadithsService.getAllExplanations().catch(() => []),
       ]);
+
+      // Fetch explanations specifically for each hadith belonging to this book
+      const explanationsByHadithId = {};
+      if (Array.isArray(realHadiths) && realHadiths.length > 0) {
+        await Promise.all(
+          realHadiths.map(async (h) => {
+            if (h.id) {
+              const exps = await hadithsService.getHadithExplanations(h.id).catch(() => []);
+              if (Array.isArray(exps) && exps.length > 0) {
+                explanationsByHadithId[h.id] = exps;
+              }
+            }
+          })
+        );
+      }
 
       // Helper to format hadith explanations
       const formatExplanationsForHadith = (hId) => {
-        const hExplanations = Array.isArray(allExplanations)
-          ? allExplanations.filter((exp) => Number(exp.hadithId) === Number(hId))
-          : [];
-
+        if (!hId) {
+          return [{ _localId: Date.now() + Math.random(), scholarOrBook: "", text: "" }];
+        }
+        const hExplanations = explanationsByHadithId[hId] || [];
         if (hExplanations.length > 0) {
-          return hExplanations.map((e, eIdx) => ({
-            _localId: e.id || eIdx + 1,
-            id: e.id || eIdx + 1,
+          return hExplanations.map((e) => ({
+            _localId: e.id || Date.now() + Math.random(),
+            id: e.id,
             scholarOrBook:
+              e.scholarOrBook ||
+              e.title ||
               e.explanationBookName ||
               e.explanationBookAuthor ||
-              hadithsService.resolveExplanationTitleSync(e, expBooks),
-            text: e.text || "",
+              e.bookTitle ||
+              e.author ||
+              hadithsService.resolveExplanationTitleSync(e, expBooks) ||
+              "",
+            text: e.text || e.explanationText || e.content || "",
+            explanationBookId: e.explanationBookId || null,
           }));
         }
-        return [{ _localId: 1, id: 1, scholarOrBook: "", text: "" }];
+        return [{ _localId: Date.now() + Math.random(), scholarOrBook: "", text: "" }];
       };
 
       // Helper to format keyterms for hadith
       const formatKeyTermsForHadith = (hId) => {
+        if (!hId) return [];
         return Array.isArray(allKeyTerms)
           ? allKeyTerms.filter((kt) => Number(kt.hadithId) === Number(hId))
           : [];
@@ -229,13 +250,29 @@ export default function ContentManagement() {
                   audioFileName: h.audioUrl || "",
                 }));
 
+              const hadithsToUse =
+                childHadiths.length > 0
+                  ? childHadiths
+                  : [
+                      {
+                        _localId: Date.now() + Math.random(),
+                        title: "",
+                        matnText: "",
+                        explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
+                        keyTerms: [],
+                        videoUrl: "",
+                        audioFile: null,
+                        audioFileName: "",
+                      },
+                    ];
+
               return {
                 _localId: child.id || Date.now() + Math.random(),
                 id: child.id,
                 name: child.name || child.title || "",
                 type: child.type,
                 order: child.order || 1,
-                hadiths: childHadiths,
+                hadiths: hadithsToUse,
               };
             });
 
@@ -258,7 +295,7 @@ export default function ContentManagement() {
               id: Date.now(),
               title: "",
               matnText: "",
-              explanations: [{ id: 1, scholarOrBook: "", text: "" }],
+              explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
               keyTerms: [],
               videoUrl: "",
               audioFile: null,
@@ -288,7 +325,7 @@ export default function ContentManagement() {
               _localId: Date.now(),
               title: "",
               matnText: book.matnText || "",
-              explanations: [{ id: 1, scholarOrBook: "", text: "" }],
+              explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
               keyTerms: [],
               videoUrl: "",
               audioFile: null,
@@ -385,7 +422,11 @@ function extractEntityId(res) {
 
       if (editingBook) {
         bookId = editingBook.id;
-        await booksService.updateBook(bookId, formData);
+        try {
+          await booksService.updateBook(bookId, formData);
+        } catch (updateErr) {
+          console.warn("Could not update book metadata via PUT, continuing to save sections & hadiths:", updateErr.message);
+        }
       } else {
         const created = await booksService.createBook(formData);
         console.log("📚 [Created Book Response]:", created);
@@ -394,6 +435,23 @@ function extractEntityId(res) {
 
       if (!bookId && editingBook) {
         bookId = editingBook.id;
+      }
+      
+      // Delete any items that the user removed in the modal
+      if (Array.isArray(formData.deletedExplanationIds) && formData.deletedExplanationIds.length > 0) {
+        for (const delId of formData.deletedExplanationIds) {
+          await hadithsService.deleteExplanation(delId).catch(() => null);
+        }
+      }
+      if (Array.isArray(formData.deletedHadithIds) && formData.deletedHadithIds.length > 0) {
+        for (const delId of formData.deletedHadithIds) {
+          await hadithsService.deleteHadith(delId).catch(() => null);
+        }
+      }
+      if (Array.isArray(formData.deletedSectionIds) && formData.deletedSectionIds.length > 0) {
+        for (const delId of formData.deletedSectionIds) {
+          await booksService.deleteSection(delId).catch(() => null);
+        }
       }
 
       console.log("📚 [Active Book ID]:", bookId);
@@ -421,23 +479,59 @@ function extractEntityId(res) {
                   videoUrl: sec.videoUrl || "",
                   audioUrl: sec.audioFileName || "",
                 };
-                console.log("📜 [Direct Hadith Payload]:", hadithPayload);
-                const createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
-                  console.warn("Could not save direct hadith:", err);
-                  return null;
-                });
-                const hadithId = extractEntityId(createdHadith);
+                let createdHadith = null;
+                if (sec.id && Number(sec.id) < 1e10) {
+                  createdHadith = await hadithsService.updateHadith(sec.id, hadithPayload).catch((err) => {
+                    console.warn("Could not update direct hadith:", err);
+                    return null;
+                  });
+                } else {
+                  createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
+                    console.warn("Could not save direct hadith:", err);
+                    return null;
+                  });
+                }
+                const hadithId = extractEntityId(createdHadith) || sec.id;
 
                 // Save key terms if provided
                 if (hadithId && Array.isArray(sec.keyTerms) && sec.keyTerms.length > 0) {
                   for (const kt of sec.keyTerms) {
                     if (kt.text) {
                       await hadithsService.createHadithKeyTerm({
-                        hadithId,
+                        hadithId: Number(hadithId),
                         text: kt.text,
                         normalizedText: kt.normalizedText,
                         order: kt.order || 1,
                       }).catch(() => null);
+                    }
+                  }
+                }
+
+                // Save explanations if provided
+                if (hadithId && Array.isArray(sec.explanations) && sec.explanations.length > 0) {
+                  for (const exp of sec.explanations) {
+                    if (exp.text && exp.text.trim()) {
+                      let savedExp = null;
+                      const isRealServerId = exp.id && typeof exp.id === "number" && exp.id > 0 && exp.id < 1e9;
+                      if (isRealServerId) {
+                        savedExp = await hadithsService.updateExplanation(exp.id, {
+                          hadithId: Number(hadithId),
+                          text: exp.text,
+                          scholarOrBook: exp.scholarOrBook,
+                          explanationBookId: exp.explanationBookId,
+                        }).catch(() => null);
+                      }
+                      if (!savedExp) {
+                        await hadithsService.createExplanation({
+                          hadithId: Number(hadithId),
+                          text: exp.text,
+                          scholarOrBook: exp.scholarOrBook,
+                          explanationBookId: exp.explanationBookId,
+                        }).catch((err) => {
+                          console.warn("Could not save direct explanation:", err);
+                          return null;
+                        });
+                      }
                     }
                   }
                 }
@@ -517,13 +611,20 @@ function extractEntityId(res) {
                           videoUrl: h.videoUrl || "",
                           audioUrl: h.audioFileName || "",
                         };
-                        console.log("📜 [Hierarchy Hadith Payload]:", hadithPayload);
-                        const createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
-                          console.warn("Could not create hierarchy hadith:", err);
-                          return null;
-                        });
+                        let createdHadith = null;
+                        if (h.id && Number(h.id) < 1e10) {
+                          createdHadith = await hadithsService.updateHadith(h.id, hadithPayload).catch((err) => {
+                            console.warn("Could not update hierarchy hadith:", err);
+                            return null;
+                          });
+                        } else {
+                          createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
+                            console.warn("Could not create hierarchy hadith:", err);
+                            return null;
+                          });
+                        }
 
-                        const hadithId = extractEntityId(createdHadith);
+                        const hadithId = extractEntityId(createdHadith) || h.id;
 
                         if (hadithId && Array.isArray(h.keyTerms) && h.keyTerms.length > 0) {
                           for (const kt of h.keyTerms) {
@@ -534,6 +635,35 @@ function extractEntityId(res) {
                                 normalizedText: kt.normalizedText,
                                 order: kt.order || 1,
                               }).catch(() => null);
+                            }
+                          }
+                        }
+
+                        // Save explanations if provided
+                        if (hadithId && Array.isArray(h.explanations) && h.explanations.length > 0) {
+                          for (const exp of h.explanations) {
+                            if (exp.text && exp.text.trim()) {
+                              let savedExp = null;
+                              const isRealServerId = exp.id && typeof exp.id === "number" && exp.id > 0 && exp.id < 1e9;
+                              if (isRealServerId) {
+                                savedExp = await hadithsService.updateExplanation(exp.id, {
+                                  hadithId: Number(hadithId),
+                                  text: exp.text,
+                                  scholarOrBook: exp.scholarOrBook,
+                                  explanationBookId: exp.explanationBookId,
+                                }).catch(() => null);
+                              }
+                              if (!savedExp) {
+                                await hadithsService.createExplanation({
+                                  hadithId: Number(hadithId),
+                                  text: exp.text,
+                                  scholarOrBook: exp.scholarOrBook,
+                                  explanationBookId: exp.explanationBookId,
+                                }).catch((err) => {
+                                  console.warn("Could not save hierarchy explanation:", err);
+                                  return null;
+                                });
+                              }
                             }
                           }
                         }

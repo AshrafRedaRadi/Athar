@@ -40,14 +40,29 @@ export const hadithsService = {
    */
   async getHadithsByBook(bookId, sectionId = null) {
     if (!bookId) return [];
-    let endpoint = `/api/Hadiths?bookId=${bookId}`;
+    let endpoint = `/api/Hadiths?HadithBookId=${bookId}&bookId=${bookId}`;
     if (sectionId) {
-      endpoint += `&sectionId=${sectionId}`;
+      endpoint += `&HadithSectionId=${sectionId}&sectionId=${sectionId}`;
     }
     const data = await apiFetch(endpoint);
     if (!Array.isArray(data)) return [];
 
-    return data.map((item, index) => formatHadith(item, index));
+    // Filter strictly by bookId (and optional sectionId) to prevent leaking hadiths from other books
+    const filtered = data.filter((item) => {
+      const bId = item.hadithBookId || item.HadithBookId || item.bookId || item.BookId;
+      if (bId && Number(bId) !== Number(bookId)) {
+        return false;
+      }
+      if (sectionId) {
+        const sId = item.hadithSectionId || item.HadithSectionId || item.sectionId || item.SectionId;
+        if (sId && Number(sId) !== Number(sectionId)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return filtered.map((item, index) => formatHadith(item, index));
   },
 
   /**
@@ -111,10 +126,27 @@ export const hadithsService = {
 
   /**
    * Delete a Hadith by ID via DELETE /api/Hadiths/{id}
+   * Cleans up attached child explanations first to avoid FK 400 Bad Request
    * @param {number|string} id
    * @returns {Promise<Object>}
    */
   async deleteHadith(id) {
+    if (!id) return null;
+    try {
+      // 1. Delete all attached explanations first to satisfy backend Foreign Key constraint
+      const exps = await this.getHadithExplanations(id).catch(() => []);
+      if (Array.isArray(exps) && exps.length > 0) {
+        for (const exp of exps) {
+          if (exp.id) {
+            await this.deleteExplanation(exp.id).catch(() => null);
+          }
+        }
+      }
+    } catch {
+      // Ignore pre-cleanup errors
+    }
+
+    // 2. Delete the hadith entity
     return await apiFetch(`/api/Hadiths/${id}`, {
       method: "DELETE",
     });
@@ -228,6 +260,79 @@ export const hadithsService = {
       console.warn("Could not fetch all explanations:", err.message);
       return [];
     }
+  },
+
+  /**
+   * Helper to resolve or find a valid explanation book ID
+   */
+  async getOrCreateExplanationBookId(scholarOrBookName) {
+    try {
+      const books = await this.getExplanationBooks();
+      if (Array.isArray(books) && books.length > 0) {
+        if (scholarOrBookName && typeof scholarOrBookName === "string" && scholarOrBookName.trim()) {
+          const s = scholarOrBookName.trim().toLowerCase();
+          const match = books.find((b) =>
+            (b.title && b.title.toLowerCase().includes(s)) ||
+            (b.author && b.author.toLowerCase().includes(s)) ||
+            (s.includes(b.title?.toLowerCase() || ""))
+          );
+          if (match) return match.id;
+        }
+        return books[0].id;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  },
+
+  /**
+   * Create an explanation for a hadith via POST /api/Explanations
+   * @param {Object} payload { hadithId, text, scholarOrBook, explanationBookId }
+   */
+  async createExplanation(payload) {
+    let expBookId = payload.explanationBookId;
+    if (!expBookId) {
+      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook || payload.title);
+    }
+    const body = {
+      hadithId: Number(payload.hadithId),
+      text: payload.text || "",
+      explanationBookId: Number(expBookId) || 1,
+    };
+    return await apiFetch("/api/Explanations", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  /**
+   * Update an existing explanation via PUT /api/Explanations/{id}
+   */
+  async updateExplanation(id, payload) {
+    let expBookId = payload.explanationBookId;
+    if (!expBookId) {
+      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook || payload.title);
+    }
+    const body = {
+      id: Number(id),
+      hadithId: Number(payload.hadithId),
+      text: payload.text || "",
+      explanationBookId: Number(expBookId) || 1,
+    };
+    return await apiFetch(`/api/Explanations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
+
+  /**
+   * Delete an explanation via DELETE /api/Explanations/{id}
+   */
+  async deleteExplanation(id) {
+    return await apiFetch(`/api/Explanations/${id}`, {
+      method: "DELETE",
+    });
   },
 
   /**

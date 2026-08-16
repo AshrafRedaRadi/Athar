@@ -223,6 +223,26 @@ export const booksService = {
    * @returns {Promise<Object>}
    */
   async updateBook(id, bookData) {
+    // If no new image file, try JSON first as ASP.NET Core [HttpPut] typically expects JSON
+    if (!(bookData.coverImageFile instanceof File)) {
+      try {
+        const jsonPayload = {
+          id: Number(id) || id,
+          title: bookData.title || "",
+          author: bookData.author || "",
+          description: bookData.description || "",
+          difficultyLevel: Number(bookData.difficultyLevel) || 1,
+          category: bookData.category || "الحديث",
+        };
+        return await apiFetch(`/api/HadithBooks/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(jsonPayload),
+        });
+      } catch (jsonErr) {
+        console.warn("JSON updateBook attempt failed, trying FormData:", jsonErr.message);
+      }
+    }
+
     const formData = new FormData();
     formData.append("Id", String(id));
     formData.append("id", String(id));
@@ -260,6 +280,17 @@ export const booksService = {
    */
   async deleteBook(id) {
     return await apiFetch(`/api/HadithBooks/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Delete a Section by ID via DELETE /api/HadithSections/{id}
+   * @param {number|string} id
+   * @returns {Promise<Object>}
+   */
+  async deleteSection(id) {
+    return await apiFetch(`/api/HadithSections/${id}`, {
       method: "DELETE",
     });
   },

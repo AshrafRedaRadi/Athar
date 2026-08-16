@@ -1,6 +1,6 @@
 import * as signalR from "@microsoft/signalr";
 import { MessagePackHubProtocol } from "@microsoft/signalr-protocol-msgpack";
-import { API_BASE_URL } from "../api/client";
+import { API_BASE_URL, getAccessToken } from "../api/client";
 
 /**
  * SignalR Hub URL for Hadith Recitation
@@ -15,7 +15,7 @@ export const recitationService = {
     const createConnection = () => {
       const conn = new signalR.HubConnectionBuilder()
         .withUrl(RECITATION_HUB_URL, {
-          accessTokenFactory: () => localStorage.getItem("token") || "",
+          accessTokenFactory: () => getAccessToken() || "",
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         })
         .withHubProtocol(new MessagePackHubProtocol())
