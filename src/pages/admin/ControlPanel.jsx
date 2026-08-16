@@ -99,6 +99,7 @@ function ControlPanel() {
 
   // KPI Cards Data (matching Stat.jsx circular icon & layout)
   const statsData = [
+    /*
     {
       id: "teachers",
       title: "المعلمون",
@@ -106,6 +107,7 @@ function ControlPanel() {
       icon: <HiOutlineUsers className="text-cyan-700 dark:text-cyan-400 text-base sm:text-lg md:text-xl" />,
       iconBg: "bg-cyan-100 dark:bg-cyan-950/40",
     },
+    */
     {
       id: "students",
       title: "الطلاب",
@@ -120,6 +122,7 @@ function ControlPanel() {
       icon: <HiOutlineBookOpen className="text-amber-700 dark:text-amber-400 text-base sm:text-lg md:text-xl" />,
       iconBg: "bg-amber-100 dark:bg-amber-950/40",
     },
+    /*
     {
       id: "sessions",
       title: "الحلقات النشطة",
@@ -127,6 +130,7 @@ function ControlPanel() {
       icon: <HiOutlineViewGrid className="text-indigo-700 dark:text-indigo-400 text-base sm:text-lg md:text-xl" />,
       iconBg: "bg-indigo-100 dark:bg-indigo-950/40",
     },
+    */
   ];
 
   return (
@@ -157,26 +161,26 @@ function ControlPanel() {
           </button>
         </header>
 
-        {/* KPI Cards Grid (4 side-by-side in a single row) */}
-        <section className="grid grid-cols-4 gap-1.5 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+        {/* KPI Cards Grid (Adjusted to 2 columns so remaining cards take up available space) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {statsData.map((stat) => (
             <div
               key={stat.id}
-              className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-xl sm:rounded-2xl shadow-xs p-2 sm:p-3.5 md:p-4 flex flex-col md:flex-row items-center justify-center md:justify-start text-center md:text-right gap-1 sm:gap-2.5 md:gap-3 min-w-0 hover:shadow-md transition-shadow relative"
+              className="bg-base-100 dark:bg-base-100 border border-base-300/60 rounded-xl sm:rounded-2xl shadow-xs p-3.5 sm:p-4 md:p-5 flex items-center justify-start text-right gap-3 md:gap-4 min-w-0 hover:shadow-md transition-shadow relative"
             >
               {/* Circular Icon */}
               <div
-                className={`w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 ${stat.iconBg}`}
+                className={`w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center shrink-0 ${stat.iconBg}`}
               >
                 {stat.icon}
               </div>
 
               {/* Label & Value */}
-              <div className="text-center md:text-right min-w-0 flex-1 truncate">
-                <p className="text-[10px] sm:text-xs md:text-sm text-base-content/90 font-2 leading-tight truncate">
+              <div className="text-right min-w-0 flex-1 truncate">
+                <p className="text-xs sm:text-sm text-base-content/90 font-2 leading-tight truncate">
                   {stat.title}
                 </p>
-                <h2 className="text-xs sm:text-base md:text-xl lg:text-2xl font-bold font-1 text-base-content mt-0.5 truncate">
+                <h2 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold font-1 text-base-content mt-0.5 truncate">
                   {stat.value}
                 </h2>
               </div>
@@ -185,9 +189,9 @@ function ControlPanel() {
         </section>
 
         {/* Main Content Grid: Activity Feed & Chart Area */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Recent Activities (4 cols on lg) */}
-          <div className="lg:col-span-4 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+        <section className="grid grid-cols-1 gap-6">
+          {/* Recent Activities */}
+          <div className="bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold font-1 text-base-content">
@@ -255,7 +259,8 @@ function ControlPanel() {
             </div>
           </div>
 
-          {/* Right Column: Weekly Memorization Stats / Chart Placeholder (8 cols on lg) */}
+          {/* Right Column: Weekly Memorization Stats / Chart Placeholder (Commented out) */}
+          {/*
           <div className="lg:col-span-8 bg-base-100 border border-base-200 rounded-2xl p-6 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold font-1 text-base-content">
@@ -270,12 +275,12 @@ function ControlPanel() {
               </button>
             </div>
 
-            {/* Interactive Chart Placeholder Area */}
             <div className="flex-1 min-h-[300px] border-2 border-dashed border-base-300 rounded-2xl flex flex-col items-center justify-center p-8 bg-base-200/40 text-base-content/40">
               <HiOutlineChartBar className="text-4xl mb-3 opacity-60" />
               <p className="text-sm font-medium">مساحة الرسم البياني التفاعلي</p>
             </div>
           </div>
+          */}
         </section>
       </main>
     </div>
