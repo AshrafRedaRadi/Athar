@@ -10,7 +10,7 @@ export function useGoogleAuth() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
 
-  const handleGoogleSuccess = async (idToken) => {
+  const handleGoogleSuccess = async (idToken, rememberMe = false) => {
     if (!idToken) {
       setGoogleError('لم يتم استلام رمز الهوية من Google.');
       return;
@@ -18,7 +18,7 @@ export function useGoogleAuth() {
     setGoogleError('');
     setGoogleLoading(true);
     try {
-      await loginGoogle(idToken);
+      await loginGoogle(idToken, rememberMe);
       localStorage.setItem('athar_has_logged_in_before', 'true');
       const from = location.state?.from?.pathname || '/home';
       navigate(from, { replace: true });

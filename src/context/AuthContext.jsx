@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, setAccessToken, refreshAccessToken, onTokenChange, getAccessToken } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -17,90 +17,113 @@ const formatUserData = (profileData) => {
 };
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) return null;
-    try {
-      return formatUserData(JSON.parse(savedUser));
-    } catch {
-      return null;
-    }
-  });
+  const [token, setTokenState] = useState(null);
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      if (storedToken) {
-        try {
-          const profileData = await apiFetch('/api/Account/profile');
-          const formatted = formatUserData(profileData);
-          setUser(formatted);
-          localStorage.setItem('user', JSON.stringify(formatted));
-
-          // Daily check-in for returning users (fire-and-forget)
-          const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
-          const lastCheckIn = localStorage.getItem('athar_last_checkin');
-          if (lastCheckIn !== today) {
-            apiFetch('/api/activity/check-in', { method: 'POST' })
-              .then(() => localStorage.setItem('athar_last_checkin', today))
-              .catch(() => {}); // silently ignore errors
-          }
-        } catch {
-          logout();
-        }
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Daily check-in helper — fire-and-forget, never blocks login
-  // ---------------------------------------------------------------------------
-  const performDailyCheckIn = async () => {
-    try {
-      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(); // "YYYY-MM-DD"
-      const lastCheckIn = localStorage.getItem('athar_last_checkin');
-      if (lastCheckIn === today) return; // already checked in today
-
-      await apiFetch('/api/activity/check-in', { method: 'POST' });
-      localStorage.setItem('athar_last_checkin', today);
-    } catch {
-      // Silently ignore — check-in failure must never block the user
+  // تحديث التوكن في الـ State والـ Client معاً
+  const updateToken = (newToken) => {
+    setTokenState(newToken);
+    if (newToken !== getAccessToken()) {
+      setAccessToken(newToken);
     }
   };
 
-  const login = async (email, password) => {
+  useEffect(() => {
+    onTokenChange((newToken) => {
+      setTokenState(newToken);
+      if (!newToken) {
+        setUser(null);
+      }
+    });
+  }, []);
+
+  // التحقق من الجلسة المخزنة في الكوكيز عند فتح التطبيق
+  useEffect(() => {
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        // 1. تجديد التوكن عبر الـ HttpOnly Cookie
+        const newAccessToken = await refreshAccessToken();
+        
+        if (newAccessToken && isMounted) {
+          updateToken(newAccessToken);
+          
+          // 2. جلب بيانات المستخدم بالتوكن الجديد
+          const profileData = await apiFetch('/api/Account/profile', {
+            headers: { Authorization: `Bearer ${newAccessToken}` }
+          });
+          
+          if (isMounted) {
+            setUser(formatUserData(profileData));
+          }
+
+          // Daily check-in
+          const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+          const lastCheckIn = localStorage.getItem('athar_last_checkin');
+          if (lastCheckIn !== today) {
+            apiFetch('/api/activity/check-in', { 
+              method: 'POST',
+              headers: { Authorization: `Bearer ${newAccessToken}` }
+            })
+              .then(() => localStorage.setItem('athar_last_checkin', today))
+              .catch(() => {});
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setUser(null);
+          updateToken(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const performDailyCheckIn = async (activeToken) => {
+    try {
+      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+      const lastCheckIn = localStorage.getItem('athar_last_checkin');
+      if (lastCheckIn === today) return;
+
+      await apiFetch('/api/activity/check-in', { 
+        method: 'POST',
+        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {}
+      });
+      localStorage.setItem('athar_last_checkin', today);
+    } catch {}
+  };
+
+  // تسجيل الدخول العادي
+  const login = async (email, password, rememberMe = true) => {
     const responseData = await apiFetch('/api/Auth/login', {
       method: 'POST',
-      body: JSON.stringify({
-        email, 
-        password,
-      }),
+      body: JSON.stringify({ email, password, rememberMe }),
     });
 
-    const newToken = responseData?.token || (typeof responseData === 'string' ? responseData : null);
+    const newToken = responseData?.data?.accessToken || responseData?.accessToken || responseData?.token || (typeof responseData === 'string' ? responseData : null);
 
     if (newToken) {
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-
+      updateToken(newToken);
       try {
-        const profileData = await apiFetch('/api/Account/profile');
-        const formatted = formatUserData(profileData);
-        localStorage.setItem('user', JSON.stringify(formatted));
-        setUser(formatted);
+        const profileData = await apiFetch('/api/Account/profile', {
+          headers: { Authorization: `Bearer ${newToken}` }
+        });
+        setUser(formatUserData(profileData));
       } catch {
         setUser(null);
       }
-
-      // Daily check-in (fire-and-forget)
-      performDailyCheckIn();
+      performDailyCheckIn(newToken);
     }
     return responseData;
   };
@@ -112,52 +135,64 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const confirmEmail = async (userId, token) => {
-    const query = `userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`;
+  const confirmEmail = async (userId, tokenParam) => {
+    const query = `userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(tokenParam)}`;
     return await apiFetch(`/api/Auth/confirm-email?${query}`, {
       method: 'GET',
     });
   };
 
-  const loginGoogle = async (idToken) => {
+  // تسجيل الدخول بجوجل
+  const loginGoogle = async (idToken, rememberMe = true) => {
     const responseData = await apiFetch('/api/Auth/google', {
       method: 'POST',
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken, rememberMe }),
     });
 
-    const newToken = responseData?.token;
+    const newToken = responseData?.data?.accessToken || responseData?.accessToken || responseData?.token || (typeof responseData === 'string' ? responseData : null);
     if (newToken) {
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
+      updateToken(newToken);
       try {
-        const userData = await apiFetch('/api/Account/profile');
-        const formatted = formatUserData(userData);
-        localStorage.setItem('user', JSON.stringify(formatted));
-        setUser(formatted);
+        const userData = await apiFetch('/api/Account/profile', {
+          headers: { Authorization: `Bearer ${newToken}` }
+        });
+        setUser(formatUserData(userData));
       } catch {
         setUser(null);
       }
-
-      // Daily check-in (fire-and-forget)
-      performDailyCheckIn();
+      performDailyCheckIn(newToken);
     }
     return responseData;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('tokenExpiration');
-    localStorage.removeItem('user');
-    setToken(null);
+  // تسجيل الخروج من الجهاز الحالي
+  const logout = async () => {
+    try {
+      await apiFetch('/api/Auth/logout', {
+        method: 'POST',
+      });
+    } catch {}
+    updateToken(null);
+    setUser(null);
+  };
+
+  // تسجيل الخروج من كل الأجهزة
+  const logoutAll = async () => {
+    try {
+      await apiFetch('/api/Auth/logout-all', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-CSRF-Token': 'athar-spa-v1',
+        },
+      });
+    } catch {}
+    updateToken(null);
     setUser(null);
   };
 
   const updateUser = (newData) => {
-    setUser((prev) => {
-      const updated = formatUserData({ ...prev, ...newData });
-      localStorage.setItem('user', JSON.stringify(updated));
-      return updated;
-    });
+    setUser((prev) => formatUserData({ ...prev, ...newData }));
   };
 
   const value = {
@@ -171,6 +206,8 @@ export function AuthProvider({ children }) {
     confirmEmail,
     loginGoogle,
     logout,
+    logoutAll,
+    refreshAccessToken,
     updateUser,
   };
 

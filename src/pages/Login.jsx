@@ -6,7 +6,6 @@ import AuthCard from '../components/auth/AuthCard';
 import { useAuth } from '../context/AuthContext';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
-// تم إضافة [&::-ms-reveal]:hidden لإخفاء زر المتصفح الافتراضي
 const inputClass =
   'w-full bg-black/15 border border-white/10 text-white rounded-full h-9 min-h-9 px-4 text-[0.8rem] outline-none placeholder:text-white/40 focus:bg-black/25 focus:border-white/40 transition-colors font-2 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden';
 
@@ -20,6 +19,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,17 +30,12 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      let savedUser = null;
-      try {
-        savedUser = JSON.parse(localStorage.getItem('user'));
-      } catch {
-        // ignore
-      }
+      const responseData = await login(email, password, rememberMe);
+      const user = responseData?.data?.user || responseData?.user;
 
       if (location.state?.from?.pathname) {
         navigate(location.state.from.pathname, { replace: true });
-      } else if (savedUser?.isAdmin || savedUser?.role === 'admin') {
+      } else if (user?.isAdmin || user?.role === 'admin') {
         navigate('/admin/controlpanel', { replace: true });
       } else {
         localStorage.setItem('athar_has_logged_in_before', 'true');
@@ -57,6 +52,8 @@ export default function Login() {
 
   return (
     <AuthLayout>
+     
+
       <AuthCard>
         <div className="flex bg-white/15 p-1 rounded-xl mb-2.5 gap-1 shrink-0">
           <button
@@ -131,7 +128,38 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="text-left mb-0.5">
+            <div className="flex items-center justify-between my-1">
+              <label className="flex items-center gap-2 text-white/80 text-[0.75rem] font-2 cursor-pointer select-none group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-300 ${
+                      rememberMe
+                        ? 'bg-[#4A90A4] border-[#4A90A4] shadow-[0_0_8px_rgba(74,144,164,0.6)] scale-105'
+                        : 'bg-black/25 border-white/20 group-hover:border-white/50 group-hover:bg-black/35'
+                    }`}
+                  >
+                    <svg
+                      className={`w-2.5 h-2.5 text-white transition-all duration-300 transform ${
+                        rememberMe ? 'scale-100 opacity-100 rotate-0' : 'scale-50 opacity-0 -rotate-12'
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <span className="group-hover:text-white transition-colors duration-200">تذكرني</span>
+              </label>
+
               <button
                 type="button"
                 className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif] bg-transparent border-0 p-0 cursor-pointer"
@@ -142,7 +170,7 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || googleLoading}
               className="w-full rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white border-0 h-9.5 min-h-9.5 font-semibold text-[0.85rem] font-2 flex items-center justify-center mb-1 transition-colors cursor-pointer"
             >
               {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
@@ -158,7 +186,7 @@ export default function Login() {
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
                   if (credentialResponse.credential) {
-                    handleGoogleSuccess(credentialResponse.credential);
+                    handleGoogleSuccess(credentialResponse.credential, rememberMe);
                   }
                 }}
                 onError={() => handleGoogleError()}

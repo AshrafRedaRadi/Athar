@@ -5,10 +5,27 @@
 
 export const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || "https://atharai.runasp.net";
 
+let inMemoryToken = null;
+let refreshPromise = null;
+let tokenChangeListener = null;
+
+export function onTokenChange(listener) {
+  tokenChangeListener = listener;
+}
+
+export function setAccessToken(token) {
+  inMemoryToken = token;
+  if (tokenChangeListener) {
+    tokenChangeListener(token);
+  }
+}
+
+export function getAccessToken() {
+  return inMemoryToken;
+}
+
 /**
  * Returns full URL for relative image paths (e.g. coverImageUrl)
- * @param {string} relativePath - e.g. "/uploads/books/example.webp"
- * @returns {string|null} - e.g. "https://atharai.runasp.net/uploads/books/example.webp"
  */
 export function getImageUrl(relativePath) {
   if (!relativePath) return null;
@@ -57,26 +74,90 @@ export function translateServerError(rawMsg) {
 }
 
 /**
- * Core fetch wrapper with auth header, error handling, and 401 redirect support.
- * @param {string} endpoint - e.g. "/api/HadithBooks"
- * @param {object} options - fetch options
- * @returns {Promise<any>}
+ * Single-flight Refresh: تجديد التوكن تلقائياً مع معالجة تعارض 409
  */
-export async function apiFetch(endpoint, options = {}) {
-  const token = localStorage.getItem("token");
+export async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      let res = await fetch(`${API_BASE_URL}/api/Auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-Token": "athar-spa-v1",
+        },
+      });
+
+      // 409 يعني أن تاب آخر قام بالتجديد للتو؛ ننتظر 250ms ونعيد المحاولة لمرة واحدة
+      if (res.status === 409) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        res = await fetch(`${API_BASE_URL}/api/Auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "X-CSRF-Token": "athar-spa-v1",
+          },
+        });
+      }
+
+      if (!res.ok) {
+        setAccessToken(null);
+        throw new Error(`Refresh failed with status ${res.status}`);
+      }
+
+      const resData = await res.json();
+      
+      // Extract the new token from resData robustly
+      let newToken = null;
+      if (resData) {
+        if (typeof resData.data === "string") {
+          newToken = resData.data;
+        } else if (resData.data && typeof resData.data === "object") {
+          newToken = resData.data.accessToken || resData.data.token;
+        }
+        
+        if (!newToken) {
+          newToken = resData.accessToken || resData.token || (typeof resData === "string" ? resData : null);
+        }
+      }
+
+      setAccessToken(newToken);
+      return newToken;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
+/**
+ * Core fetch wrapper with auth header, error handling, credentials, and auto-refresh on 401.
+ */
+export async function apiFetch(endpoint, options = {}, isRetry = false) {
   const isFormData = options.body instanceof FormData;
+  const currentToken = inMemoryToken;
 
   const headers = {
     ...(!isFormData && { "Content-Type": "application/json" }),
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(currentToken && !options.headers?.Authorization && { Authorization: `Bearer ${currentToken}` }),
     ...options.headers,
   };
+
+  // إضافة هيدر CSRF تلقائياً لمسارات المصادقة المعنية
+  if (
+    endpoint.includes("/api/Auth/refresh") ||
+    endpoint.includes("/api/Auth/logout") ||
+    endpoint.includes("/api/Auth/logout-all")
+  ) {
+    headers["X-CSRF-Token"] = "athar-spa-v1";
+  }
 
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
 
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: "include",
       headers,
     });
 
@@ -92,21 +173,35 @@ export async function apiFetch(endpoint, options = {}) {
       resData = await response.text();
     }
 
-    // Handle 401 Unauthorized
+    // معالجة 401 وإعادة المحاولة بعد تجديد التوكن
     if (response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("tokenExpiration");
-
-      if (endpoint.includes("/api/Auth/login")) {
+      if (endpoint.includes("/api/Auth/login") || endpoint.includes("/api/Auth/google")) {
         const rawMsg = resData?.msg || resData?.message;
         throw new Error(translateServerError(rawMsg || "Invalid email or password."));
       }
 
+      if (!isRetry && !endpoint.includes("/api/Auth/refresh")) {
+        try {
+          const newToken = await refreshAccessToken();
+          const retryOptions = {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${newToken}`,
+            },
+          };
+          return await apiFetch(endpoint, retryOptions, true);
+        } catch {
+          setAccessToken(null);
+          const serverMsg = resData?.msg || resData?.message;
+          throw new Error(translateServerError(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة العمل"));
+        }
+      }
+
       const serverMsg = resData?.msg || resData?.message;
-      throw new Error(translateServerError(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة التعلم"));
+      throw new Error(translateServerError(serverMsg || "انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول لمتابعة العمل"));
     }
 
-    // Handle 403 Forbidden (Insufficient Admin Permissions on Backend)
     if (response.status === 403) {
       const serverMsg = resData?.msg || resData?.message;
       throw new Error(translateServerError(serverMsg || "عذراً، هذا الحساب لا يملك صلاحيات المشرف (Admin) على الباكإند لإتمام العملية (HTTP 403 Forbidden)."));
@@ -123,7 +218,6 @@ export async function apiFetch(endpoint, options = {}) {
       throw new Error(translateServerError(errorMsg || "تعذَّر إكمال العملية حالياً، يرجى المحاولة لاحقاً"));
     }
 
-    // Unpack backend response wrapper { isSuccess, data, message } if present
     if (resData && typeof resData === "object" && "isSuccess" in resData) {
       if (!resData.isSuccess) {
         throw new Error(translateServerError(resData.message || "عذراً، تعذَّر إكمال الطلب في الوقت الحالي"));
