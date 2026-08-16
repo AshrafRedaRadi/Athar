@@ -181,7 +181,8 @@ export default function ContentFormModal({
 
   const handleStructureModeChange = (newMode) => {
     if (newMode === formData.structureMode) return;
-    if (isFormTouched && hasAnyContent()) {
+    // Always show confirmation when editing existing book OR when any content has been entered
+    if (initialData || hasAnyContent()) {
       setShowModeChangeWarning(newMode);
     } else {
       applyStructureModeChange(newMode);
@@ -912,7 +913,7 @@ export default function ContentFormModal({
                             {child.hadiths.map((h, hIdx) => (
                               <div
                                 key={h._localId}
-                                className="bg-base-100 rounded-xl border border-base-300 p-4 space-y-3"
+                                className="bg-base-100 rounded-xl border border-base-300 p-4 space-y-4"
                               >
                                 <div className="flex items-center justify-between pb-2 border-b border-base-200">
                                   <span className="badge badge-sm bg-slate-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-md">
@@ -924,45 +925,282 @@ export default function ContentFormModal({
                                     className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
                                   >
                                     <HiTrash className="text-xs" />
+                                    <span className="text-[10px]">حذف</span>
                                   </button>
                                 </div>
 
                                 {/* Title */}
-                                <input
-                                  type="text"
-                                  value={h.title}
-                                  onChange={(e) =>
-                                    handleHadithFieldChange(root._localId, child._localId, h._localId, "title", e.target.value)
-                                  }
-                                  placeholder="عنوان الحديث أو الفقرة (اختياري)"
-                                  className="w-full px-3 py-2 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
-                                />
+                                <div>
+                                  <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">
+                                    <HiOutlineBookOpen className="text-sm text-cyan-700" />
+                                    <span>عنوان الحديث أو الفقرة <span className="text-base-content/40 font-normal">(اختياري)</span></span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={h.title}
+                                    onChange={(e) =>
+                                      handleHadithFieldChange(root._localId, child._localId, h._localId, "title", e.target.value)
+                                    }
+                                    placeholder="مثال: الحديث الأول: إنما الأعمال بالنيات"
+                                    className="w-full px-3 py-2 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+                                  />
+                                </div>
 
                                 {/* Matn Text */}
-                                <textarea
-                                  rows={3}
-                                  value={h.matnText}
-                                  onChange={(e) =>
-                                    handleHadithFieldChange(root._localId, child._localId, h._localId, "matnText", e.target.value)
-                                  }
-                                  placeholder="اكتب أو ألصق نص المتن الأصلي..."
-                                  className="w-full p-3 rounded-lg border border-base-300 bg-base-100 text-sm font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
-                                />
+                                <div>
+                                  <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">
+                                    <HiOutlineDocumentText className="text-sm text-cyan-700" />
+                                    <span>نص المتن الرئيسي <span className="text-red-500">*</span></span>
+                                  </label>
+                                  <textarea
+                                    rows={3}
+                                    value={h.matnText}
+                                    onChange={(e) =>
+                                      handleHadithFieldChange(root._localId, child._localId, h._localId, "matnText", e.target.value)
+                                    }
+                                    placeholder="اكتب أو ألصق نص المتن الأصلي..."
+                                    className="w-full p-3 rounded-lg border border-base-300 bg-base-100 text-sm font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+                                  />
 
-                                {/* Key Terms Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveKeyTermsSectionId(h._localId)}
-                                  className="btn btn-xs btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-lg text-[10px] flex items-center gap-1 font-bold transition-all group"
-                                >
-                                  <HiOutlineSparkles className="text-xs text-cyan-700 group-hover:text-white" />
-                                  <span>الكلمات الحساسة</span>
-                                  {(h.keyTerms?.length || 0) > 0 && (
-                                    <span className="badge badge-xs bg-cyan-700 text-white font-bold px-1.5 rounded-full text-[9px]">
-                                      {h.keyTerms.length}
-                                    </span>
-                                  )}
-                                </button>
+                                  {/* Key Terms Button */}
+                                  <div className="mt-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveKeyTermsSectionId(h._localId)}
+                                      className="btn btn-xs btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-lg text-[10px] flex items-center gap-1 font-bold transition-all group"
+                                    >
+                                      <HiOutlineSparkles className="text-xs text-cyan-700 group-hover:text-white" />
+                                      <span>إدارة الكلمات الحساسة في النطق</span>
+                                      {(h.keyTerms?.length || 0) > 0 && (
+                                        <span className="badge badge-xs bg-cyan-700 text-white font-bold px-1.5 rounded-full text-[9px]">
+                                          {h.keyTerms.length}
+                                        </span>
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Explanations */}
+                                <div className="space-y-2.5 bg-base-200/40 p-3 rounded-xl border border-base-200">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-bold text-base-content/80 flex items-center gap-1">
+                                      <HiOutlineBookOpen className="text-sm text-cyan-700" />
+                                      <span>الشروحات النصية المكتوبة</span>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        markTouched();
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          hierarchySections: prev.hierarchySections.map((r) => {
+                                            if (r._localId === root._localId) {
+                                              return {
+                                                ...r,
+                                                children: r.children.map((c) => {
+                                                  if (c._localId === child._localId) {
+                                                    return {
+                                                      ...c,
+                                                      hadiths: c.hadiths.map((hd) => {
+                                                        if (hd._localId === h._localId) {
+                                                          return {
+                                                            ...hd,
+                                                            explanations: [
+                                                              ...hd.explanations,
+                                                              { _localId: Date.now() + Math.random(), scholarOrBook: "", text: "" },
+                                                            ],
+                                                          };
+                                                        }
+                                                        return hd;
+                                                      }),
+                                                    };
+                                                  }
+                                                  return c;
+                                                }),
+                                              };
+                                            }
+                                            return r;
+                                          }),
+                                        }));
+                                      }}
+                                      className="btn btn-xs btn-outline border-cyan-700 text-cyan-700 hover:bg-cyan-700 hover:text-white rounded-lg text-[10px] gap-0.5 font-bold"
+                                    >
+                                      <HiPlus className="text-xs" />
+                                      <span>إضافة شرح</span>
+                                    </button>
+                                  </div>
+
+                                  {h.explanations?.map((exp, eIdx) => (
+                                    <div
+                                      key={exp._localId || eIdx}
+                                      className="bg-base-100 p-3 rounded-lg border border-base-300 space-y-2"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <input
+                                          type="text"
+                                          value={exp.scholarOrBook}
+                                          onChange={(e) => {
+                                            markTouched();
+                                            setFormData((prev) => ({
+                                              ...prev,
+                                              hierarchySections: prev.hierarchySections.map((r) => {
+                                                if (r._localId === root._localId) {
+                                                  return {
+                                                    ...r,
+                                                    children: r.children.map((c) => {
+                                                      if (c._localId === child._localId) {
+                                                        return {
+                                                          ...c,
+                                                          hadiths: c.hadiths.map((hd) => {
+                                                            if (hd._localId === h._localId) {
+                                                              return {
+                                                                ...hd,
+                                                                explanations: hd.explanations.map((ex, i) =>
+                                                                  i === eIdx ? { ...ex, scholarOrBook: e.target.value } : ex
+                                                                ),
+                                                              };
+                                                            }
+                                                            return hd;
+                                                          }),
+                                                        };
+                                                      }
+                                                      return c;
+                                                    }),
+                                                  };
+                                                }
+                                                return r;
+                                              }),
+                                            }));
+                                          }}
+                                          placeholder="اسم الشرح / الشيخ"
+                                          className="w-full px-2.5 py-1 rounded-lg border border-base-300 bg-base-100 text-[11px] font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+                                        />
+                                        {h.explanations.length > 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              markTouched();
+                                              setFormData((prev) => ({
+                                                ...prev,
+                                                hierarchySections: prev.hierarchySections.map((r) => {
+                                                  if (r._localId === root._localId) {
+                                                    return {
+                                                      ...r,
+                                                      children: r.children.map((c) => {
+                                                        if (c._localId === child._localId) {
+                                                          return {
+                                                            ...c,
+                                                            hadiths: c.hadiths.map((hd) => {
+                                                              if (hd._localId === h._localId) {
+                                                                return {
+                                                                  ...hd,
+                                                                  explanations: hd.explanations.filter((_, i) => i !== eIdx),
+                                                                };
+                                                              }
+                                                              return hd;
+                                                            }),
+                                                          };
+                                                        }
+                                                        return c;
+                                                      }),
+                                                    };
+                                                  }
+                                                  return r;
+                                                }),
+                                              }));
+                                            }}
+                                            className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 rounded-md shrink-0"
+                                          >
+                                            <HiTrash className="text-xs" />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        value={exp.text}
+                                        onChange={(e) => {
+                                          markTouched();
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            hierarchySections: prev.hierarchySections.map((r) => {
+                                              if (r._localId === root._localId) {
+                                                return {
+                                                  ...r,
+                                                  children: r.children.map((c) => {
+                                                    if (c._localId === child._localId) {
+                                                      return {
+                                                        ...c,
+                                                        hadiths: c.hadiths.map((hd) => {
+                                                          if (hd._localId === h._localId) {
+                                                            return {
+                                                              ...hd,
+                                                              explanations: hd.explanations.map((ex, i) =>
+                                                                i === eIdx ? { ...ex, text: e.target.value } : ex
+                                                              ),
+                                                            };
+                                                          }
+                                                          return hd;
+                                                        }),
+                                                      };
+                                                    }
+                                                    return c;
+                                                  }),
+                                                };
+                                              }
+                                              return r;
+                                            }),
+                                          }));
+                                        }}
+                                        placeholder="اكتب الشرح النصي والتعليقات..."
+                                        className="w-full p-2.5 rounded-lg border border-base-300 bg-base-100 text-[11px] font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Video & Audio */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">
+                                      <HiOutlineVideoCamera className="text-sm text-cyan-700" />
+                                      <span>الشرح المرئي (رابط الفيديو)</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={h.videoUrl}
+                                      onChange={(e) =>
+                                        handleHadithFieldChange(root._localId, child._localId, h._localId, "videoUrl", e.target.value)
+                                      }
+                                      placeholder="رابط فيديو أو YouTube ID"
+                                      className="w-full px-3 py-1.5 rounded-lg border border-base-300 bg-base-100 text-[11px] font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">
+                                      <HiOutlineVolumeUp className="text-sm text-cyan-700" />
+                                      <span>الصوتيات (ملف صوتي)</span>
+                                    </label>
+                                    <label className="btn btn-xs btn-outline border-cyan-700/40 text-cyan-700 bg-base-100 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 font-2 rounded-lg text-[10px] flex items-center gap-1.5 cursor-pointer w-full shadow-xs">
+                                      <HiOutlineUpload className="text-sm text-cyan-700 shrink-0" />
+                                      <span className="truncate">
+                                        {h.audioFileName || "رفع ملف صوتي (MP3 / WAV)"}
+                                      </span>
+                                      <input
+                                        type="file"
+                                        accept="audio/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleHadithFieldChange(root._localId, child._localId, h._localId, "audioFile", file);
+                                            handleHadithFieldChange(root._localId, child._localId, h._localId, "audioFileName", file.name);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
                               </div>
                             ))}
 
