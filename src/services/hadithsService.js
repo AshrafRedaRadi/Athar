@@ -60,6 +60,67 @@ export const hadithsService = {
   },
 
   /**
+   * Create a new Hadith via POST /api/Hadiths
+   * @param {Object} hadithData
+   * @returns {Promise<Object>}
+   */
+  async createHadith(hadithData) {
+    const payload = {
+      title: hadithData.title || "",
+      text: hadithData.matnText || hadithData.text || "",
+      order: Number(hadithData.order) || 1,
+      hadithBookId: Number(hadithData.hadithBookId),
+      hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
+      narrator: hadithData.narrator || "",
+      takhrij: hadithData.takhrij || "",
+      grade: Number(hadithData.grade) || 1,
+      audioUrl: hadithData.audioUrl || "",
+      videoExplanationYouTubeId: hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "",
+    };
+    return await apiFetch("/api/Hadiths", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Update an existing Hadith via PUT /api/Hadiths/{id}
+   * @param {number|string} id
+   * @param {Object} hadithData
+   * @returns {Promise<Object>}
+   */
+  async updateHadith(id, hadithData) {
+    const payload = {
+      id: Number(id) || id,
+      title: hadithData.title || "",
+      text: hadithData.matnText || hadithData.text || "",
+      order: Number(hadithData.order) || 1,
+      hadithBookId: Number(hadithData.hadithBookId),
+      hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
+      narrator: hadithData.narrator || "",
+      takhrij: hadithData.takhrij || "",
+      grade: Number(hadithData.grade) || 1,
+      audioUrl: hadithData.audioUrl || "",
+      videoExplanationYouTubeId: hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "",
+    };
+    return await apiFetch(`/api/Hadiths/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Delete a Hadith by ID via DELETE /api/Hadiths/{id}
+   * @param {number|string} id
+   * @returns {Promise<Object>}
+   */
+  async deleteHadith(id) {
+    return await apiFetch(`/api/Hadiths/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
    * Fetch user progress list for hadiths in a book
    */
   async getHadithProgress(bookId) {

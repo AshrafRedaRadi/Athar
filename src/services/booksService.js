@@ -127,4 +127,141 @@ export const booksService = {
       return null;
     }
   },
+
+  // ── HadithSections CRUD ──
+
+  /**
+   * Create a new section under a book
+   * @param {{ name: string, type: number, order: number, hadithBookId: number, parentSectionId?: number }} data
+   */
+  async createSection(data) {
+    return await apiFetch("/api/HadithSections", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an existing section
+   * @param {number|string} sectionId
+   * @param {Object} data
+   */
+  async updateSection(sectionId, data) {
+    return await apiFetch(`/api/HadithSections/${sectionId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a section by ID
+   * @param {number|string} sectionId
+   */
+  async deleteSection(sectionId) {
+    return await apiFetch(`/api/HadithSections/${sectionId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Fetch full book content (sections + hadiths) in parallel
+   * @param {number|string} bookId
+   * @returns {Promise<{ sections: Array, hadiths: Array }>}
+   */
+  async getBookFullContent(bookId) {
+    if (!bookId) return { sections: [], hadiths: [] };
+    const [sections, hadiths] = await Promise.all([
+      apiFetch(`/api/HadithSections?bookId=${bookId}`).catch(() => []),
+      apiFetch(`/api/Hadiths?bookId=${bookId}`).catch(() => []),
+    ]);
+    return {
+      sections: Array.isArray(sections) ? sections : [],
+      hadiths: Array.isArray(hadiths) ? hadiths : [],
+    };
+  },
+
+  // ── HadithBooks CRUD ──
+
+  /**
+   * Create a new Hadith book via POST /api/HadithBooks (multipart/form-data)
+   * @param {Object} bookData
+   * @returns {Promise<Object>} Created book data
+   */
+  async createBook(bookData) {
+    const formData = new FormData();
+    formData.append("Title", bookData.title || "");
+    formData.append("title", bookData.title || "");
+    formData.append("Author", bookData.author || "");
+    formData.append("author", bookData.author || "");
+    formData.append("Description", bookData.description || "");
+    formData.append("description", bookData.description || "");
+    formData.append("DifficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    formData.append("difficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    
+    if (bookData.category) {
+      formData.append("Category", bookData.category);
+      formData.append("category", bookData.category);
+    }
+    
+    if (bookData.coverImageFile instanceof File) {
+      formData.append("CoverImage", bookData.coverImageFile);
+      formData.append("coverImage", bookData.coverImageFile);
+      formData.append("File", bookData.coverImageFile);
+      formData.append("file", bookData.coverImageFile);
+    }
+
+    return await apiFetch("/api/HadithBooks", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  /**
+   * Update an existing Hadith book via PUT /api/HadithBooks/{id} (multipart/form-data)
+   * @param {number|string} id
+   * @param {Object} bookData
+   * @returns {Promise<Object>}
+   */
+  async updateBook(id, bookData) {
+    const formData = new FormData();
+    formData.append("Id", String(id));
+    formData.append("id", String(id));
+    formData.append("Title", bookData.title || "");
+    formData.append("title", bookData.title || "");
+    formData.append("Author", bookData.author || "");
+    formData.append("author", bookData.author || "");
+    formData.append("Description", bookData.description || "");
+    formData.append("description", bookData.description || "");
+    formData.append("DifficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    formData.append("difficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    
+    if (bookData.category) {
+      formData.append("Category", bookData.category);
+      formData.append("category", bookData.category);
+    }
+    
+    if (bookData.coverImageFile instanceof File) {
+      formData.append("CoverImage", bookData.coverImageFile);
+      formData.append("coverImage", bookData.coverImageFile);
+      formData.append("File", bookData.coverImageFile);
+      formData.append("file", bookData.coverImageFile);
+    }
+
+    return await apiFetch(`/api/HadithBooks/${id}`, {
+      method: "PUT",
+      body: formData,
+    });
+  },
+
+  /**
+   * Delete a Hadith book by ID via DELETE /api/HadithBooks/{id}
+   * @param {number|string} id
+   * @returns {Promise<Object>}
+   */
+  async deleteBook(id) {
+    return await apiFetch(`/api/HadithBooks/${id}`, {
+      method: "DELETE",
+    });
+  },
 };
+

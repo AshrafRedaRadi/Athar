@@ -21,7 +21,7 @@ const SUGGESTED_QUESTIONS = [
   "اشرح لي معنى 'الدين النصيحة' ومن رواه؟",
 ];
 
-export default function RagTestSandbox() {
+export default function RagTestSandbox({ isModal = false, className = "" }) {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -94,14 +94,19 @@ export default function RagTestSandbox() {
   const [isMobileHistoryOpen, setIsMobileHistoryOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const latestAssistantRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Auto-scroll logic: focuses on the TOP of the answer when assistant responds
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    const isAssistant = lastMsg?.role !== "User" && lastMsg?.role !== "user";
+
+    if (isAssistant && latestAssistantRef.current) {
+      latestAssistantRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isLoading]);
 
   // Load user conversations list on mount
@@ -222,7 +227,14 @@ export default function RagTestSandbox() {
   };
 
   return (
-    <div className="bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 rounded-3xl shadow-sm font-2 overflow-hidden transition-all flex flex-col lg:flex-row h-[700px] max-h-[85vh] lg:h-[720px]" dir="rtl">
+    <div
+      className={`bg-base-100 dark:bg-slate-900 font-2 overflow-hidden transition-all flex flex-col lg:flex-row ${
+        isModal
+          ? "h-full w-full border-0 rounded-none shadow-none"
+          : "border border-base-300 dark:border-slate-800 rounded-3xl shadow-sm h-[700px] max-h-[85vh] lg:h-[720px]"
+      } ${className}`}
+      dir="rtl"
+    >
       {/* ── Desktop Collapsible & Resizable Sidebar (ChatGPT Style) ── */}
       <div
         style={{
@@ -324,7 +336,7 @@ export default function RagTestSandbox() {
         <div className="p-3.5 bg-base-100 dark:bg-slate-900 rounded-2xl border border-base-300 dark:border-slate-800 text-xs sm:text-sm text-base-content/80 space-y-1 font-2 min-w-0 shrink-0 mt-3">
           <p className="font-bold text-cyan-700 dark:text-cyan-400 flex items-center gap-1.5 font-1">
             <HiOutlineSparkles className="text-base shrink-0" />
-            <span className="truncate">المساعد المعرفي الذكي</span>
+            <span className="truncate">مساعد أثر الذكي</span>
           </p>
           <p className="text-[11px] sm:text-xs leading-relaxed text-base-content/70">
             يتم البحث والاسترجاع الموثق من كتب ومتون أثر المنشورة بدقة بالغة.
@@ -354,51 +366,33 @@ export default function RagTestSandbox() {
       </div>
 
       {/* ── Main Chat Area ── */}
-      <div className="flex-1 p-4 sm:p-6 flex flex-col justify-between space-y-4 font-2 min-w-0 h-full min-h-0">
-        {/* Chat Header with ChatGPT-style sidebar toggle and Mobile Collapsible History */}
-        <div className="flex flex-col gap-3 pb-4 border-b border-base-200 dark:border-slate-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Desktop Expand Sidebar Button (Only visible when sidebar is closed) */}
-              {!isSidebarOpen && (
-                <button
-                  type="button"
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="hidden lg:flex btn btn-ghost btn-sm rounded-xl p-2 text-base-content/70 hover:text-base-content cursor-pointer"
-                  title="فتح سجل المحادثات"
-                >
-                  <HiOutlineBars3BottomRight className="text-xl" />
-                </button>
-              )}
+      <div className="flex-1 p-3 sm:p-4.5 flex flex-col justify-between space-y-2.5 font-2 min-w-0 h-full min-h-0">
+        {/* Desktop Top Actions ONLY when Sidebar is collapsed */}
+        {!isSidebarOpen && (
+          <div className="hidden lg:flex items-center justify-between pb-2 border-b border-base-200 dark:border-slate-800 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="btn btn-ghost btn-sm rounded-xl p-2 text-base-content/70 hover:text-base-content cursor-pointer gap-2"
+              title="فتح سجل المحادثات"
+            >
+              <HiOutlineBars3BottomRight className="text-xl" />
+              <span className="text-xs font-bold font-2">سجل المحادثات</span>
+            </button>
 
-              <div className="w-10 h-10 rounded-2xl bg-purple-500/10 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shadow-xs shrink-0">
-                <HiOutlineSparkles />
-              </div>
-              <div>
-                <h3 className="font-1 font-bold text-base sm:text-lg text-base-content">
-                  {activeConversationId ? `المحادثة رقم #${activeConversationId}` : "محادثة جديدة"}
-                </h3>
-                <p className="text-xs sm:text-sm text-base-content/70 font-2 mt-0.5">
-                  استجابة فورية مع إسناد وتوثيق المصادر الحقيقية من الكتب المنشورة
-                </p>
-              </div>
-            </div>
-
-            {/* Desktop Quick New Chat Button if sidebar is closed */}
-            {!isSidebarOpen && (
-              <button
-                type="button"
-                onClick={handleStartNewChat}
-                className="hidden lg:flex btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl gap-1.5 font-bold"
-              >
-                <HiOutlinePlus className="text-base" />
-                <span>محادثة جديدة</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleStartNewChat}
+              className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl gap-1.5 font-bold font-2 shadow-xs"
+            >
+              <HiOutlinePlus className="text-base" />
+              <span>محادثة جديدة</span>
+            </button>
           </div>
+        )}
 
-          {/* ── Mobile Rich History Header & Interactive Collapsible List (Visible on < lg screens) ── */}
-          <div className="lg:hidden space-y-2.5 pt-1 w-full min-w-0">
+        {/* ── Mobile Rich History Header & Interactive Collapsible List (Visible ONLY on < lg screens) ── */}
+        <div className="lg:hidden space-y-2 pt-0.5 w-full min-w-0 shrink-0">
             <div className="flex items-center justify-between gap-2 p-1.5 sm:p-2 bg-base-200/60 dark:bg-slate-800/80 rounded-2xl border border-base-300 dark:border-slate-700 w-full min-w-0">
               <button
                 type="button"
@@ -436,57 +430,64 @@ export default function RagTestSandbox() {
               </button>
             </div>
 
-            {/* Expandable Mobile History Card */}
-            {isMobileHistoryOpen && (
-              <div className="p-3.5 bg-base-100 dark:bg-slate-850 rounded-2xl border border-base-300 dark:border-slate-700 shadow-md space-y-2 animate-fadeIn font-2 max-h-72 overflow-y-auto">
-                {conversations.length === 0 ? (
-                  <p className="text-center text-xs text-base-content/60 py-4 font-2">
-                    لا توجد محادثات سابقة حتى الآن.
-                  </p>
-                ) : (
-                  conversations.map((conv) => {
-                    const isActive = activeConversationId === conv.id;
-                    return (
-                      <button
-                        key={conv.id}
-                        type="button"
-                        onClick={() => {
-                          handleSelectConversation(conv.id);
-                          setIsMobileHistoryOpen(false);
-                        }}
-                        className={`w-full text-right p-3 rounded-xl text-xs transition-all flex items-start gap-2.5 cursor-pointer font-2 ${
-                          isActive
-                            ? "bg-cyan-700 text-white font-bold shadow-xs"
-                            : "hover:bg-base-200 dark:hover:bg-slate-800 text-base-content border border-base-200 dark:border-slate-700/60"
-                        }`}
-                      >
-                        <HiOutlineChatBubbleLeftRight
-                          className={`text-base shrink-0 mt-0.5 ${
-                            isActive ? "text-white" : "text-cyan-700 dark:text-cyan-400"
+            {/* Expandable Mobile History Card with Butter-Smooth Open/Close Transition */}
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${
+                isMobileHistoryOpen
+                  ? "grid-rows-[1fr] opacity-100 mt-2"
+                  : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="p-3.5 bg-base-100 dark:bg-slate-850 rounded-2xl border border-base-300 dark:border-slate-700 shadow-md space-y-2 font-2 max-h-64 overflow-y-auto [scrollbar-width:thin]">
+                  {conversations.length === 0 ? (
+                    <p className="text-center text-xs text-base-content/60 py-4 font-2">
+                      لا توجد محادثات سابقة حتى الآن.
+                    </p>
+                  ) : (
+                    conversations.map((conv) => {
+                      const isActive = activeConversationId === conv.id;
+                      return (
+                        <button
+                          key={conv.id}
+                          type="button"
+                          onClick={() => {
+                            handleSelectConversation(conv.id);
+                            setIsMobileHistoryOpen(false);
+                          }}
+                          className={`w-full text-right p-3 rounded-xl text-xs transition-all flex items-start gap-2.5 cursor-pointer font-2 ${
+                            isActive
+                              ? "bg-cyan-700 text-white font-bold shadow-xs"
+                              : "hover:bg-base-200 dark:hover:bg-slate-800 text-base-content border border-base-200 dark:border-slate-700/60"
                           }`}
-                        />
-                        <div className="truncate flex-1">
-                          <p className="truncate font-bold">
-                            {conv.title || `محادثة #${conv.id}`}
-                          </p>
-                          <p
-                            className={`text-[10px] mt-0.5 truncate font-mono ${
-                              isActive ? "text-white/80" : "text-base-content/50"
+                        >
+                          <HiOutlineChatBubbleLeftRight
+                            className={`text-base shrink-0 mt-0.5 ${
+                              isActive ? "text-white" : "text-cyan-700 dark:text-cyan-400"
                             }`}
-                          >
-                            {conv.lastActivityAt
-                              ? new Date(conv.lastActivityAt).toLocaleDateString("ar-EG")
-                              : ""}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
+                          />
+                          <div className="truncate flex-1">
+                            <p className="truncate font-bold">
+                              {conv.title || `محادثة #${conv.id}`}
+                            </p>
+                            <p
+                              className={`text-[10px] mt-0.5 truncate font-mono ${
+                                isActive ? "text-white/80" : "text-base-content/50"
+                              }`}
+                            >
+                              {conv.lastActivityAt
+                                ? new Date(conv.lastActivityAt).toLocaleDateString("ar-EG")
+                                : ""}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
 
         {/* Error Notification */}
         {errorMessage && (
@@ -497,29 +498,35 @@ export default function RagTestSandbox() {
         )}
 
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto space-y-5 min-h-[360px] max-h-[480px] p-2 pr-1">
+        <div
+          className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-1.5 pr-1 [scrollbar-width:thin] ${
+            messages.length === 0
+              ? "flex flex-col items-center justify-center"
+              : "space-y-3"
+          }`}
+        >
           {messages.length === 0 ? (
-            <div className="py-14 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-700/10 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 mx-auto flex items-center justify-center text-3xl shadow-xs">
+            <div className="text-center space-y-3.5 w-full max-w-full px-2 sm:px-4 py-2">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-cyan-700/10 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-400 mx-auto flex items-center justify-center text-2xl sm:text-3xl shadow-xs">
                 <HiOutlineSparkles />
               </div>
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h4 className="font-1 font-bold text-base sm:text-lg text-base-content">
-                  ابدأ بسؤال المساعد الذكي حول أي حديث أو متن
+              <div className="space-y-1.5 w-full max-w-full">
+                <h4 className="font-1 font-bold text-base sm:text-lg text-base-content whitespace-normal sm:whitespace-nowrap leading-snug">
+                  ابدأ بسؤال مساعد أثر الذكي حول أي حديث أو متن
                 </h4>
-                <p className="text-xs sm:text-sm text-base-content/70 leading-relaxed font-2">
+                <p className="text-xs sm:text-sm text-base-content/70 leading-relaxed font-2 whitespace-normal sm:whitespace-nowrap">
                   سيقوم النظام بالبحث في الكتب المفهرسة واستخراج الإجابة مع ذكر المصادر والصفحات بدقة.
                 </p>
               </div>
 
               {/* Suggested Questions */}
-              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 max-w-full mx-auto">
                 {SUGGESTED_QUESTIONS.map((q, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(q)}
-                    className="btn btn-sm btn-ghost bg-base-200/80 dark:bg-slate-800/80 hover:bg-cyan-700 hover:text-white rounded-2xl text-xs sm:text-sm font-normal font-2 border border-base-300/70 dark:border-slate-700/70 px-3.5"
+                    className="btn btn-sm btn-ghost bg-base-200/80 dark:bg-slate-800/80 hover:bg-cyan-700 hover:text-white rounded-2xl text-xs sm:text-sm font-normal font-2 border border-base-300/70 dark:border-slate-700/70 px-3 sm:px-4 whitespace-normal text-center shadow-2xs h-auto min-h-8 py-1.5"
                   >
                     {q}
                   </button>
@@ -527,23 +534,25 @@ export default function RagTestSandbox() {
               </div>
             </div>
           ) : (
-            messages.map((msg) => {
+            messages.map((msg, index) => {
               const isUser = msg.role === "User" || msg.role === "user";
+              const isLatestAssistant = !isUser && index === messages.length - 1;
               const hasSources = Array.isArray(msg.sources) && msg.sources.length > 0;
 
               return (
                 <div
                   key={msg.id}
-                  className={`flex flex-col ${isUser ? "items-start" : "items-end"} space-y-2.5 font-2`}
+                  ref={isLatestAssistant ? latestAssistantRef : null}
+                  className={`flex flex-col ${isUser ? "items-start" : "items-end"} space-y-2 font-2`}
                 >
                   {/* Message Bubble */}
                   <div
-                    className={`max-w-[90%] sm:max-w-[82%] rounded-3xl p-4 sm:p-5 text-sm sm:text-base leading-relaxed shadow-xs ${
+                    className={`max-w-[92%] sm:max-w-[85%] rounded-3xl text-sm sm:text-[15px] leading-relaxed shadow-xs ${
                       isUser
-                        ? "bg-cyan-700 text-white rounded-br-xs font-2"
+                        ? "bg-cyan-700 text-white rounded-br-xs font-2 px-4 py-2 sm:px-5 sm:py-2.5"
                         : msg.isError
-                        ? "bg-rose-950/50 dark:bg-rose-950/70 text-rose-100 border border-rose-500/50 rounded-bl-xs"
-                        : "bg-base-200/90 dark:bg-slate-800 text-base-content rounded-bl-xs border border-base-300 dark:border-slate-700"
+                        ? "bg-rose-950/50 dark:bg-rose-950/70 text-rose-100 border border-rose-500/50 rounded-bl-xs p-3.5 sm:p-4.5"
+                        : "bg-base-200/90 dark:bg-slate-800 text-base-content rounded-bl-xs border border-base-300 dark:border-slate-700 p-3.5 sm:p-4.5"
                     }`}
                   >
                     {isUser ? (
@@ -616,13 +625,6 @@ export default function RagTestSandbox() {
                       </div>
                     </div>
                   )}
-
-                  {/* Fallback Badge when no source is found for assistant message */}
-                  {!isUser && !hasSources && !msg.isError && (
-                    <div className="text-xs text-base-content/60 pr-2 flex items-center gap-1.5">
-                      <span className="badge badge-sm badge-ghost rounded-lg font-2">لا يوجد مصدر منشور مباشر</span>
-                    </div>
-                  )}
                 </div>
               );
             })
@@ -640,7 +642,7 @@ export default function RagTestSandbox() {
         </div>
 
         {/* Input Bar */}
-        <div className="pt-3 border-t border-base-200 dark:border-slate-800">
+        <div className="pt-1">
           <form
             onSubmit={(e) => {
               e.preventDefault();

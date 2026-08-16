@@ -11,6 +11,7 @@ import RecordButton from "../components/study/recitation/RecordButton";
 import RecitationResultsModal from "../components/study/recitation/RecitationResultsModal";
 import AudioPlayer from "../components/study/AudioPlayer";
 import ExplanationPanel from "../components/study/ExplanationPanel";
+import AiChatModal from "../components/shared/AiChatModal";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";
@@ -34,6 +35,7 @@ export default function Study() {
   const [isAudioListeningMode, setIsAudioListeningMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
   const [congratsMessage, setCongratsMessage] = useState("تم حفظ الحديث، بارك الله فيك استمر!");
   const [progressMap, setProgressMap] = useState({});
@@ -563,11 +565,12 @@ export default function Study() {
 
                   {/* 4. AI Helper Button */}
                   <button
-                    onClick={() => console.log("AI Helper clicked")}
-                    className="btn btn-circle w-10 h-10 min-h-0 bg-cyan-700 hover:bg-cyan-800 text-white shadow-md border-none flex items-center justify-center"
-                    aria-label="المساعد الذكي"
+                    onClick={() => setIsAiChatOpen(true)}
+                    className="btn btn-circle w-10 h-10 min-h-0 bg-gradient-to-tr from-cyan-800 via-cyan-700 to-cyan-600 hover:from-cyan-700 hover:to-cyan-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)] hover:shadow-[0_0_18px_rgba(6,182,212,0.65)] ring-2 ring-cyan-400/50 hover:ring-cyan-400/90 border-none flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 group relative cursor-pointer"
+                    aria-label="مساعد أثر الذكي"
+                    title="مساعد أثر الذكي (أثر AI)"
                   >
-                    <BsStars className="text-base" />
+                    <BsStars className="text-base group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300 text-white drop-shadow-sm" />
                   </button>
                 </div>
 
@@ -646,6 +649,12 @@ export default function Study() {
         extras={extras}
         hadithId={currentHadith?.id}
         wasHidden={wasHiddenWhenStartedRef.current}
+      />
+
+      {/* ── AI Assistant Large Chat Modal ── */}
+      <AiChatModal
+        isOpen={isAiChatOpen}
+        onClose={() => setIsAiChatOpen(false)}
       />
     </div>
   );

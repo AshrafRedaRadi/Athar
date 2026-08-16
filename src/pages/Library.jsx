@@ -7,6 +7,7 @@ import CategoryFilters from "../components/shared/CategoryFilters";
 import Card from "../components/library/Card";
 import { booksService } from "../services/booksService";
 import { useTheme } from "../hooks/useTheme";
+import AiAssistantFloatingButton from "../components/shared/AiAssistantFloatingButton";
 
 // ─────────────────────────────────────────────
 //  Static mock fallback data (in case API is offline)
@@ -172,6 +173,9 @@ export default function Library() {
             </button>
           </div>
         )}
+
+        {/* ── AI Assistant Floating Action Button ── */}
+        <AiAssistantFloatingButton />
 
       </main>
     </div>

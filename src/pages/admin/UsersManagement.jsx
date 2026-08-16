@@ -41,7 +41,7 @@ export default function UsersManagement() {
   // Mobile Category Tabs list
   const ROLE_CATEGORIES = [
     { id: "الكل", label: `الكل (${users.length})` },
-    { id: "معلم", label: `المعلمين (${users.filter((u) => u.role === "معلم").length})` },
+    // { id: "معلم", label: `المعلمين (${users.filter((u) => u.role === "معلم").length})` },
     { id: "طالب", label: `الطلاب (${users.filter((u) => u.role === "طالب").length})` },
     { id: "أدمن", label: `الأدمن (${users.filter((u) => u.role === "أدمن").length})` },
   ];
@@ -230,7 +230,7 @@ export default function UsersManagement() {
             className="select select-bordered rounded-xl text-sm font-2 w-full sm:w-44 font-bold"
           >
             <option value="الكل">جميع الأدوار</option>
-            <option value="معلم">معلم</option>
+            {/* <option value="معلم">معلم</option> */}
             <option value="طالب">طالب</option>
             <option value="أدمن">مشرف (أدمن)</option>
           </select>

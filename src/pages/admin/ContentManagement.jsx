@@ -73,57 +73,58 @@ export default function ContentManagement() {
   const [deletingBook, setDeletingBook] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Extract loadBackendBooks so it can be re-invoked on create/update/delete
+  const loadBackendBooks = async () => {
+    try {
+      setIsLoading(true);
+      const apiBooks = await booksService.getBooks();
+      if (Array.isArray(apiBooks) && apiBooks.length > 0) {
+        const formatted = apiBooks.map((b, index) => {
+          let cat = b.category || "الحديث";
+          if (b.title?.includes("التوحيد") || b.category?.includes("عقيدة")) cat = "العقيدة";
+          else if (b.category?.includes("فقه")) cat = "الفقه";
+          else if (b.category?.includes("تفسير")) cat = "التفسير";
+          else if (b.category?.includes("نحو") || b.category?.includes("لغة")) cat = "اللغة العربية";
+
+          return {
+            id: b.id,
+            title: b.title,
+            author: b.author || "غير محدد",
+            description: b.description || "",
+            category: cat,
+            studentsCount: `${b.studentsCount || Math.floor(Math.random() * 500) + 150}`,
+            status: b.status || "معروض",
+            lastUpdated: formatArabicDate(b.updatedAt || b.createdAt),
+            coverImage: b.coverImage,
+            difficultyLevel: b.difficultyLevel || 1,
+            bgClass: index % 2 === 0
+              ? "bg-cyan-50/70 border-cyan-200/70 dark:bg-cyan-950/20 dark:border-cyan-900/40"
+              : "bg-amber-50/80 border-amber-200/70 dark:bg-amber-950/20 dark:border-amber-900/40",
+            headerBg: index % 2 === 0
+              ? "bg-cyan-100/50 dark:bg-cyan-900/30"
+              : "bg-amber-100/50 dark:bg-amber-900/30",
+            badgeBg: index % 2 === 0 ? "bg-cyan-700 text-white" : "bg-amber-700 text-white",
+            matnText: b.text || "",
+            textExplanation: "",
+            videoExplanation: "",
+            audioUrl: "",
+          };
+        });
+
+        setBooks(formatted);
+      } else {
+        setBooks([]);
+      }
+    } catch (err) {
+      console.warn("Error fetching backend books:", err.message);
+      setBooks([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Fetch real books from backend API on mount
   useEffect(() => {
-    async function loadBackendBooks() {
-      try {
-        setIsLoading(true);
-        const apiBooks = await booksService.getBooks();
-        if (Array.isArray(apiBooks) && apiBooks.length > 0) {
-          const formatted = apiBooks.map((b, index) => {
-            let cat = b.category || "الحديث";
-            if (b.title?.includes("التوحيد") || b.category?.includes("عقيدة")) cat = "العقيدة";
-            else if (b.category?.includes("فقه")) cat = "الفقه";
-            else if (b.category?.includes("تفسير")) cat = "التفسير";
-            else if (b.category?.includes("نحو") || b.category?.includes("لغة")) cat = "اللغة العربية";
-
-            return {
-              id: b.id,
-              title: b.title,
-              author: b.author || "غير محدد",
-              description: b.description || "",
-              category: cat,
-              studentsCount: `${b.studentsCount || Math.floor(Math.random() * 500) + 150}`,
-              status: b.status || "معروض",
-              lastUpdated: formatArabicDate(b.updatedAt || b.createdAt),
-              coverImage: b.coverImage,
-              difficultyLevel: b.difficultyLevel || 1,
-              bgClass: index % 2 === 0
-                ? "bg-cyan-50/70 border-cyan-200/70 dark:bg-cyan-950/20 dark:border-cyan-900/40"
-                : "bg-amber-50/80 border-amber-200/70 dark:bg-amber-950/20 dark:border-amber-900/40",
-              headerBg: index % 2 === 0
-                ? "bg-cyan-100/50 dark:bg-cyan-900/30"
-                : "bg-amber-100/50 dark:bg-amber-900/30",
-              badgeBg: index % 2 === 0 ? "bg-cyan-700 text-white" : "bg-amber-700 text-white",
-              matnText: b.text || "",
-              textExplanation: "",
-              videoExplanation: "",
-              audioUrl: "",
-            };
-          });
-
-          setBooks(formatted);
-        } else {
-          setBooks([]);
-        }
-      } catch (err) {
-        console.warn("Error fetching backend books:", err.message);
-        setBooks([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     loadBackendBooks();
   }, []);
 
@@ -268,56 +269,158 @@ export default function ContentManagement() {
     setIsDeleteOpen(true);
   };
 
-  const handleSaveForm = (formData) => {
+  const handleSaveForm = async (formData) => {
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      let bookId = null;
+
       if (editingBook) {
-        setBookVisibilityStatus(editingBook.id, formData.status || "معروض");
-        setBooks((prev) =>
-          prev.map((b) =>
-            b.id === editingBook.id
-              ? {
-                  ...b,
-                  ...formData,
-                  matnText: formData.matnText,
-                  textExplanation: formData.textExplanation,
-                  videoExplanation: formData.videoExplanation,
-                  audioUrl: formData.audioUrl,
-                  lastUpdated: "الآن",
-                }
-              : b
-          )
-        );
+        bookId = editingBook.id;
+        await booksService.updateBook(bookId, formData);
       } else {
-        const newId = Date.now();
-        setBookVisibilityStatus(newId, formData.status || "معروض");
-        const newBook = {
-          id: newId,
-          ...formData,
-          studentsCount: "1",
-          status: formData.status || "معروض",
-          lastUpdated: "الآن",
-          bgClass: "bg-cyan-50/70 border-cyan-200/70 dark:bg-cyan-950/20 dark:border-cyan-900/40",
-          headerBg: "bg-cyan-100/50 dark:bg-cyan-900/30",
-          badgeBg: "bg-cyan-700 text-white",
-        };
-        setBooks((prev) => [newBook, ...prev]);
+        const created = await booksService.createBook(formData);
+        bookId = created?.id ?? created?.data?.id ?? (typeof created === "number" ? created : null);
       }
 
-      setIsSubmitting(false);
+      if (!bookId && editingBook) {
+        bookId = editingBook.id;
+      }
+
+      // Persist book visibility preference
+      if (bookId) {
+        setBookVisibilityStatus(bookId, formData.status || "معروض");
+      }
+
+      // If we have a valid bookId, save sections and hadiths to backend
+      if (bookId) {
+        if (formData.structureMode === "direct" || !formData.structureMode) {
+          // Direct Mode: Flat hadiths
+          if (Array.isArray(formData.sections)) {
+            for (let i = 0; i < formData.sections.length; i++) {
+              const sec = formData.sections[i];
+              if (sec.matnText && sec.matnText.trim()) {
+                const hadithPayload = {
+                  title: sec.title || "",
+                  matnText: sec.matnText,
+                  order: i + 1,
+                  hadithBookId: bookId,
+                  hadithSectionId: null,
+                  videoUrl: sec.videoUrl || "",
+                  audioUrl: sec.audioFileName || "",
+                };
+                const createdHadith = await hadithsService.createHadith(hadithPayload).catch(() => null);
+                const hadithId = createdHadith?.id ?? createdHadith?.data?.id;
+
+                // Save key terms if provided
+                if (hadithId && Array.isArray(sec.keyTerms) && sec.keyTerms.length > 0) {
+                  for (const kt of sec.keyTerms) {
+                    if (kt.text) {
+                      await hadithsService.createHadithKeyTerm({
+                        hadithId,
+                        text: kt.text,
+                        normalizedText: kt.normalizedText,
+                        order: kt.order || 1,
+                      }).catch(() => null);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else if (
+          formData.structureMode === "kitab_bab" ||
+          formData.structureMode === "bab_fasl"
+        ) {
+          // Hierarchy Modes: Kitab -> Bab or Bab -> Fasl
+          if (Array.isArray(formData.hierarchySections)) {
+            for (let rIdx = 0; rIdx < formData.hierarchySections.length; rIdx++) {
+              const root = formData.hierarchySections[rIdx];
+              const createdRoot = await booksService.createSection({
+                name: root.name || `قسم ${rIdx + 1}`,
+                type: root.type,
+                order: rIdx + 1,
+                hadithBookId: bookId,
+                parentSectionId: null,
+              }).catch(() => null);
+
+              const rootId = createdRoot?.id ?? createdRoot?.data?.id ?? (typeof createdRoot === "number" ? createdRoot : null);
+
+              if (Array.isArray(root.children)) {
+                for (let cIdx = 0; cIdx < root.children.length; cIdx++) {
+                  const child = root.children[cIdx];
+                  const createdChild = await booksService.createSection({
+                    name: child.name || `فرع ${cIdx + 1}`,
+                    type: child.type,
+                    order: cIdx + 1,
+                    hadithBookId: bookId,
+                    parentSectionId: rootId,
+                  }).catch(() => null);
+
+                  const childId = createdChild?.id ?? createdChild?.data?.id ?? (typeof createdChild === "number" ? createdChild : null);
+
+                  if (Array.isArray(child.hadiths)) {
+                    for (let hIdx = 0; hIdx < child.hadiths.length; hIdx++) {
+                      const h = child.hadiths[hIdx];
+                      if (h.matnText && h.matnText.trim()) {
+                        const createdHadith = await hadithsService.createHadith({
+                          title: h.title || "",
+                          matnText: h.matnText,
+                          order: hIdx + 1,
+                          hadithBookId: bookId,
+                          hadithSectionId: childId,
+                          videoUrl: h.videoUrl || "",
+                          audioUrl: h.audioFileName || "",
+                        }).catch(() => null);
+
+                        const hadithId = createdHadith?.id ?? createdHadith?.data?.id;
+
+                        if (hadithId && Array.isArray(h.keyTerms) && h.keyTerms.length > 0) {
+                          for (const kt of h.keyTerms) {
+                            if (kt.text) {
+                              await hadithsService.createHadithKeyTerm({
+                                hadithId,
+                                text: kt.text,
+                                normalizedText: kt.normalizedText,
+                                order: kt.order || 1,
+                              }).catch(() => null);
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      await loadBackendBooks();
       setIsFormOpen(false);
-    }, 400);
+      setEditingBook(null);
+    } catch (err) {
+      console.error("Error saving book:", err);
+      alert("حدث خطأ أثناء حفظ الكتاب في السيرفر: " + (err.message || "يرجى التحقق من المدخلات"));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingBook) return;
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await booksService.deleteBook(deletingBook.id);
+      await loadBackendBooks();
+    } catch (err) {
+      console.warn("Could not delete from server, removing locally:", err.message);
       setBooks((prev) => prev.filter((b) => b.id !== deletingBook.id));
+    } finally {
       setIsSubmitting(false);
       setIsDeleteOpen(false);
       setDeletingBook(null);
-    }, 300);
+    }
   };
 
   return (
