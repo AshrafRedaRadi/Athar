@@ -179,4 +179,58 @@ export const booksService = {
       hadiths: Array.isArray(hadiths) ? hadiths : [],
     };
   },
+
+  // ── HadithBooks CRUD ──
+
+  /**
+   * Create a new Hadith book via POST /api/HadithBooks
+   * @param {Object} bookData
+   * @returns {Promise<Object>} Created book data
+   */
+  async createBook(bookData) {
+    const payload = {
+      title: bookData.title,
+      author: bookData.author || "",
+      description: bookData.description || "",
+      difficultyLevel: Number(bookData.difficultyLevel) || 1,
+      category: bookData.category || "الحديث",
+    };
+    return await apiFetch("/api/HadithBooks", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Update an existing Hadith book via PUT /api/HadithBooks/{id}
+   * @param {number|string} id
+   * @param {Object} bookData
+   * @returns {Promise<Object>}
+   */
+  async updateBook(id, bookData) {
+    const payload = {
+      id: Number(id) || id,
+      title: bookData.title,
+      author: bookData.author || "",
+      description: bookData.description || "",
+      difficultyLevel: Number(bookData.difficultyLevel) || 1,
+      category: bookData.category || "الحديث",
+    };
+    return await apiFetch(`/api/HadithBooks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Delete a Hadith book by ID via DELETE /api/HadithBooks/{id}
+   * @param {number|string} id
+   * @returns {Promise<Object>}
+   */
+  async deleteBook(id) {
+    return await apiFetch(`/api/HadithBooks/${id}`, {
+      method: "DELETE",
+    });
+  },
 };
+
