@@ -6,7 +6,6 @@ const DAISYUI_THEMES = [
   'dark',
   'luxury',
   'synthwave',
-  'cyberpunk',
   'retro',
   'dracula',
   'cupcake',
@@ -40,6 +39,7 @@ const DAISYUI_THEMES = [
   'silk',
   'cmyk',
   'black',
+  'cyberpunk',
 ];
 
 const DARK_THEMES = new Set([

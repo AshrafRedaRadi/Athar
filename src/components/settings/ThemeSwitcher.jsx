@@ -8,7 +8,6 @@ const themeLabels = {
   dark: "Dark (داكن)",
   luxury: "Luxury (فاخر)",
   synthwave: "Synthwave (نيون نايت)",
-  cyberpunk: "Cyberpunk (سايبر)",
   retro: "Retro (كلاسيكي)",
   dracula: "Dracula (دراكولا)",
   cupcake: "Cupcake (كاب كيك)",
@@ -38,6 +37,7 @@ const themeLabels = {
   silk: "Silk (حريري)",
   cmyk: "CMYK (طباعي)",
   black: "Black (أسود داكن)",
+  cyberpunk: "Cyberpunk (سايبر)",
 };
 
 function ThemeSwitcher() {
