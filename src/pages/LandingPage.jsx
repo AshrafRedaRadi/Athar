@@ -16,6 +16,7 @@ import {
 } from 'react-icons/io5';
 import logoImg from '../assets/logo.png';
 import mosqueSvg from '../assets/Mosque.svg';
+import { apiFetch } from '../api/client';
 import { booksService } from '../services/booksService';
 import { hadithsService } from '../services/hadithsService';
 import { usersService } from '../services/usersService';
@@ -122,7 +123,7 @@ function MosqueBackground({ className = '' }) {
       <img
         src={mosqueSvg}
         alt=""
-        className="w-full h-[220px] sm:h-[300px] md:h-[400px] lg:h-[480px] object-cover object-bottom block select-none pointer-events-none"
+        className="w-full h-auto object-contain object-bottom block select-none pointer-events-none"
         style={{
           transform: 'translateY(2px)',
         }}
@@ -705,7 +706,7 @@ export default function LandingPage() {
 
   const [hadithsCount, setHadithsCount] = useState(42);
   const [booksCount, setBooksCount] = useState(1);
-  const [studentsCount, setStudentsCount] = useState(1240);
+  const [studentsCount, setStudentsCount] = useState(0);
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -715,25 +716,37 @@ export default function LandingPage() {
 
     async function loadDynamicCounts() {
       try {
-        const [hCount, bCount, sCount] = await Promise.all([
-          typeof hadithsService?.getHadithsCount === 'function' ? hadithsService.getHadithsCount() : Promise.resolve(null),
-          typeof booksService?.getBooksCount === 'function' ? booksService.getBooksCount() : Promise.resolve(null),
-          typeof usersService?.getStudentsCount === 'function' ? usersService.getStudentsCount() : Promise.resolve(null),
-        ]);
+        const overviewRes = await apiFetch('/api/overview');
+        const overviewData = overviewRes?.data || overviewRes;
 
         if (!isMounted) return;
 
-        if (typeof hCount === 'number' && hCount > 0) {
-          setHadithsCount(hCount);
-        }
-        if (typeof bCount === 'number' && bCount > 0) {
-          setBooksCount(bCount);
-        }
-        if (typeof sCount === 'number' && sCount > 0) {
-          setStudentsCount(sCount);
+        if (overviewData) {
+          if (typeof overviewData.hadithCount === 'number') {
+            setHadithsCount(overviewData.hadithCount);
+          }
+          if (typeof overviewData.matnCount === 'number') {
+            setBooksCount(overviewData.matnCount);
+          }
+          if (typeof overviewData.studentsCount === 'number') {
+            setStudentsCount(overviewData.studentsCount);
+          }
         }
       } catch (err) {
-        console.warn('Could not load dynamic stats for landing page:', err);
+        console.warn('Could not load overview stats from /api/overview, trying fallbacks:', err);
+        try {
+          const [hCount, bCount, sCount] = await Promise.all([
+            typeof hadithsService?.getHadithsCount === 'function' ? hadithsService.getHadithsCount() : Promise.resolve(null),
+            typeof booksService?.getBooksCount === 'function' ? booksService.getBooksCount() : Promise.resolve(null),
+            typeof usersService?.getStudentsCount === 'function' ? usersService.getStudentsCount() : Promise.resolve(null),
+          ]);
+          if (!isMounted) return;
+          if (typeof hCount === 'number' && hCount > 0) setHadithsCount(hCount);
+          if (typeof bCount === 'number' && bCount > 0) setBooksCount(bCount);
+          if (typeof sCount === 'number' && sCount > 0) setStudentsCount(sCount);
+        } catch {
+          // keep initial values
+        }
       }
     }
 
@@ -745,7 +758,7 @@ export default function LandingPage() {
 
   const statsList = [
     { value: hadithsCount, suffix: '', label: 'حديث نبوي شريف' },
-    { value: booksCount, suffix: '', label: 'كتاب حديث' },
+    { value: booksCount, suffix: '', label: 'كتب المتن' },
     { value: studentsCount, suffix: '+', label: 'الطلاب' },
     { value: 100, suffix: '%', label: 'مجاني للبدء' },
   ];
@@ -802,18 +815,19 @@ export default function LandingPage() {
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 px-5 md:px-10 ${isScrolled
           ? 'py-2.5 bg-[#0f2633]/90 backdrop-blur-md shadow-lg border-b border-white/10'
           : 'py-4 bg-transparent'
+
           }`}
         style={!isScrolled ? { background: 'linear-gradient(to bottom, rgba(15,38,51,0.95) 0%, transparent 100%)' } : {}}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-1 sm:gap-2">
 
           <a
             href="#top"
             onClick={scrollToTop}
-            className="flex items-center gap-2 group cursor-pointer"
+            className="flex items-center gap-1 sm:gap-2 group cursor-pointer shrink-0"
           >
-            <img src={logoImg} alt="أثر" className="h-9 w-9 object-contain transition-transform group-hover:scale-105" />
-            <span className="text-xl font-bold font-1 text-white tracking-wide">أثر</span>
+            <img src={logoImg} alt="أثر" className="h-7 w-7 sm:h-9 sm:w-9 object-contain transition-transform group-hover:scale-105" />
+            <span className="text-base sm:text-xl font-bold font-1 text-white tracking-wide">أثر</span>
           </a>
 
           <div className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -829,16 +843,16 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
               to="/login"
-              className="text-xs sm:text-sm text-white/80 hover:text-white transition-colors font-2 px-3.5 sm:px-4 py-1.5 rounded-full border border-white/20 hover:border-[#337fa1]/50 hover:bg-[#337fa1]/10"
+              className="text-[11px] sm:text-sm text-white/80 hover:text-white transition-colors font-2 px-2 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/20 hover:border-[#337fa1]/50 hover:bg-[#337fa1]/10 whitespace-nowrap"
             >
               تسجيل الدخول
             </Link>
             <Link
               to="/signup"
-              className="text-xs sm:text-sm font-bold font-2 px-3.5 sm:px-4 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_2px_12px_rgba(201,149,58,0.3)] hover:shadow-[0_4px_18px_rgba(201,149,58,0.45)]"
+              className="text-[11px] sm:text-sm font-bold font-2 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-[0_2px_12px_rgba(201,149,58,0.3)] hover:shadow-[0_4px_18px_rgba(201,149,58,0.45)] whitespace-nowrap"
               style={{ background: 'linear-gradient(to left, #C9953A, #e4b25e)', color: '#0f2633' }}
             >
               ابدأ مجاناً
@@ -846,7 +860,7 @@ export default function LandingPage() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-white/90 hover:text-[#C9953A] p-1 text-2xl cursor-pointer transition-colors"
+              className="md:hidden text-white/90 hover:text-[#C9953A] p-0.5 text-xl sm:text-2xl cursor-pointer transition-colors"
               aria-label="القائمة"
             >
               {mobileMenuOpen ? <IoCloseOutline /> : <IoMenuOutline />}
