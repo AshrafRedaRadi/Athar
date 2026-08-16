@@ -8,6 +8,7 @@ import { dashboardService } from "../services/dashboardService";
 import { hadithsService } from "../services/hadithsService";
 import { activityService, computeCurrentStreak } from "../services/activityService";
 import { studyPlanService } from "../services/studyPlanService";
+import AiAssistantFloatingButton from "../components/shared/AiAssistantFloatingButton";
 
 function Home() {
   const { isAuthenticated } = useAuth();
@@ -217,6 +218,9 @@ function Home() {
             />
           </>
         )}
+
+        {/* ── AI Assistant Floating Action Button ── */}
+        <AiAssistantFloatingButton />
       </main>
     </div>
   );
