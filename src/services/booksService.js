@@ -84,6 +84,7 @@ export const booksService = {
   async getBooksCount() {
     try {
       const data = await apiFetch("/api/HadithBooks");
+      console.log("📚 [Hadith Books API Data]:", data);
       if (Array.isArray(data)) {
         return data.length;
       }

@@ -126,11 +126,8 @@ export const usersService = {
    */
   async getStudentsCount() {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (!token) {
-        return 1240;
-      }
       const data = await apiFetch('/api/Admin/users?Role=Student&IsActive=true');
+      console.log("👥 [Active Students API Data]:", data);
       if (Array.isArray(data)) {
         return data.length;
       }
@@ -142,9 +139,10 @@ export const usersService = {
         if (Array.isArray(data.data)) return data.data.length;
         if (Array.isArray(data.users)) return data.users.length;
       }
-      return 1240;
-    } catch {
-      return 1240;
+      return 0;
+    } catch (err) {
+      console.warn("Could not fetch active students count:", err.message);
+      return null;
     }
   },
 };

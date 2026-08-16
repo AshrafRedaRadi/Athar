@@ -177,6 +177,12 @@ const SCRIPT_PHASE_2 = [
 
 function RecitationVideoSimulator() {
   const [currentTime, setCurrentTime] = useState(0);
+  const [phase, setPhase] = useState(1);
+  const [isHidden, setIsHidden] = useState(false);
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ x: '70%', y: '85%' });
+  const [showBanner, setShowBanner] = useState(false);
+  const [bannerText, setBannerText] = useState('');
 
   const totalDuration = 14500;
   const requestRef = useRef();
@@ -200,6 +206,13 @@ function RecitationVideoSimulator() {
     return () => cancelAnimationFrame(requestRef.current);
   }, []);
 
+  useEffect(() => {
+    if (currentTime < 500) {
+      setPhase(1);
+      setIsHidden(false);
+      setCursorPos({ x: '70%', y: '85%' });
+      setIsMicActive(false);
+      setShowBanner(false);
     } else if (currentTime >= 500 && currentTime < 900) {
       setCursorPos({ x: '50%', y: '88%' });
       setIsMicActive(true);
@@ -277,14 +290,14 @@ function RecitationVideoSimulator() {
                   <div key={idx} className="relative inline-flex flex-col items-center">
                     <span
                       className={`text-xl sm:text-2xl font-bold px-2.5 py-0.5 rounded-lg transition-all duration-300 ${isHiddenWord
-                          ? 'bg-slate-300/80 text-transparent select-none rounded-md blur-[2px]'
-                          : isCurrent
-                            ? 'scale-110 bg-[#286a89] text-white shadow-md'
-                            : isCorrect
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : isError
-                                ? 'bg-rose-100 text-rose-800 border border-rose-300 line-through'
-                                : 'text-slate-700 opacity-60'
+                        ? 'bg-slate-300/80 text-transparent select-none rounded-md blur-[2px]'
+                        : isCurrent
+                          ? 'scale-110 bg-[#286a89] text-white shadow-md'
+                          : isCorrect
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : isError
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300 line-through'
+                              : 'text-slate-700 opacity-60'
                         }`}
                     >
                       {item.text}
@@ -334,8 +347,8 @@ function RecitationVideoSimulator() {
               {/* زر العين بجانب المايك */}
               <div
                 className={`w-9 h-9 rounded-full border shadow-sm flex items-center justify-center transition-all duration-300 ${isHidden
-                    ? 'bg-[#286a89] border-[#286a89] text-white shadow-md scale-105'
-                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+                  ? 'bg-[#286a89] border-[#286a89] text-white shadow-md scale-105'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
                   }`}
                 title={isHidden ? 'إظهار النص' : 'إخفاء النص غيباً'}
               >
@@ -787,8 +800,8 @@ export default function LandingPage() {
       {/* ─── NAVBAR ─── */}
       <nav
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 px-5 md:px-10 ${isScrolled
-            ? 'py-2.5 bg-[#0f2633]/90 backdrop-blur-md shadow-lg border-b border-white/10'
-            : 'py-4 bg-transparent'
+          ? 'py-2.5 bg-[#0f2633]/90 backdrop-blur-md shadow-lg border-b border-white/10'
+          : 'py-4 bg-transparent'
           }`}
         style={!isScrolled ? { background: 'linear-gradient(to bottom, rgba(15,38,51,0.95) 0%, transparent 100%)' } : {}}
       >
