@@ -183,42 +183,73 @@ export const booksService = {
   // ── HadithBooks CRUD ──
 
   /**
-   * Create a new Hadith book via POST /api/HadithBooks
+   * Create a new Hadith book via POST /api/HadithBooks (multipart/form-data)
    * @param {Object} bookData
    * @returns {Promise<Object>} Created book data
    */
   async createBook(bookData) {
-    const payload = {
-      title: bookData.title,
-      author: bookData.author || "",
-      description: bookData.description || "",
-      difficultyLevel: Number(bookData.difficultyLevel) || 1,
-      category: bookData.category || "الحديث",
-    };
+    const formData = new FormData();
+    formData.append("Title", bookData.title || "");
+    formData.append("title", bookData.title || "");
+    formData.append("Author", bookData.author || "");
+    formData.append("author", bookData.author || "");
+    formData.append("Description", bookData.description || "");
+    formData.append("description", bookData.description || "");
+    formData.append("DifficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    formData.append("difficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    
+    if (bookData.category) {
+      formData.append("Category", bookData.category);
+      formData.append("category", bookData.category);
+    }
+    
+    if (bookData.coverImageFile instanceof File) {
+      formData.append("CoverImage", bookData.coverImageFile);
+      formData.append("coverImage", bookData.coverImageFile);
+      formData.append("File", bookData.coverImageFile);
+      formData.append("file", bookData.coverImageFile);
+    }
+
     return await apiFetch("/api/HadithBooks", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: formData,
     });
   },
 
   /**
-   * Update an existing Hadith book via PUT /api/HadithBooks/{id}
+   * Update an existing Hadith book via PUT /api/HadithBooks/{id} (multipart/form-data)
    * @param {number|string} id
    * @param {Object} bookData
    * @returns {Promise<Object>}
    */
   async updateBook(id, bookData) {
-    const payload = {
-      id: Number(id) || id,
-      title: bookData.title,
-      author: bookData.author || "",
-      description: bookData.description || "",
-      difficultyLevel: Number(bookData.difficultyLevel) || 1,
-      category: bookData.category || "الحديث",
-    };
+    const formData = new FormData();
+    formData.append("Id", String(id));
+    formData.append("id", String(id));
+    formData.append("Title", bookData.title || "");
+    formData.append("title", bookData.title || "");
+    formData.append("Author", bookData.author || "");
+    formData.append("author", bookData.author || "");
+    formData.append("Description", bookData.description || "");
+    formData.append("description", bookData.description || "");
+    formData.append("DifficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    formData.append("difficultyLevel", String(Number(bookData.difficultyLevel) || 1));
+    
+    if (bookData.category) {
+      formData.append("Category", bookData.category);
+      formData.append("category", bookData.category);
+    }
+    
+    if (bookData.coverImageFile instanceof File) {
+      formData.append("CoverImage", bookData.coverImageFile);
+      formData.append("coverImage", bookData.coverImageFile);
+      formData.append("File", bookData.coverImageFile);
+      formData.append("file", bookData.coverImageFile);
+    }
+
     return await apiFetch(`/api/HadithBooks/${id}`, {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: formData,
     });
   },
 
