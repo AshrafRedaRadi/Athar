@@ -12,10 +12,21 @@ import {
   HiOutlineSparkles,
   HiPlus,
   HiTrash,
+  HiChevronDown,
+  HiChevronUp,
 } from "react-icons/hi";
 import KeyTermsModal from "./KeyTermsModal";
+import StructureModeSelector from "./StructureModeSelector";
+import {
+  BOOK_STRUCTURE_MODES,
+  STRUCTURE_MODE_CONFIG,
+  SECTION_TYPES,
+  SECTION_TYPE_LABELS,
+  createEmptyFormSection,
+  createEmptyFormHadith,
+} from "../../utils/hadithSectionTree";
 
-// Helper to generate empty section object
+// Helper to generate empty section object (legacy flat mode)
 const createEmptySection = (index = 1) => ({
   id: Date.now() + Math.random(),
   title: "",
@@ -35,14 +46,10 @@ const createEmptySection = (index = 1) => ({
 
 /**
  * ContentFormModal - Advanced Form Modal for Adding/Editing Hadith Books & Matn Sections.
- * Supports:
- * 1. Image File Upload for Cover
- * 2. Category selection matching search filter options (Required)
- * 3. Book Brief Description labeled "نبذة عن الكتاب" (Required)
- * 4. Hierarchical Matn Sections (Title, Main Text, Multiple Written Explanations, Video URL, Audio File Upload)
- * 5. Dynamic Section & Explanation Adders
- * 6. Large spacious layout (max-w-5xl)
- * 7. Unsaved Changes Guard on close
+ * Supports 3 structure modes:
+ * 1. Direct (flat hadiths/paragraphs)
+ * 2. Kitab → Bab → Hadiths
+ * 3. Bab → Fasl → Paragraphs
  */
 export default function ContentFormModal({
   isOpen,
@@ -60,12 +67,19 @@ export default function ContentFormModal({
     description: "",
     coverImageFile: null,
     coverImagePreview: "",
+    structureMode: BOOK_STRUCTURE_MODES.DIRECT,
+    // For DIRECT mode (النمط 1)
     sections: [createEmptySection(1)],
+    // For KITAB_BAB & BAB_FASL modes (النمط 2 و 3)
+    hierarchySections: [],
   });
 
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [isFormTouched, setIsFormTouched] = useState(false);
   const [activeKeyTermsSectionId, setActiveKeyTermsSectionId] = useState(null);
+  const [showModeChangeWarning, setShowModeChangeWarning] = useState(null);
+  // Track collapsed sections for hierarchy mode
+  const [collapsedSections, setCollapsedSections] = useState(new Set());
 
   // Populate data when editing or reset when adding
   useEffect(() => {
@@ -79,6 +93,7 @@ export default function ContentFormModal({
         description: initialData.description || "",
         coverImageFile: null,
         coverImagePreview: initialData.coverImage || "",
+        structureMode: initialData.structureMode || BOOK_STRUCTURE_MODES.DIRECT,
         sections:
           initialData.sections && initialData.sections.length > 0
             ? initialData.sections
@@ -99,8 +114,10 @@ export default function ContentFormModal({
                 audioFileName: initialData.audioUrl ? "تسجيل صوتي سابق" : "",
               },
             ],
+        hierarchySections: initialData.hierarchySections || [],
       });
       setIsFormTouched(false);
+      setCollapsedSections(new Set());
     } else {
       setFormData({
         title: "",
@@ -111,26 +128,30 @@ export default function ContentFormModal({
         description: "",
         coverImageFile: null,
         coverImagePreview: "",
+        structureMode: BOOK_STRUCTURE_MODES.DIRECT,
         sections: [createEmptySection(1)],
+        hierarchySections: [],
       });
       setIsFormTouched(false);
+      setCollapsedSections(new Set());
     }
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
-  // Mark form as modified
+  // ────────────────────────────────────────────────
+  // SHARED HELPERS
+  // ────────────────────────────────────────────────
+
   const markTouched = () => {
     if (!isFormTouched) setIsFormTouched(true);
   };
 
-  // Base field change handler
   const handleFieldChange = (field, value) => {
     markTouched();
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Cover image file change handler
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -144,21 +165,56 @@ export default function ContentFormModal({
     }
   };
 
-  // Helper to get the primary scholar/book name from section 1 explanation 1
+  // ────────────────────────────────────────────────
+  // STRUCTURE MODE CHANGE
+  // ────────────────────────────────────────────────
+
+  const hasAnyContent = () => {
+    // Check direct mode
+    const hasDirect = formData.sections.some(
+      (s) => s.title || s.matnText || s.explanations.some((e) => e.text || e.scholarOrBook)
+    );
+    // Check hierarchy mode
+    const hasHierarchy = formData.hierarchySections.length > 0;
+    return hasDirect || hasHierarchy;
+  };
+
+  const handleStructureModeChange = (newMode) => {
+    if (newMode === formData.structureMode) return;
+    if (isFormTouched && hasAnyContent()) {
+      setShowModeChangeWarning(newMode);
+    } else {
+      applyStructureModeChange(newMode);
+    }
+  };
+
+  const applyStructureModeChange = (newMode) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      structureMode: newMode,
+      sections: [createEmptySection(1)],
+      hierarchySections: [],
+    }));
+    setCollapsedSections(new Set());
+    setShowModeChangeWarning(null);
+  };
+
+  // ────────────────────────────────────────────────
+  // DIRECT MODE (النمط 1) HANDLERS
+  // ────────────────────────────────────────────────
+
   const getPrimaryScholarOrBook = (secList) => {
     return secList?.[0]?.explanations?.[0]?.scholarOrBook || "";
   };
 
-  // Sections Handlers
   const handleAddSection = () => {
     markTouched();
     const primaryScholar = getPrimaryScholarOrBook(formData.sections);
     const newSection = createEmptySection(formData.sections.length + 1);
-
     if (primaryScholar && newSection.explanations[0]) {
       newSection.explanations[0].scholarOrBook = primaryScholar;
     }
-
     setFormData((prev) => ({
       ...prev,
       sections: [...prev.sections, newSection],
@@ -199,7 +255,6 @@ export default function ContentFormModal({
     }
   };
 
-  // Explanations Handlers inside Section
   const handleAddExplanation = (sectionId) => {
     markTouched();
     const primaryScholar = getPrimaryScholarOrBook(formData.sections);
@@ -242,16 +297,13 @@ export default function ContentFormModal({
 
   const handleExplanationChange = (sectionId, expId, field, value) => {
     markTouched();
-
     setFormData((prev) => {
       const isPrimaryExp =
         prev.sections.length > 0 &&
         prev.sections[0].id === sectionId &&
         prev.sections[0].explanations.length > 0 &&
         prev.sections[0].explanations[0].id === expId;
-
       const oldPrimaryScholar = getPrimaryScholarOrBook(prev.sections);
-
       return {
         ...prev,
         sections: prev.sections.map((s) => ({
@@ -260,8 +312,6 @@ export default function ContentFormModal({
             if (s.id === sectionId && exp.id === expId) {
               return { ...exp, [field]: value };
             }
-
-            // Smart propagation: If user updates primary scholar/book name, propagate to unedited/matching ones
             if (
               isPrimaryExp &&
               field === "scholarOrBook" &&
@@ -269,7 +319,6 @@ export default function ContentFormModal({
             ) {
               return { ...exp, scholarOrBook: value };
             }
-
             return exp;
           }),
         })),
@@ -280,15 +329,213 @@ export default function ContentFormModal({
   const handleSaveSectionKeyTerms = (keyTermsList) => {
     if (!activeKeyTermsSectionId) return;
     markTouched();
+
+    // Check direct mode sections
+    const directSection = formData.sections.find((s) => s.id === activeKeyTermsSectionId);
+    if (directSection) {
+      setFormData((prev) => ({
+        ...prev,
+        sections: prev.sections.map((s) =>
+          s.id === activeKeyTermsSectionId ? { ...s, keyTerms: keyTermsList } : s
+        ),
+      }));
+      return;
+    }
+
+    // Check hierarchy mode hadiths
     setFormData((prev) => ({
       ...prev,
-      sections: prev.sections.map((s) =>
-        s.id === activeKeyTermsSectionId ? { ...s, keyTerms: keyTermsList } : s
+      hierarchySections: prev.hierarchySections.map((root) => ({
+        ...root,
+        hadiths: root.hadiths.map((h) =>
+          h._localId === activeKeyTermsSectionId ? { ...h, keyTerms: keyTermsList } : h
+        ),
+        children: root.children.map((child) => ({
+          ...child,
+          hadiths: child.hadiths.map((h) =>
+            h._localId === activeKeyTermsSectionId ? { ...h, keyTerms: keyTermsList } : h
+          ),
+        })),
+      })),
+    }));
+  };
+
+  // ────────────────────────────────────────────────
+  // HIERARCHY MODE (النمط 2 و 3) HANDLERS
+  // ────────────────────────────────────────────────
+
+  const modeConfig = STRUCTURE_MODE_CONFIG[formData.structureMode];
+  const rootLevel = modeConfig?.levels?.[0]; // e.g. { type: KITAB, label: "كتاب" }
+  const childLevel = modeConfig?.levels?.[1]; // e.g. { type: BAB, label: "باب" }
+
+  const handleAddRootSection = () => {
+    markTouched();
+    const newRoot = createEmptyFormSection(
+      rootLevel.type,
+      formData.hierarchySections.length + 1
+    );
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: [...prev.hierarchySections, newRoot],
+    }));
+  };
+
+  const handleRemoveRootSection = (localId) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.filter((s) => s._localId !== localId),
+    }));
+  };
+
+  const handleRootSectionNameChange = (localId, name) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((s) =>
+        s._localId === localId ? { ...s, name } : s
       ),
     }));
   };
 
-  // Request Close with Unsaved Guard
+  const handleAddChildSection = (rootLocalId) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          const newChild = createEmptyFormSection(
+            childLevel.type,
+            root.children.length + 1
+          );
+          return { ...root, children: [...root.children, newChild] };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  const handleRemoveChildSection = (rootLocalId, childLocalId) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          return {
+            ...root,
+            children: root.children.filter((c) => c._localId !== childLocalId),
+          };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  const handleChildSectionNameChange = (rootLocalId, childLocalId, name) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          return {
+            ...root,
+            children: root.children.map((c) =>
+              c._localId === childLocalId ? { ...c, name } : c
+            ),
+          };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  // Hadith/paragraph handlers within hierarchy
+  const handleAddHadithToChild = (rootLocalId, childLocalId) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          return {
+            ...root,
+            children: root.children.map((child) => {
+              if (child._localId === childLocalId) {
+                const newH = createEmptyFormHadith(child.hadiths.length + 1);
+                return { ...child, hadiths: [...child.hadiths, newH] };
+              }
+              return child;
+            }),
+          };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  const handleRemoveHadithFromChild = (rootLocalId, childLocalId, hadithLocalId) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          return {
+            ...root,
+            children: root.children.map((child) => {
+              if (child._localId === childLocalId) {
+                return {
+                  ...child,
+                  hadiths: child.hadiths.filter((h) => h._localId !== hadithLocalId),
+                };
+              }
+              return child;
+            }),
+          };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  const handleHadithFieldChange = (rootLocalId, childLocalId, hadithLocalId, field, value) => {
+    markTouched();
+    setFormData((prev) => ({
+      ...prev,
+      hierarchySections: prev.hierarchySections.map((root) => {
+        if (root._localId === rootLocalId) {
+          return {
+            ...root,
+            children: root.children.map((child) => {
+              if (child._localId === childLocalId) {
+                return {
+                  ...child,
+                  hadiths: child.hadiths.map((h) =>
+                    h._localId === hadithLocalId ? { ...h, [field]: value } : h
+                  ),
+                };
+              }
+              return child;
+            }),
+          };
+        }
+        return root;
+      }),
+    }));
+  };
+
+  // Toggle collapse for a section
+  const toggleCollapse = (localId) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(localId)) next.delete(localId);
+      else next.add(localId);
+      return next;
+    });
+  };
+
+  // ────────────────────────────────────────────────
+  // CLOSE & SUBMIT
+  // ────────────────────────────────────────────────
+
   const handleAttemptClose = () => {
     if (isFormTouched) {
       setShowConfirmClose(true);
@@ -315,6 +562,457 @@ export default function ContentFormModal({
     });
   };
 
+  // ────────────────────────────────────────────────
+  // FIND KEY TERMS SECTION DATA (for modal)
+  // ────────────────────────────────────────────────
+
+  const findKeyTermsTarget = () => {
+    if (!activeKeyTermsSectionId) return { keyTerms: [], title: "" };
+    // Direct mode
+    const directSec = formData.sections.find((s) => s.id === activeKeyTermsSectionId);
+    if (directSec) return { keyTerms: directSec.keyTerms || [], title: directSec.title || "" };
+    // Hierarchy mode
+    for (const root of formData.hierarchySections) {
+      for (const child of root.children) {
+        for (const h of child.hadiths) {
+          if (h._localId === activeKeyTermsSectionId) {
+            return { keyTerms: h.keyTerms || [], title: h.title || "" };
+          }
+        }
+      }
+      for (const h of root.hadiths || []) {
+        if (h._localId === activeKeyTermsSectionId) {
+          return { keyTerms: h.keyTerms || [], title: h.title || "" };
+        }
+      }
+    }
+    return { keyTerms: [], title: "" };
+  };
+
+  const keyTermsTarget = findKeyTermsTarget();
+
+  // ────────────────────────────────────────────────
+  // RENDER: HADITH/PARAGRAPH CARD (reused across modes)
+  // ────────────────────────────────────────────────
+
+  const renderHadithCard = (sec, sIdx, { onRemove, isRemovable = true } = {}) => (
+    <div
+      key={sec.id || sec._localId}
+      className="bg-base-100 rounded-2xl border-2 border-cyan-700/20 p-5 space-y-5 shadow-xs relative"
+    >
+      {/* Section Header */}
+      <div className="flex items-center justify-between border-b border-base-200 pb-3">
+        <span className="badge bg-cyan-700 text-white font-bold text-xs px-3 py-1 rounded-lg">
+          الحديث / الفقرة {sIdx + 1}
+        </span>
+        {isRemovable && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg gap-1"
+            title="حذف هذا الحديث أو الفقرة"
+          >
+            <HiTrash className="text-sm" />
+            <span>حذف</span>
+          </button>
+        )}
+      </div>
+
+      {/* Title (Optional) */}
+      <div>
+        <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1.5">
+          <HiOutlineBookOpen className="text-base text-cyan-700" />
+          <span>عنوان الحديث أو الفقرة <span className="text-base-content/50 font-normal">(اختياري)</span></span>
+        </label>
+        <input
+          type="text"
+          value={sec.title}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (sec.id) handleSectionChange(sec.id, "title", val);
+            else if (sec._localId) handleHadithFieldChangeGeneric(sec._localId, "title", val);
+          }}
+          placeholder="مثال: الحديث الأول: إنما الأعمال بالنيات (اختياري)"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-base-300 bg-base-100 text-sm font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+        />
+      </div>
+
+      {/* Main Matn Text */}
+      <div>
+        <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
+          <HiOutlineDocumentText className="text-base text-cyan-700" />
+          <span>نص المتن الرئيسي <span className="text-red-500">*</span></span>
+        </label>
+        <textarea
+          rows={4}
+          required
+          value={sec.matnText}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (sec.id) handleSectionChange(sec.id, "matnText", val);
+            else if (sec._localId) handleHadithFieldChangeGeneric(sec._localId, "matnText", val);
+          }}
+          placeholder="اكتب أو ألصق نص المتن الأصلي..."
+          className="w-full p-4 rounded-xl border border-base-300 bg-base-100 text-base font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+        />
+
+        {/* Key Terms Button */}
+        <div className="mt-2.5">
+          <button
+            type="button"
+            onClick={() => setActiveKeyTermsSectionId(sec.id || sec._localId)}
+            className="btn btn-xs sm:btn-sm btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-xl text-xs flex items-center gap-1.5 font-bold transition-all shadow-2xs group"
+          >
+            <HiOutlineSparkles className="text-sm text-cyan-700 group-hover:text-white" />
+            <span>إدارة الكلمات الحساسة في النطق</span>
+            {(sec.keyTerms?.length || 0) > 0 && (
+              <span className="badge badge-sm bg-cyan-700 text-white font-bold px-2 py-0.5 rounded-full text-[10px]">
+                {sec.keyTerms.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Text Explanations */}
+      <div className="space-y-3 bg-base-200/40 p-4 rounded-xl border border-base-200">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-base-content/90 flex items-center gap-1.5">
+            <HiOutlineBookOpen className="text-base text-cyan-700" />
+            <span>الشروحات النصية المكتوبة</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              if (sec.id) handleAddExplanation(sec.id);
+            }}
+            className="btn btn-xs btn-outline border-cyan-700 text-cyan-700 hover:bg-cyan-700 hover:text-white rounded-lg text-[11px] gap-1 font-bold"
+          >
+            <HiPlus className="text-xs" />
+            <span>إضافة شرح نصي آخر</span>
+          </button>
+        </div>
+
+        {sec.explanations?.map((exp, eIdx) => (
+          <div
+            key={exp.id || exp._localId}
+            className="bg-base-100 p-3.5 rounded-xl border border-base-300 space-y-3 relative"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <input
+                type="text"
+                value={exp.scholarOrBook}
+                onChange={(e) => {
+                  if (sec.id) handleExplanationChange(sec.id, exp.id, "scholarOrBook", e.target.value);
+                }}
+                placeholder="اسم الشرح / الشيخ (مثال: شرح الشيخ ابن عثيمين)"
+                className="w-full px-3 py-1.5 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+              />
+              {sec.explanations.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sec.id) handleRemoveExplanation(sec.id, exp.id);
+                  }}
+                  className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 rounded-md shrink-0"
+                  title="حذف هذا الشرح"
+                >
+                  <HiTrash className="text-sm" />
+                </button>
+              )}
+            </div>
+            <textarea
+              rows={3}
+              value={exp.text}
+              onChange={(e) => {
+                if (sec.id) handleExplanationChange(sec.id, exp.id, "text", e.target.value);
+              }}
+              placeholder="اكتب الشرح النصي والتعليقات..."
+              className="w-full p-3 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Video & Audio */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div>
+          <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
+            <HiOutlineVideoCamera className="text-base text-cyan-700" />
+            <span>الشرح المرئي (رابط الفيديو)</span>
+          </label>
+          <input
+            type="text"
+            value={sec.videoUrl}
+            onChange={(e) => {
+              if (sec.id) handleSectionChange(sec.id, "videoUrl", e.target.value);
+            }}
+            placeholder="رابط فيديو الشرح المرئي أو YouTube ID"
+            className="w-full px-3.5 py-2 rounded-xl border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
+            <HiOutlineVolumeUp className="text-base text-cyan-700" />
+            <span>الصوتيات (رفع ملف صوتي من الجهاز)</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <label className="btn btn-sm btn-outline border-cyan-700/40 text-cyan-700 bg-base-100 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 font-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer grow shadow-xs">
+              <HiOutlineUpload className="text-base text-cyan-700 shrink-0" />
+              <span className="truncate">
+                {sec.audioFileName || "رفع ملف صوتي من الجهاز (MP3 / WAV)"}
+              </span>
+              <input
+                type="file"
+                accept="audio/*"
+                onChange={(e) => {
+                  if (sec.id) handleAudioUpload(sec.id, e);
+                }}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Placeholder for generic hadith field change (hierarchy mode)
+  const handleHadithFieldChangeGeneric = () => { };
+
+  // ────────────────────────────────────────────────
+  // RENDER: HIERARCHY BUILDER (النمط 2 و 3)
+  // ────────────────────────────────────────────────
+
+  const renderHierarchyBuilder = () => {
+    if (!rootLevel || !childLevel) return null;
+
+    return (
+      <div className="space-y-5">
+        {formData.hierarchySections.map((root, rIdx) => {
+          const isCollapsed = collapsedSections.has(root._localId);
+          const totalHadiths = root.children.reduce((sum, c) => sum + c.hadiths.length, 0);
+
+          return (
+            <div
+              key={root._localId}
+              className="border-2 border-amber-500/30 dark:border-amber-700/30 rounded-2xl overflow-hidden shadow-xs"
+            >
+              {/* Root Section Header */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-amber-50/70 dark:bg-amber-950/30 border-b border-amber-200/50 dark:border-amber-800/30">
+                <span className="badge bg-amber-600 text-white font-bold text-xs px-3 py-1 rounded-lg shrink-0">
+                  {rootLevel.label} {rIdx + 1}
+                </span>
+
+                <input
+                  type="text"
+                  value={root.name}
+                  onChange={(e) => handleRootSectionNameChange(root._localId, e.target.value)}
+                  placeholder={`اسم ال${rootLevel.label} (مثال: ${rootLevel.label === "كتاب" ? "كتاب الطهارة" : "باب العبادات"})`}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-amber-300/60 dark:border-amber-800/50 bg-white dark:bg-slate-900 text-sm font-2 font-bold text-base-content focus:outline-hidden focus:border-amber-500 shadow-xs"
+                />
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Stats badge */}
+                  <span className="text-[10px] text-amber-700/70 dark:text-amber-400/70 font-2 hidden sm:inline">
+                    {root.children.length} {childLevel.plural} · {totalHadiths} عنصر
+                  </span>
+
+                  {/* Collapse toggle */}
+                  <button
+                    type="button"
+                    onClick={() => toggleCollapse(root._localId)}
+                    className="btn btn-ghost btn-xs rounded-lg text-amber-700 dark:text-amber-400"
+                    title={isCollapsed ? "توسيع" : "طي"}
+                  >
+                    {isCollapsed ? <HiChevronDown className="text-base" /> : <HiChevronUp className="text-base" />}
+                  </button>
+
+                  {/* Delete root */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRootSection(root._localId)}
+                    className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
+                    title={`حذف ال${rootLevel.label}`}
+                  >
+                    <HiTrash className="text-sm" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Collapsible Content */}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
+                  }`}
+              >
+                <div className="p-4 space-y-4">
+                  {/* Child Sections */}
+                  {root.children.map((child, cIdx) => {
+                    const isChildCollapsed = collapsedSections.has(child._localId);
+
+                    return (
+                      <div
+                        key={child._localId}
+                        className="border border-cyan-600/20 dark:border-cyan-700/20 rounded-xl overflow-hidden"
+                      >
+                        {/* Child Header */}
+                        <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-cyan-50/50 dark:bg-cyan-950/20 border-b border-cyan-200/40 dark:border-cyan-800/20">
+                          <span className="badge bg-cyan-600 text-white font-bold text-[11px] px-2.5 py-0.5 rounded-lg shrink-0">
+                            {childLevel.label} {cIdx + 1}
+                          </span>
+
+                          <input
+                            type="text"
+                            value={child.name}
+                            onChange={(e) =>
+                              handleChildSectionNameChange(root._localId, child._localId, e.target.value)
+                            }
+                            placeholder={`اسم ال${childLevel.label} (مثال: ${childLevel.label === "باب" ? "باب الوضوء" : "فصل الصيام"})`}
+                            className="flex-1 px-2.5 py-1 rounded-lg border border-cyan-300/50 dark:border-cyan-800/40 bg-white dark:bg-slate-900 text-xs font-2 font-bold text-base-content focus:outline-hidden focus:border-cyan-500"
+                          />
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] text-cyan-600/60 font-2 hidden sm:inline">
+                              {child.hadiths.length} عنصر
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleCollapse(child._localId)}
+                              className="btn btn-ghost btn-xs rounded-lg text-cyan-600"
+                              title={isChildCollapsed ? "توسيع" : "طي"}
+                            >
+                              {isChildCollapsed ? <HiChevronDown className="text-sm" /> : <HiChevronUp className="text-sm" />}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveChildSection(root._localId, child._localId)}
+                              className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
+                              title={`حذف ال${childLevel.label}`}
+                            >
+                              <HiTrash className="text-xs" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Child Content: Hadiths */}
+                        <div
+                          className={`transition-all duration-300 ease-in-out overflow-hidden ${isChildCollapsed ? "max-h-0 opacity-0" : "max-h-none opacity-100"
+                            }`}
+                        >
+                          <div className="p-3.5 space-y-3">
+                            {child.hadiths.length === 0 && (
+                              <p className="text-xs text-base-content/50 text-center py-3 font-2">
+                                لا توجد أحاديث أو فقرات بعد في هذا ال{childLevel.label}
+                              </p>
+                            )}
+
+                            {child.hadiths.map((h, hIdx) => (
+                              <div
+                                key={h._localId}
+                                className="bg-base-100 rounded-xl border border-base-300 p-4 space-y-3"
+                              >
+                                <div className="flex items-center justify-between pb-2 border-b border-base-200">
+                                  <span className="badge badge-sm bg-slate-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-md">
+                                    حديث / فقرة {hIdx + 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveHadithFromChild(root._localId, child._localId, h._localId)}
+                                    className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md"
+                                  >
+                                    <HiTrash className="text-xs" />
+                                  </button>
+                                </div>
+
+                                {/* Title */}
+                                <input
+                                  type="text"
+                                  value={h.title}
+                                  onChange={(e) =>
+                                    handleHadithFieldChange(root._localId, child._localId, h._localId, "title", e.target.value)
+                                  }
+                                  placeholder="عنوان الحديث أو الفقرة (اختياري)"
+                                  className="w-full px-3 py-2 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+                                />
+
+                                {/* Matn Text */}
+                                <textarea
+                                  rows={3}
+                                  value={h.matnText}
+                                  onChange={(e) =>
+                                    handleHadithFieldChange(root._localId, child._localId, h._localId, "matnText", e.target.value)
+                                  }
+                                  placeholder="اكتب أو ألصق نص المتن الأصلي..."
+                                  className="w-full p-3 rounded-lg border border-base-300 bg-base-100 text-sm font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+                                />
+
+                                {/* Key Terms Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveKeyTermsSectionId(h._localId)}
+                                  className="btn btn-xs btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-lg text-[10px] flex items-center gap-1 font-bold transition-all group"
+                                >
+                                  <HiOutlineSparkles className="text-xs text-cyan-700 group-hover:text-white" />
+                                  <span>الكلمات الحساسة</span>
+                                  {(h.keyTerms?.length || 0) > 0 && (
+                                    <span className="badge badge-xs bg-cyan-700 text-white font-bold px-1.5 rounded-full text-[9px]">
+                                      {h.keyTerms.length}
+                                    </span>
+                                  )}
+                                </button>
+                              </div>
+                            ))}
+
+                            {/* Add Hadith button */}
+                            <button
+                              type="button"
+                              onClick={() => handleAddHadithToChild(root._localId, child._localId)}
+                              className="btn btn-sm btn-outline border-cyan-700/50 text-cyan-700 hover:bg-cyan-700 hover:text-white rounded-xl text-xs font-bold gap-1 w-full"
+                            >
+                              <HiPlus className="text-sm" />
+                              <span>إضافة حديث أو فقرة لهذا ال{childLevel.label}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Add Child Section button */}
+                  <button
+                    type="button"
+                    onClick={() => handleAddChildSection(root._localId)}
+                    className="btn btn-sm btn-outline border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-600 hover:text-white rounded-xl text-xs font-bold gap-1 w-full"
+                  >
+                    <HiPlus className="text-sm" />
+                    <span>إضافة {childLevel.label} جديد داخل {rootLevel.label === "كتاب" ? "هذا الكتاب" : "هذا الباب"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Add Root Section button */}
+        <button
+          type="button"
+          onClick={handleAddRootSection}
+          className="btn btn-md bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold gap-1.5 shadow-xs w-full"
+        >
+          <HiPlus className="text-base" />
+          <span>إضافة {rootLevel.label} جديد</span>
+        </button>
+      </div>
+    );
+  };
+
+  // ────────────────────────────────────────────────
+  // MAIN RENDER
+  // ────────────────────────────────────────────────
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 md:p-6 overflow-y-auto"
@@ -332,7 +1030,7 @@ export default function ContentFormModal({
                 {initialData ? "تعديل محتوى المتن" : "إضافة متن جديد"}
               </h2>
               <p className="text-xs text-base-content/60 font-2">
-                إدخال وإدارة تفاصيل المتن والأقسام والشروحات الصويتة والمرئية.
+                إدخال وإدارة تفاصيل المتن والأقسام والشروحات الصوتية والمرئية.
               </p>
             </div>
           </div>
@@ -393,7 +1091,7 @@ export default function ContentFormModal({
                 />
               </div>
 
-              {/* 1.3 Category (Matching Filter Options) */}
+              {/* 1.3 Category */}
               <div>
                 <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
                   التصنيف الرئيسي <span className="text-red-500">*</span>
@@ -429,7 +1127,7 @@ export default function ContentFormModal({
                 </select>
               </div>
 
-              {/* 1.5 Main Site Visibility Control */}
+              {/* 1.5 Visibility */}
               <div>
                 <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1">
                   <HiOutlineEye className="text-base text-cyan-700" />
@@ -447,7 +1145,7 @@ export default function ContentFormModal({
               </div>
             </div>
 
-            {/* 1.5 Brief Description (Required) */}
+            {/* 1.6 Brief Description */}
             <div>
               <label className="block text-xs font-semibold text-base-content/80 mb-1.5">
                 نبذة عن الكتاب <span className="text-red-500">*</span>
@@ -462,13 +1160,12 @@ export default function ContentFormModal({
               />
             </div>
 
-            {/* 1.6 Cover Image File Upload */}
+            {/* 1.7 Cover Image */}
             <div>
               <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1.5">
                 <HiOutlinePhotograph className="text-base text-cyan-700" />
                 <span>صورة الغلاف (رفع من الجهاز)</span>
               </label>
-
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <label className="btn btn-outline border-cyan-700/40 text-cyan-700 bg-base-100 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 font-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-xs">
                   <HiOutlineUpload className="text-lg text-cyan-700 shrink-0" />
@@ -480,7 +1177,6 @@ export default function ContentFormModal({
                     className="hidden"
                   />
                 </label>
-
                 {formData.coverImagePreview && (
                   <div className="flex items-center gap-3 bg-base-100 p-2 rounded-xl border border-base-300">
                     <img
@@ -499,199 +1195,62 @@ export default function ContentFormModal({
           </div>
 
           {/* ────────────────────────────────────────────────────────── */}
-          {/* SECTION 2: HIERARCHICAL MATN SECTIONS & EXPLANATIONS */}
+          {/* SECTION 2: STRUCTURE MODE + CONTENT */}
           {/* ────────────────────────────────────────────────────────── */}
           <div className="space-y-6">
-            <div className="flex items-center justify-between pb-2 border-b border-base-200">
-              <div className="flex items-center gap-2">
+            <div className="pb-2 border-b border-base-200">
+              <div className="flex items-center gap-2 mb-4">
                 <span className="w-6 h-6 rounded-full bg-cyan-700 text-white text-xs flex items-center justify-center font-bold">2</span>
                 <h3 className="font-1 font-bold text-base text-cyan-700 dark:text-cyan-400">
-                  الفقرات والأحاديث والشروحات والصوتيات
+                  هيكل المحتوى والأحاديث والشروحات
                 </h3>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddSection}
-                className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl text-xs font-bold gap-1 shadow-xs"
-              >
-                <HiPlus className="text-base" />
-                <span>إضافة فقرة أو حديث</span>
-              </button>
+              {/* Structure Mode Selector */}
+              <StructureModeSelector
+                value={formData.structureMode}
+                onChange={handleStructureModeChange}
+                disabled={false}
+              />
             </div>
 
-            {formData.sections.map((sec, sIdx) => (
-              <div
-                key={sec.id}
-                className="bg-base-100 rounded-2xl border-2 border-cyan-700/20 p-5 space-y-5 shadow-xs relative"
-              >
-                {/* Section Header */}
-                <div className="flex items-center justify-between border-b border-base-200 pb-3">
-                  <span className="badge bg-cyan-700 text-white font-bold text-xs px-3 py-1 rounded-lg">
-                    الحديث / الفقرة {sIdx + 1}
-                  </span>
-
-                  {formData.sections.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSection(sec.id)}
-                      className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg gap-1"
-                      title="حذف هذا الحديث أو الفقرة"
-                    >
-                      <HiTrash className="text-sm" />
-                      <span>حذف</span>
-                    </button>
-                  )}
+            {/* ── DIRECT MODE (النمط 1): Flat sections ── */}
+            {formData.structureMode === BOOK_STRUCTURE_MODES.DIRECT && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAddSection}
+                    className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl text-xs font-bold gap-1 shadow-xs"
+                  >
+                    <HiPlus className="text-base" />
+                    <span>إضافة فقرة أو حديث</span>
+                  </button>
                 </div>
 
-                {/* 2.1 Section Name / Title (Optional) */}
-                <div>
-                  <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1.5">
-                    <HiOutlineBookOpen className="text-base text-cyan-700" />
-                    <span>عنوان الحديث أو الفقرة <span className="text-base-content/50 font-normal">(اختياري)</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    value={sec.title}
-                    onChange={(e) => handleSectionChange(sec.id, "title", e.target.value)}
-                    placeholder="مثال: الحديث الأول: إنما الأعمال بالنيات (اختياري)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-base-300 bg-base-100 text-sm font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
-                  />
-                </div>
-
-                {/* 2.1 Main Matn Text */}
-                <div>
-                  <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
-                    <HiOutlineDocumentText className="text-base text-cyan-700" />
-                    <span>نص المتن الرئيسي <span className="text-red-500">*</span></span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={sec.matnText}
-                    onChange={(e) => handleSectionChange(sec.id, "matnText", e.target.value)}
-                    placeholder="اكتب أو ألصق نص المتن الأصلي..."
-                    className="w-full p-4 rounded-xl border border-base-300 bg-base-100 text-base font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
-                  />
-
-                  {/* Button right below Matn Text Area */}
-                  <div className="mt-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setActiveKeyTermsSectionId(sec.id)}
-                      className="btn btn-xs sm:btn-sm btn-outline border-cyan-700/60 text-cyan-700 hover:bg-cyan-700 hover:text-white font-2 rounded-xl text-xs flex items-center gap-1.5 font-bold transition-all shadow-2xs group"
-                    >
-                      <HiOutlineSparkles className="text-sm text-cyan-700 group-hover:text-white" />
-                      <span>إدارة الكلمات الحساسة في النطق</span>
-                      {(sec.keyTerms?.length || 0) > 0 && (
-                        <span className="badge badge-sm bg-cyan-700 text-white font-bold px-2 py-0.5 rounded-full text-[10px]">
-                          {sec.keyTerms.length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2.2 Text Explanations List (Multiple Allowed) */}
-                <div className="space-y-3 bg-base-200/40 p-4 rounded-xl border border-base-200">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-base-content/90 flex items-center gap-1.5">
-                      <HiOutlineBookOpen className="text-base text-cyan-700" />
-                      <span>الشروحات النصية المكتوبة</span>
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={() => handleAddExplanation(sec.id)}
-                      className="btn btn-xs btn-outline border-cyan-700 text-cyan-700 hover:bg-cyan-700 hover:text-white rounded-lg text-[11px] gap-1 font-bold"
-                    >
-                      <HiPlus className="text-xs" />
-                      <span>إضافة شرح نصي آخر</span>
-                    </button>
-                  </div>
-
-                  {sec.explanations.map((exp, eIdx) => (
-                    <div
-                      key={exp.id}
-                      className="bg-base-100 p-3.5 rounded-xl border border-base-300 space-y-3 relative"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <input
-                          type="text"
-                          value={exp.scholarOrBook}
-                          onChange={(e) =>
-                            handleExplanationChange(sec.id, exp.id, "scholarOrBook", e.target.value)
-                          }
-                          placeholder="اسم الشرح / الشيخ (مثال: شرح الشيخ ابن عثيمين)"
-                          className="w-full px-3 py-1.5 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
-                        />
-
-                        {sec.explanations.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExplanation(sec.id, exp.id)}
-                            className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 rounded-md shrink-0"
-                            title="حذف هذا الشرح"
-                          >
-                            <HiTrash className="text-sm" />
-                          </button>
-                        )}
-                      </div>
-
-                      <textarea
-                        rows={3}
-                        value={exp.text}
-                        onChange={(e) =>
-                          handleExplanationChange(sec.id, exp.id, "text", e.target.value)
-                        }
-                        placeholder="اكتب الشرح النصي والتعليقات..."
-                        className="w-full p-3 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* 2.3 Video & Audio Inputs Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  {/* Video URL */}
-                  <div>
-                    <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
-                      <HiOutlineVideoCamera className="text-base text-cyan-700" />
-                      <span>الشرح المرئي (رابط الفيديو)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={sec.videoUrl}
-                      onChange={(e) => handleSectionChange(sec.id, "videoUrl", e.target.value)}
-                      placeholder="رابط فيديو الشرح المرئي أو YouTube ID"
-                      className="w-full px-3.5 py-2 rounded-xl border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600"
-                    />
-                  </div>
-
-                  {/* Audio File Upload */}
-                  <div>
-                    <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
-                      <HiOutlineVolumeUp className="text-base text-cyan-700" />
-                      <span>الصوتيات (رفع ملف صوتي من الجهاز)</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <label className="btn btn-sm btn-outline border-cyan-700/40 text-cyan-700 bg-base-100 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 font-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer grow shadow-xs">
-                        <HiOutlineUpload className="text-base text-cyan-700 shrink-0" />
-                        <span className="truncate">
-                          {sec.audioFileName || "رفع ملف صوتي من الجهاز (MP3 / WAV)"}
-                        </span>
-                        <input
-                          type="file"
-                          accept="audio/*"
-                          onChange={(e) => handleAudioUpload(sec.id, e)}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                {formData.sections.map((sec, sIdx) =>
+                  renderHadithCard(sec, sIdx, {
+                    onRemove: () => handleRemoveSection(sec.id),
+                    isRemovable: formData.sections.length > 1,
+                  })
+                )}
               </div>
-            ))}
+            )}
+
+            {/* ── HIERARCHY MODE (النمط 2 و 3): Kitab→Bab or Bab→Fasl ── */}
+            {(formData.structureMode === BOOK_STRUCTURE_MODES.KITAB_BAB ||
+              formData.structureMode === BOOK_STRUCTURE_MODES.BAB_FASL) && (
+                <div className="space-y-4">
+                  {formData.hierarchySections.length === 0 && (
+                    <div className="text-center py-8 space-y-3">
+                      <p className="text-sm text-base-content/50 font-2">
+                        لم يتم إضافة أي {rootLevel?.plural} بعد. ابدأ بإضافة أول {rootLevel?.label}.
+                      </p>
+                    </div>
+                  )}
+                  {renderHierarchyBuilder()}
+                </div>
+              )}
           </div>
 
           {/* ── Form Actions Footer ── */}
@@ -720,13 +1279,9 @@ export default function ContentFormModal({
         isOpen={Boolean(activeKeyTermsSectionId)}
         onClose={() => setActiveKeyTermsSectionId(null)}
         hadithId={activeKeyTermsSectionId}
-        initialKeyTerms={
-          formData.sections.find((s) => s.id === activeKeyTermsSectionId)?.keyTerms || []
-        }
+        initialKeyTerms={keyTermsTarget.keyTerms}
         onSaveKeyTerms={handleSaveSectionKeyTerms}
-        sectionTitle={
-          formData.sections.find((s) => s.id === activeKeyTermsSectionId)?.title || ""
-        }
+        sectionTitle={keyTermsTarget.title}
       />
 
       {/* ── Unsaved Changes Guard Dialog ── */}
@@ -760,6 +1315,42 @@ export default function ContentFormModal({
                 className="btn bg-red-600 hover:bg-red-700 text-white font-2 font-bold rounded-xl text-xs flex-1"
               >
                 نعم، إلغاء المدخلات
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mode Change Warning Dialog ── */}
+      {showModeChangeWarning && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+          <div className="bg-base-100 border border-base-300 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 mx-auto flex items-center justify-center text-2xl">
+              <HiOutlineExclamationCircle />
+            </div>
+
+            <h3 className="font-1 font-bold text-lg text-base-content">
+              تغيير الهيكل التنظيمي؟
+            </h3>
+
+            <p className="font-2 text-xs text-base-content/70 leading-relaxed">
+              سيؤدي تغيير الهيكل التنظيمي إلى مسح جميع الأحاديث والفقرات المدخلة حالياً. هل تريد المتابعة؟
+            </p>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowModeChangeWarning(null)}
+                className="btn btn-outline border-base-300 font-2 rounded-xl text-xs flex-1"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => applyStructureModeChange(showModeChangeWarning)}
+                className="btn bg-amber-600 hover:bg-amber-700 text-white font-2 font-bold rounded-xl text-xs flex-1"
+              >
+                نعم، تغيير الهيكل
               </button>
             </div>
           </div>

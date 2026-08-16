@@ -127,4 +127,56 @@ export const booksService = {
       return null;
     }
   },
+
+  // ── HadithSections CRUD ──
+
+  /**
+   * Create a new section under a book
+   * @param {{ name: string, type: number, order: number, hadithBookId: number, parentSectionId?: number }} data
+   */
+  async createSection(data) {
+    return await apiFetch("/api/HadithSections", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an existing section
+   * @param {number|string} sectionId
+   * @param {Object} data
+   */
+  async updateSection(sectionId, data) {
+    return await apiFetch(`/api/HadithSections/${sectionId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a section by ID
+   * @param {number|string} sectionId
+   */
+  async deleteSection(sectionId) {
+    return await apiFetch(`/api/HadithSections/${sectionId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Fetch full book content (sections + hadiths) in parallel
+   * @param {number|string} bookId
+   * @returns {Promise<{ sections: Array, hadiths: Array }>}
+   */
+  async getBookFullContent(bookId) {
+    if (!bookId) return { sections: [], hadiths: [] };
+    const [sections, hadiths] = await Promise.all([
+      apiFetch(`/api/HadithSections?bookId=${bookId}`).catch(() => []),
+      apiFetch(`/api/Hadiths?bookId=${bookId}`).catch(() => []),
+    ]);
+    return {
+      sections: Array.isArray(sections) ? sections : [],
+      hadiths: Array.isArray(hadiths) ? hadiths : [],
+    };
+  },
 };
