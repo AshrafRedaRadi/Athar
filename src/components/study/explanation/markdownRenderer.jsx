@@ -6,11 +6,11 @@ import React from "react";
 
 /** Turquoise badge class for quoted Hadith / Quran text */
 const QUOTE_BADGE_CLASS =
-  "inline-flex items-center px-2.5 py-0.5 rounded-xl bg-cyan-700/15 dark:bg-cyan-950/90 text-cyan-950 dark:text-cyan-100 font-bold font-3 text-[1em] border border-cyan-700/30 dark:border-cyan-400/60 shadow-2xs mx-1 my-0.5 align-baseline leading-relaxed";
+  "inline-flex items-center px-2 py-0.5 rounded-lg bg-cyan-700/15 dark:bg-cyan-950/90 text-cyan-950 dark:text-cyan-100 font-bold font-3 text-[0.96em] border border-cyan-700/30 dark:border-cyan-400/60 shadow-2xs mx-1 my-0.5 align-baseline leading-relaxed";
 
 /** Subtle citation badge class for verse references like (البقرة: من الآية ٢٧٢) */
 const CITATION_BADGE_CLASS =
-  "inline-flex items-center px-2 py-0.5 rounded-md bg-base-200/90 dark:bg-base-300/80 text-cyan-800 dark:text-cyan-300 font-semibold font-2 text-[0.85em] border border-base-300 mx-1 align-baseline";
+  "inline-flex items-center px-1.5 py-0.5 rounded-md bg-base-200/90 dark:bg-base-300/80 text-cyan-800 dark:text-cyan-300 font-semibold font-2 text-[0.85em] border border-base-300 mx-1 align-baseline";
 
 /** Section key label highlight class (e.g. مسألة: / الجواب: / أولاً:) */
 const KEY_LABEL_CLASS =
@@ -105,15 +105,15 @@ function parseInlineContent(str, keyRef) {
   if (!str) return str;
 
   const result = [];
-  // Tokenize by «...», ⦅...⦆, and **...**
-  const regex = /(«[^»]+»|⦅[^⦆]+⦆|\*\*[\s\S]+?\*\*)/g;
+  // Tokenize by «...», ⦅...⦆, **bold**, and *highlight/italic*
+  const regex = /(«[^»]+»|⦅[^⦆]+⦆|\*\*[\s\S]+?\*\*|\*[^*\n]+?\*)/g;
   let lastIdx = 0;
   let match;
 
   while ((match = regex.exec(str)) !== null) {
     // Plain text before token
     if (match.index > lastIdx) {
-      const plain = str.slice(lastIdx, match.index).replace(/\*\*/g, "");
+      const plain = str.slice(lastIdx, match.index).replace(/\*/g, "");
       if (plain) result.push(plain);
     }
 
@@ -121,7 +121,7 @@ function parseInlineContent(str, keyRef) {
     const k = keyRef.k++;
 
     if (token.startsWith("«") && token.endsWith("»")) {
-      const inner = token.slice(1, -1).trim().replace(/\*\*/g, "");
+      const inner = token.slice(1, -1).trim().replace(/\*/g, "");
       result.push(
         <span key={`q_${k}`} className={QUOTE_BADGE_CLASS}>
           «{inner}»
@@ -135,7 +135,7 @@ function parseInlineContent(str, keyRef) {
         </span>
       );
     } else if (token.startsWith("**") && token.endsWith("**")) {
-      const inner = token.slice(2, -2).trim().replace(/\*\*/g, "");
+      const inner = token.slice(2, -2).trim().replace(/\*/g, "");
       // Check if it's a key label (like مسألة: / الجواب: / الراوي: / التخريج: / أولاً:)
       const isKeyLabel = /^(مسألة|الجواب|تنبيه|فائدة|أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الأول|الثاني|الثالث|الراوي|التخريج|الموقع في الكتاب|المصدر|القاعدة الكلية|تفصيل الحكم|المثال التطبيقي)[:：]?$/.test(
         inner
@@ -153,6 +153,16 @@ function parseInlineContent(str, keyRef) {
           {inner}
         </strong>
       );
+    } else if (token.startsWith("*") && token.endsWith("*") && token.length > 2) {
+      const inner = token.slice(1, -1).trim().replace(/\*/g, "");
+      result.push(
+        <strong
+          key={`i_${k}`}
+          className="font-bold text-cyan-900 dark:text-cyan-200"
+        >
+          {inner}
+        </strong>
+      );
     }
 
     lastIdx = regex.lastIndex;
@@ -160,7 +170,7 @@ function parseInlineContent(str, keyRef) {
 
   // Remaining trailing text
   if (lastIdx < str.length) {
-    const trailing = str.slice(lastIdx).replace(/\*\*/g, "");
+    const trailing = str.slice(lastIdx).replace(/\*/g, "");
     if (trailing) result.push(trailing);
   }
 
@@ -202,7 +212,7 @@ export default function renderMarkdownText(rawText) {
         blocks.push(
           <h4
             key={`h_${keyRef.k++}`}
-            className="font-3 font-bold text-[1.18em] text-cyan-800 dark:text-cyan-300 mt-4 mb-2 border-r-3 border-cyan-700 pr-2.5"
+            className="font-3 font-bold text-[1.12em] text-cyan-800 dark:text-cyan-300 mt-2.5 mb-1 border-r-3 border-cyan-700 pr-2"
           >
             {headingText}
           </h4>
@@ -222,7 +232,7 @@ export default function renderMarkdownText(rawText) {
         .trim();
 
       blocks.push(
-        <div key={`bq_${keyRef.k++}`} className="my-2.5">
+        <div key={`bq_${keyRef.k++}`} className="my-1">
           <span className={QUOTE_BADGE_CLASS}>«{clean}»</span>
         </div>
       );
@@ -242,7 +252,7 @@ export default function renderMarkdownText(rawText) {
       blocks.push(
         <ol
           key={`ol_${keyRef.k++}`}
-          className="space-y-2 my-3 ms-4 list-decimal font-2 text-[1em] text-base-content/90 leading-relaxed"
+          className="space-y-1 my-1.5 ms-4 list-decimal font-2 text-[0.96em] text-base-content/90 leading-relaxed"
         >
           {listItems.map((it, idx) => (
             <li key={idx} className="ps-1">
@@ -266,7 +276,7 @@ export default function renderMarkdownText(rawText) {
       blocks.push(
         <ul
           key={`ul_${keyRef.k++}`}
-          className="space-y-2 my-3 ms-4 list-disc font-2 text-[1em] text-base-content/90 leading-relaxed"
+          className="space-y-1 my-1.5 ms-4 list-disc font-2 text-[0.96em] text-base-content/90 leading-relaxed"
         >
           {listItems.map((it, idx) => (
             <li key={idx} className="ps-1">
@@ -286,7 +296,7 @@ export default function renderMarkdownText(rawText) {
       blocks.push(
         <h5
           key={`fh_${keyRef.k++}`}
-          className="font-3 font-bold text-[1.1em] text-cyan-800 dark:text-cyan-300 mt-4 mb-1.5"
+          className="font-3 font-bold text-[1.04em] text-cyan-800 dark:text-cyan-300 mt-2.5 mb-1"
         >
           {inner}
         </h5>
@@ -299,7 +309,7 @@ export default function renderMarkdownText(rawText) {
     blocks.push(
       <p
         key={`p_${keyRef.k++}`}
-        className="font-2 text-[1em] leading-relaxed text-base-content/90 mb-3"
+        className="font-2 text-[0.96em] leading-relaxed text-base-content/90 mb-1.5"
       >
         {parseInlineContent(trimmed, keyRef)}
       </p>
