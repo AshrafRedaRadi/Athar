@@ -506,7 +506,7 @@ export default function ContentFormModal({
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-cyan-700 text-white text-xs flex items-center justify-center font-bold">2</span>
                 <h3 className="font-1 font-bold text-base text-cyan-700 dark:text-cyan-400">
-                  أقسام المتن والشروحات والصوتيات
+                  الفقرات والأحاديث والشروحات والصوتيات
                 </h3>
               </div>
 
@@ -516,7 +516,7 @@ export default function ContentFormModal({
                 className="btn btn-sm bg-cyan-700 hover:bg-cyan-800 text-white rounded-xl text-xs font-bold gap-1 shadow-xs"
               >
                 <HiPlus className="text-base" />
-                <span>إضافة قسم جديد</span>
+                <span>إضافة فقرة أو حديث</span>
               </button>
             </div>
 
@@ -528,7 +528,7 @@ export default function ContentFormModal({
                 {/* Section Header */}
                 <div className="flex items-center justify-between border-b border-base-200 pb-3">
                   <span className="badge bg-cyan-700 text-white font-bold text-xs px-3 py-1 rounded-lg">
-                    القسم {sIdx + 1}
+                    الحديث / الفقرة {sIdx + 1}
                   </span>
 
                   {formData.sections.length > 1 && (
@@ -536,10 +536,10 @@ export default function ContentFormModal({
                       type="button"
                       onClick={() => handleRemoveSection(sec.id)}
                       className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg gap-1"
-                      title="حذف هذا القسم"
+                      title="حذف هذا الحديث أو الفقرة"
                     >
                       <HiTrash className="text-sm" />
-                      <span>حذف القسم</span>
+                      <span>حذف</span>
                     </button>
                   )}
                 </div>
@@ -548,7 +548,7 @@ export default function ContentFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1.5">
                     <HiOutlineBookOpen className="text-base text-cyan-700" />
-                    <span>اسم القسم / عنوان الحديث <span className="text-base-content/50 font-normal">(اختياري)</span></span>
+                    <span>عنوان الحديث أو الفقرة <span className="text-base-content/50 font-normal">(اختياري)</span></span>
                   </label>
                   <input
                     type="text"
@@ -563,14 +563,14 @@ export default function ContentFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-base-content/80 mb-1 flex items-center gap-1.5">
                     <HiOutlineDocumentText className="text-base text-cyan-700" />
-                    <span>نص المتن الرئيسي لهذا القسم <span className="text-red-500">*</span></span>
+                    <span>نص المتن الرئيسي <span className="text-red-500">*</span></span>
                   </label>
                   <textarea
                     rows={4}
                     required
                     value={sec.matnText}
                     onChange={(e) => handleSectionChange(sec.id, "matnText", e.target.value)}
-                    placeholder="اكتب أو ألصق نص المتن الأصلي لهذا القسم..."
+                    placeholder="اكتب أو ألصق نص المتن الأصلي..."
                     className="w-full p-4 rounded-xl border border-base-300 bg-base-100 text-base font-4 leading-relaxed text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
                   />
 
@@ -597,7 +597,7 @@ export default function ContentFormModal({
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-base-content/90 flex items-center gap-1.5">
                       <HiOutlineBookOpen className="text-base text-cyan-700" />
-                      <span>الشروحات النصية المكتوبة لهذا القسم</span>
+                      <span>الشروحات النصية المكتوبة</span>
                     </label>
 
                     <button
