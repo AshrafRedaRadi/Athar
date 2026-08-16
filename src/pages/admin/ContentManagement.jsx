@@ -161,81 +161,169 @@ export default function ContentManagement() {
         hadithsService.getAllExplanations().catch(() => []),
       ]);
 
-      if (Array.isArray(realHadiths) && realHadiths.length > 0) {
-        const sectionsWithExplanations = realHadiths.map((h, idx) => {
-          let explanationsList = [];
-          const hExplanations = Array.isArray(allExplanations)
-            ? allExplanations.filter((exp) => Number(exp.hadithId) === Number(h.id))
-            : [];
+      // Helper to format hadith explanations
+      const formatExplanationsForHadith = (hId) => {
+        const hExplanations = Array.isArray(allExplanations)
+          ? allExplanations.filter((exp) => Number(exp.hadithId) === Number(hId))
+          : [];
 
-          if (hExplanations.length > 0) {
-            explanationsList = hExplanations.map((e, eIdx) => ({
-              id: e.id || eIdx,
-              scholarOrBook:
-                e.explanationBookName ||
-                e.explanationBookAuthor ||
-                hadithsService.resolveExplanationTitleSync(e, expBooks),
-              text: e.text || "",
-            }));
-          }
+        if (hExplanations.length > 0) {
+          return hExplanations.map((e, eIdx) => ({
+            _localId: e.id || eIdx + 1,
+            id: e.id || eIdx + 1,
+            scholarOrBook:
+              e.explanationBookName ||
+              e.explanationBookAuthor ||
+              hadithsService.resolveExplanationTitleSync(e, expBooks),
+            text: e.text || "",
+          }));
+        }
+        return [{ _localId: 1, id: 1, scholarOrBook: "", text: "" }];
+      };
 
-          if (explanationsList.length === 0) {
-            explanationsList = [{ id: 1, scholarOrBook: "", text: "" }];
-          }
+      // Helper to format keyterms for hadith
+      const formatKeyTermsForHadith = (hId) => {
+        return Array.isArray(allKeyTerms)
+          ? allKeyTerms.filter((kt) => Number(kt.hadithId) === Number(hId))
+          : [];
+      };
 
-          // Find matching section name
-          const matchingSection = Array.isArray(sections)
-            ? sections.find((s) => s.id === h.hadithSectionId)
-            : null;
-          const secName = matchingSection?.title || "";
+      // ── Detect Structure Mode from Sections ──
+      const hasSections = Array.isArray(sections) && sections.length > 0;
+      let detectedMode = "direct";
 
-          // Construct section/hadith title
-          let constructedTitle = h.title || "";
-          if (!constructedTitle && secName) {
-            constructedTitle = secName;
-          } else if (secName && constructedTitle && !constructedTitle.includes(secName)) {
-            constructedTitle = `${secName}: ${constructedTitle}`;
-          } else if (!constructedTitle && h.hadithNumber) {
-            constructedTitle = h.hadithNumber;
-          }
+      if (hasSections) {
+        const hasKitab = sections.some((s) => Number(s.type) === 1);
+        const hasFasl = sections.some((s) => Number(s.type) === 3);
 
-          const fetchedKeyTerms = Array.isArray(allKeyTerms)
-            ? allKeyTerms.filter((kt) => Number(kt.hadithId) === Number(h.id))
-            : [];
+        if (hasKitab) {
+          detectedMode = "kitab_bab";
+        } else if (hasFasl || sections.some((s) => Number(s.type) === 4 && !s.parentSectionId)) {
+          detectedMode = "bab_fasl";
+        }
+      }
+
+      if (detectedMode === "kitab_bab" || detectedMode === "bab_fasl") {
+        // Build 2-level hierarchy for editing
+        const rootSections = sections
+          .filter((s) => !s.parentSectionId)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const hierarchySections = rootSections.map((root) => {
+          const children = sections
+            .filter((s) => Number(s.parentSectionId) === Number(root.id))
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((child) => {
+              const childHadiths = (Array.isArray(realHadiths) ? realHadiths : [])
+                .filter((h) => Number(h.hadithSectionId) === Number(child.id))
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((h) => ({
+                  _localId: h.id || Date.now() + Math.random(),
+                  id: h.id,
+                  title: h.title || "",
+                  matnText: h.text || "",
+                  explanations: formatExplanationsForHadith(h.id),
+                  keyTerms: formatKeyTermsForHadith(h.id),
+                  videoUrl: h.videoExplanation || "",
+                  audioFile: null,
+                  audioFileName: h.audioUrl || "",
+                }));
+
+              return {
+                _localId: child.id || Date.now() + Math.random(),
+                id: child.id,
+                name: child.name || child.title || "",
+                type: child.type,
+                order: child.order || 1,
+                hadiths: childHadiths,
+              };
+            });
 
           return {
-            id: h.id || idx + 1,
-            title: constructedTitle,
-            matnText: h.text || "",
-            explanations: explanationsList,
-            keyTerms: fetchedKeyTerms,
-            videoUrl: h.videoExplanation || "",
-            audioFile: null,
-            audioFileName: h.audioUrl || "",
+            _localId: root.id || Date.now() + Math.random(),
+            id: root.id,
+            name: root.name || root.title || "",
+            type: root.type,
+            order: root.order || 1,
+            children,
           };
         });
 
         setEditingBook({
           ...book,
-          sections: sectionsWithExplanations,
+          structureMode: detectedMode,
+          hierarchySections,
+          sections: [
+            {
+              id: Date.now(),
+              title: "",
+              matnText: "",
+              explanations: [{ id: 1, scholarOrBook: "", text: "" }],
+              keyTerms: [],
+              videoUrl: "",
+              audioFile: null,
+              audioFileName: "",
+            },
+          ],
         });
-      } else if (Array.isArray(sections) && sections.length > 0) {
-        const mappedSections = sections.map((sec, idx) => ({
-          id: sec.id || idx + 1,
-          title: sec.title || "",
-          matnText: sec.text || "",
-          explanations: [{ id: 1, scholarOrBook: "", text: "" }],
-          videoUrl: "",
-          audioFile: null,
-          audioFileName: "",
-        }));
-        setEditingBook({ ...book, sections: mappedSections });
       } else {
-        setEditingBook(book);
+        // Direct Mode: flat hadiths list
+        let directSections = [];
+        if (Array.isArray(realHadiths) && realHadiths.length > 0) {
+          directSections = realHadiths.map((h, idx) => ({
+            id: h.id || idx + 1,
+            _localId: h.id || idx + 1,
+            title: h.title || (h.hadithNumber ? h.hadithNumber : ""),
+            matnText: h.text || "",
+            explanations: formatExplanationsForHadith(h.id),
+            keyTerms: formatKeyTermsForHadith(h.id),
+            videoUrl: h.videoExplanation || "",
+            audioFile: null,
+            audioFileName: h.audioUrl || "",
+          }));
+        } else {
+          directSections = [
+            {
+              id: Date.now(),
+              _localId: Date.now(),
+              title: "",
+              matnText: book.matnText || "",
+              explanations: [{ id: 1, scholarOrBook: "", text: "" }],
+              keyTerms: [],
+              videoUrl: "",
+              audioFile: null,
+              audioFileName: "",
+            },
+          ];
+        }
+
+        setEditingBook({
+          ...book,
+          structureMode: "direct",
+          sections: directSections,
+          hierarchySections: [],
+        });
       }
     } catch (err) {
-      console.warn("Using current book state for modal:", err.message);
-      setEditingBook(book);
+      console.warn("Using fallback book state for edit modal:", err.message);
+      setEditingBook({
+        ...book,
+        structureMode: "direct",
+        sections: [
+          {
+            id: Date.now(),
+            _localId: Date.now(),
+            title: "",
+            matnText: book.matnText || "",
+            explanations: [{ id: 1, scholarOrBook: "", text: "" }],
+            keyTerms: [],
+            videoUrl: "",
+            audioFile: null,
+            audioFileName: "",
+          },
+        ],
+        hierarchySections: [],
+      });
     } finally {
       setIsLoading(false);
       setIsFormOpen(true);
