@@ -414,6 +414,7 @@ function extractEntityId(res) {
                 const hadithPayload = {
                   title: sec.title || "",
                   matnText: sec.matnText,
+                  narrator: sec.narrator?.trim() || "غير محدد",
                   order: i + 1,
                   hadithBookId: Number(bookId),
                   hadithSectionId: null,
@@ -449,9 +450,29 @@ function extractEntityId(res) {
         ) {
           // Hierarchy Modes: Kitab -> Bab or Bab -> Fasl
           if (Array.isArray(formData.hierarchySections)) {
+            const existingSections = await booksService.getBookSections(bookId).catch(() => []);
+
+            const getOrCreateSection = async ({ name, type, order, hadithBookId, parentSectionId }) => {
+              const existing = (existingSections || []).find((s) =>
+                (s.parentSectionId === parentSectionId || (parentSectionId == null && s.parentSectionId == null)) &&
+                (Number(s.order) === Number(order) || (s.name && s.name.trim() === (name || "").trim()))
+              );
+              if (existing) {
+                console.log("♻️ [Reusing Existing Section]:", existing.id, existing.name);
+                return existing;
+              }
+              return await booksService.createSection({
+                name,
+                type,
+                order,
+                hadithBookId,
+                parentSectionId,
+              });
+            };
+
             for (let rIdx = 0; rIdx < formData.hierarchySections.length; rIdx++) {
               const root = formData.hierarchySections[rIdx];
-              const createdRoot = await booksService.createSection({
+              const createdRoot = await getOrCreateSection({
                 name: root.name || `قسم ${rIdx + 1}`,
                 type: root.type,
                 order: rIdx + 1,
@@ -463,12 +484,12 @@ function extractEntityId(res) {
               });
 
               const rootId = extractEntityId(createdRoot);
-              console.log("📂 [Created Root Section ID]:", rootId);
+              console.log("📂 [Created/Reused Root Section ID]:", rootId);
 
               if (Array.isArray(root.children)) {
                 for (let cIdx = 0; cIdx < root.children.length; cIdx++) {
                   const child = root.children[cIdx];
-                  const createdChild = await booksService.createSection({
+                  const createdChild = await getOrCreateSection({
                     name: child.name || `فرع ${cIdx + 1}`,
                     type: child.type,
                     order: cIdx + 1,
@@ -480,7 +501,7 @@ function extractEntityId(res) {
                   });
 
                   const childId = extractEntityId(createdChild);
-                  console.log("📁 [Created Child Section ID]:", childId);
+                  console.log("📁 [Created/Reused Child Section ID]:", childId);
 
                   if (Array.isArray(child.hadiths)) {
                     for (let hIdx = 0; hIdx < child.hadiths.length; hIdx++) {
@@ -489,6 +510,7 @@ function extractEntityId(res) {
                         const hadithPayload = {
                           title: h.title || "",
                           matnText: h.matnText,
+                          narrator: h.narrator?.trim() || "غير محدد",
                           order: hIdx + 1,
                           hadithBookId: Number(bookId),
                           hadithSectionId: childId ? Number(childId) : null,

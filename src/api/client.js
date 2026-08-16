@@ -42,7 +42,7 @@ export function translateServerError(rawMsg) {
   if (!rawMsg) return "تعذَّر إكمال العملية حالياً، يرجى المحاولة لاحقاً";
   const s = String(rawMsg).toLowerCase();
 
-  if (s.includes("already registered") || s.includes("already exists") || s.includes("is taken") || s.includes("duplicateemail")) {
+  if ((s.includes("email") && (s.includes("already registered") || s.includes("already exists") || s.includes("is taken"))) || s.includes("duplicateemail")) {
     return "هذا البريد الإلكتروني مسجل بالفعل لدى حساب آخر.";
   }
   if (s.includes("invalid email or password")) {
