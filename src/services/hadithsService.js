@@ -376,7 +376,6 @@ export const hadithsService = {
   async getHadithsCount() {
     try {
       const data = await apiFetch("/api/Hadiths");
-      console.log("📜 [Hadiths API Data]:", data);
       if (Array.isArray(data)) {
         return data.length;
       }

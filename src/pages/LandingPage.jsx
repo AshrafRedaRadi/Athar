@@ -177,12 +177,6 @@ const SCRIPT_PHASE_2 = [
 
 function RecitationVideoSimulator() {
   const [currentTime, setCurrentTime] = useState(0);
-  const [phase, setPhase] = useState(1);
-  const [isHidden, setIsHidden] = useState(false);
-  const [isMicActive, setIsMicActive] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: '70%', y: '85%' });
-  const [showBanner, setShowBanner] = useState(false);
-  const [bannerText, setBannerText] = useState('');
 
   const totalDuration = 14500;
   const requestRef = useRef();
@@ -206,13 +200,6 @@ function RecitationVideoSimulator() {
     return () => cancelAnimationFrame(requestRef.current);
   }, []);
 
-  useEffect(() => {
-    if (currentTime < 500) {
-      setPhase(1);
-      setIsHidden(false);
-      setCursorPos({ x: '70%', y: '85%' });
-      setIsMicActive(false);
-      setShowBanner(false);
     } else if (currentTime >= 500 && currentTime < 900) {
       setCursorPos({ x: '50%', y: '88%' });
       setIsMicActive(true);
