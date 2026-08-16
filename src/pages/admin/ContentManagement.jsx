@@ -269,6 +269,27 @@ export default function ContentManagement() {
     setIsDeleteOpen(true);
   };
 
+// Robust helper to extract numerical ID from various backend response shapes
+function extractEntityId(res) {
+  if (res == null) return null;
+  if (typeof res === "number" && !isNaN(res)) return res;
+  if (typeof res === "string" && !isNaN(Number(res)) && res.trim() !== "") return Number(res);
+  if (typeof res === "object") {
+    return (
+      extractEntityId(res.id) ??
+      extractEntityId(res.Id) ??
+      extractEntityId(res.bookId) ??
+      extractEntityId(res.BookId) ??
+      extractEntityId(res.sectionId) ??
+      extractEntityId(res.SectionId) ??
+      extractEntityId(res.hadithId) ??
+      extractEntityId(res.HadithId) ??
+      extractEntityId(res.data)
+    );
+  }
+  return null;
+}
+
   const handleSaveForm = async (formData) => {
     setIsSubmitting(true);
     try {
@@ -279,12 +300,15 @@ export default function ContentManagement() {
         await booksService.updateBook(bookId, formData);
       } else {
         const created = await booksService.createBook(formData);
-        bookId = created?.id ?? created?.data?.id ?? (typeof created === "number" ? created : null);
+        console.log("📚 [Created Book Response]:", created);
+        bookId = extractEntityId(created);
       }
 
       if (!bookId && editingBook) {
         bookId = editingBook.id;
       }
+
+      console.log("📚 [Active Book ID]:", bookId);
 
       // Persist book visibility preference
       if (bookId) {
@@ -303,13 +327,17 @@ export default function ContentManagement() {
                   title: sec.title || "",
                   matnText: sec.matnText,
                   order: i + 1,
-                  hadithBookId: bookId,
+                  hadithBookId: Number(bookId),
                   hadithSectionId: null,
                   videoUrl: sec.videoUrl || "",
                   audioUrl: sec.audioFileName || "",
                 };
-                const createdHadith = await hadithsService.createHadith(hadithPayload).catch(() => null);
-                const hadithId = createdHadith?.id ?? createdHadith?.data?.id;
+                console.log("📜 [Direct Hadith Payload]:", hadithPayload);
+                const createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
+                  console.warn("Could not save direct hadith:", err);
+                  return null;
+                });
+                const hadithId = extractEntityId(createdHadith);
 
                 // Save key terms if provided
                 if (hadithId && Array.isArray(sec.keyTerms) && sec.keyTerms.length > 0) {
@@ -339,11 +367,15 @@ export default function ContentManagement() {
                 name: root.name || `قسم ${rIdx + 1}`,
                 type: root.type,
                 order: rIdx + 1,
-                hadithBookId: bookId,
+                hadithBookId: Number(bookId),
                 parentSectionId: null,
-              }).catch(() => null);
+              }).catch((err) => {
+                console.warn("Could not create root section:", err);
+                return null;
+              });
 
-              const rootId = createdRoot?.id ?? createdRoot?.data?.id ?? (typeof createdRoot === "number" ? createdRoot : null);
+              const rootId = extractEntityId(createdRoot);
+              console.log("📂 [Created Root Section ID]:", rootId);
 
               if (Array.isArray(root.children)) {
                 for (let cIdx = 0; cIdx < root.children.length; cIdx++) {
@@ -352,33 +384,42 @@ export default function ContentManagement() {
                     name: child.name || `فرع ${cIdx + 1}`,
                     type: child.type,
                     order: cIdx + 1,
-                    hadithBookId: bookId,
-                    parentSectionId: rootId,
-                  }).catch(() => null);
+                    hadithBookId: Number(bookId),
+                    parentSectionId: rootId ? Number(rootId) : null,
+                  }).catch((err) => {
+                    console.warn("Could not create child section:", err);
+                    return null;
+                  });
 
-                  const childId = createdChild?.id ?? createdChild?.data?.id ?? (typeof createdChild === "number" ? createdChild : null);
+                  const childId = extractEntityId(createdChild);
+                  console.log("📁 [Created Child Section ID]:", childId);
 
                   if (Array.isArray(child.hadiths)) {
                     for (let hIdx = 0; hIdx < child.hadiths.length; hIdx++) {
                       const h = child.hadiths[hIdx];
                       if (h.matnText && h.matnText.trim()) {
-                        const createdHadith = await hadithsService.createHadith({
+                        const hadithPayload = {
                           title: h.title || "",
                           matnText: h.matnText,
                           order: hIdx + 1,
-                          hadithBookId: bookId,
-                          hadithSectionId: childId,
+                          hadithBookId: Number(bookId),
+                          hadithSectionId: childId ? Number(childId) : null,
                           videoUrl: h.videoUrl || "",
                           audioUrl: h.audioFileName || "",
-                        }).catch(() => null);
+                        };
+                        console.log("📜 [Hierarchy Hadith Payload]:", hadithPayload);
+                        const createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
+                          console.warn("Could not create hierarchy hadith:", err);
+                          return null;
+                        });
 
-                        const hadithId = createdHadith?.id ?? createdHadith?.data?.id;
+                        const hadithId = extractEntityId(createdHadith);
 
                         if (hadithId && Array.isArray(h.keyTerms) && h.keyTerms.length > 0) {
                           for (const kt of h.keyTerms) {
                             if (kt.text) {
                               await hadithsService.createHadithKeyTerm({
-                                hadithId,
+                                hadithId: Number(hadithId),
                                 text: kt.text,
                                 normalizedText: kt.normalizedText,
                                 order: kt.order || 1,

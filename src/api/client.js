@@ -208,12 +208,17 @@ export async function apiFetch(endpoint, options = {}, isRetry = false) {
     }
 
     if (!response.ok) {
+      console.error(`🚨 [API Error ${response.status}] ${endpoint}:`, resData);
       let errorMsg = resData?.msg || resData?.message;
-      if (!errorMsg && resData?.errors && typeof resData.errors === "object") {
-        const errList = Object.values(resData.errors).flat().filter(Boolean);
+      if (resData?.errors && typeof resData.errors === "object") {
+        const errList = Object.entries(resData.errors)
+          .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`)
+          .filter(Boolean);
         if (errList.length > 0) {
           errorMsg = errList.join(" | ");
         }
+      } else if (!errorMsg && resData?.title) {
+        errorMsg = resData.title;
       }
       throw new Error(translateServerError(errorMsg || "تعذَّر إكمال العملية حالياً، يرجى المحاولة لاحقاً"));
     }
