@@ -15,6 +15,7 @@ import { HiOutlineChartBar } from "react-icons/hi2";
 import Navbar from "../../components/shared/Navbar";
 import { usersService } from "../../services/usersService";
 import { booksService } from "../../services/booksService";
+import { apiFetch } from "../../api/client";
 
 function formatTimeAgo(dateInput) {
   if (!dateInput) return "مؤخراً";
@@ -54,13 +55,34 @@ function ControlPanel() {
       setIsLoadingActivities(true);
 
       try {
-        const [students, books, users] = await Promise.all([
-          usersService.getStudentsCount(),
-          booksService.getExplanationBooksCount(),
-          usersService.getUsers(),
+        const [overviewRes, users] = await Promise.all([
+          apiFetch("/api/Admin/overview").catch((err) => {
+            console.warn("Could not fetch /api/Admin/overview:", err);
+            return null;
+          }),
+          usersService.getUsers().catch((err) => {
+            console.warn("Could not fetch users for activity list:", err);
+            return [];
+          }),
         ]);
-        setStudentsCount(students);
-        setBooksCount(books);
+
+        if (overviewRes) {
+          const overviewData = overviewRes.data || overviewRes;
+          if (typeof overviewData.studentsCount === "number") {
+            setStudentsCount(overviewData.studentsCount);
+          }
+          if (typeof overviewData.matnCount === "number") {
+            setBooksCount(overviewData.matnCount);
+          }
+        } else {
+          // Fallback if overview endpoint fails
+          const [students, books] = await Promise.all([
+            usersService.getStudentsCount(),
+            booksService.getExplanationBooksCount(),
+          ]);
+          setStudentsCount(students);
+          setBooksCount(books);
+        }
 
         if (Array.isArray(users) && users.length > 0) {
           // Sort users according to createdAt date ascendingly
