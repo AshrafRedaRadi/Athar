@@ -80,7 +80,7 @@ function AdminSidebar({
         <div>
           {/* User Avatar + Welcome Header */}
           <Link
-            to="/settings"
+            to="/admin/settings"
             onClick={closeDrawer}
             className="flex items-center justify-between border-b border-base-300 pb-4 hover:opacity-90 transition-opacity cursor-pointer group"
             title="انتقل إلى إعدادات الملف الشخصي"

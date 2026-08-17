@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { BsStars } from "react-icons/bs";
 import { AiOutlineInfoCircle } from "react-icons/ai";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
-import { FiBarChart2, FiAward, FiChevronLeft, FiChevronsLeft } from "react-icons/fi";
+import { FiBarChart2, FiAward, FiChevronLeft, FiChevronsLeft, FiLock } from "react-icons/fi";
 import Navbar from "../components/shared/Navbar";
 import StudyToolbar from "../components/study/StudyToolbar";
 import HadithCard from "../components/study/HadithCard";
@@ -15,6 +15,7 @@ import AiChatModal from "../components/shared/AiChatModal";
 import { hadithsService } from "../services/hadithsService";
 import { booksService } from "../services/booksService";
 import { useAuth } from "../context/AuthContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useRecitation } from "../components/study/recitation/useRecitation";
 
 // ─────────────────────────────────────────────
@@ -22,6 +23,7 @@ import { useRecitation } from "../components/study/recitation/useRecitation";
 // ─────────────────────────────────────────────
 export default function Study() {
   const { bookId, sectionId, hadithId } = useParams();
+  const { isHintsLocked, isRecitationLimitReached, showUpgradeModal } = useSubscription();
 
   // sectionId "0" means the book has no sections → omit &sectionId from API call
   const effectiveSectionId = sectionId === "0" ? null : sectionId;
@@ -38,6 +40,7 @@ export default function Study() {
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
   const [congratsMessage, setCongratsMessage] = useState("تم حفظ الحديث، بارك الله فيك استمر!");
+  const [hintTooltip, setHintTooltip] = useState(null);
   const [progressMap, setProgressMap] = useState({});
   const audioControlRef = useRef(null);
   const wasHiddenWhenStartedRef = useRef(false); // tracks if text was hidden when recitation began
@@ -224,39 +227,123 @@ export default function Study() {
     setShowCongrats(false);
   }, [currentHadith?.id]);
 
-  const handleRevealNextWord = () => requestHint(1);
-  const handleRevealNextSentence = () => requestHint(3);
+  const [localRecitationError, setLocalRecitationError] = useState(null);
+
+  const activeRecitationError = localRecitationError || recitationError;
+
+  const handleRevealNextWord = () => {
+    if (isHintsLocked) {
+      setHintTooltip("ميزة التلميحات خاصة بمشتركي الباقة القياسية 🔒");
+      setTimeout(() => setHintTooltip(null), 4000);
+      return;
+    }
+    if (!isListening) {
+      setHintTooltip("يرجى بدء التسميع الصوتي أولاً لاستخدام التلميح 🎙️");
+      setTimeout(() => setHintTooltip(null), 3000);
+      return;
+    }
+    requestHint(1);
+  };
+
+  const handleRevealNextSentence = () => {
+    if (isHintsLocked) {
+      setHintTooltip("ميزة التلميحات خاصة بمشتركي الباقة القياسية 🔒");
+      setTimeout(() => setHintTooltip(null), 4000);
+      return;
+    }
+    if (!isListening) {
+      setHintTooltip("يرجى بدء التسميع الصوتي أولاً لاستخدام التلميح 🎙️");
+      setTimeout(() => setHintTooltip(null), 3000);
+      return;
+    }
+    requestHint(3);
+  };
 
   // Render reusable hint pill container with circular arrow buttons
   const renderHintPill = () => (
-    <div className="flex items-center gap-1 bg-base-100/95 backdrop-blur-md border border-base-300 rounded-full p-1 shadow-md">
-      <button
-        onClick={handleRevealNextWord}
-        disabled={!isListening}
-        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
-        title="كشف الكلمة التالية"
-        aria-label="كشف الكلمة التالية"
+    <div className="relative inline-flex flex-col items-center">
+      {/* Floating Tooltip Message above hint buttons */}
+      {hintTooltip && (
+        <div className="absolute -top-12 z-50 whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-900/95 dark:bg-slate-800/95 border border-amber-400/70 text-amber-300 text-xs font-bold shadow-xl animate-fadeIn flex items-center gap-2">
+          <span>{hintTooltip}</span>
+          {isHintsLocked && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                showUpgradeModal("تلميحات الكلمات أثناء التسميع");
+              }}
+              className="px-2 py-0.5 rounded-md bg-cyan-700 hover:bg-cyan-800 text-white text-[10px] font-bold cursor-pointer transition shadow-xs"
+            >
+              ترقية
+            </button>
+          )}
+        </div>
+      )}
+
+      <div
+        onClick={() => {
+          if (isHintsLocked) {
+            setHintTooltip("ميزة التلميحات خاصة بمشتركي الباقة القياسية 🔒");
+            setTimeout(() => setHintTooltip(null), 4000);
+          }
+        }}
+        className="flex items-center gap-1 bg-base-100/95 dark:bg-slate-900/95 backdrop-blur-md border border-base-300 dark:border-slate-800 rounded-full p-1 shadow-md cursor-pointer"
       >
-        <FiChevronLeft className="text-sm font-bold stroke-[2.5]" />
-      </button>
-      <button
-        onClick={handleRevealNextSentence}
-        disabled={!isListening}
-        className="w-8 h-8 rounded-full border border-base-300 bg-base-100 hover:bg-base-200 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
-        title="كشف الجملة التالية"
-        aria-label="كشف الجملة التالية"
-      >
-        <FiChevronsLeft className="text-sm font-bold stroke-[2.5]" />
-      </button>
+        {isHintsLocked && (
+          <span
+            className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center text-[10px] font-bold shrink-0 ml-0.5"
+            title="ميزة خاصة بالباقة القياسية"
+          >
+            <FiLock className="text-xs" />
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRevealNextWord();
+          }}
+          className={`w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs cursor-pointer ${
+            !isListening && !isHintsLocked ? "opacity-40" : ""
+          }`}
+          title={isHintsLocked ? "ميزة خاصة بالباقة القياسية (اضغط للترقية)" : "كشف الكلمة التالية"}
+          aria-label="كشف الكلمة التالية"
+        >
+          <FiChevronLeft className="text-sm font-bold stroke-[2.5]" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRevealNextSentence();
+          }}
+          className={`w-8 h-8 rounded-full border border-base-300 dark:border-slate-700 bg-base-100 dark:bg-slate-800 text-base-content/80 hover:text-cyan-700 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shrink-0 shadow-2xs cursor-pointer ${
+            !isListening && !isHintsLocked ? "opacity-40" : ""
+          }`}
+          title={isHintsLocked ? "ميزة خاصة بالباقة القياسية (اضغط للترقية)" : "كشف الجملة التالية"}
+          aria-label="كشف الجملة التالية"
+        >
+          <FiChevronsLeft className="text-sm font-bold stroke-[2.5]" />
+        </button>
+      </div>
     </div>
   );
 
   // Toggle recording
   const handleRecordToggle = () => {
+    setLocalRecitationError(null);
     if (isListening) {
       stopListening();
       recitationActiveHadithIndexRef.current = null;
     } else {
+      if (isRecitationLimitReached) {
+        setLocalRecitationError(
+          "لقد استنفدت الحد اليومي المتاح لجلسات التسميع في باقتك. يرجى الترقية إلى الباقة القياسية للحصول على جلسات تسميع إضافية."
+        );
+        showUpgradeModal("جلسات التسميع اليومية");
+        return;
+      }
       recitationActiveHadithIndexRef.current = currentHadithIndex;
       wasHiddenWhenStartedRef.current = isHidden; // capture hide state at recitation start
       startListening(currentHadith?.id);
@@ -448,10 +535,28 @@ export default function Study() {
                   hadithLabel={currentHadith.hadithNumber}
                 />
 
-                {/* Recitation Error Banner if any */}
-                {recitationError && (
-                  <div className="alert alert-error shadow-sm text-xs font-2 my-2 rounded-xl text-white">
-                    <span>{recitationError}</span>
+                {/* Recitation Error / Limit Banner */}
+                {activeRecitationError && (
+                  <div className="my-3 p-3.5 sm:p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-950/40 border border-rose-500/30 dark:border-rose-800/60 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-right font-2 animate-fadeIn">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                      <span className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-200 leading-relaxed">
+                        {activeRecitationError}
+                      </span>
+                    </div>
+                    {(isRecitationLimitReached ||
+                      activeRecitationError.includes("انتهت") ||
+                      activeRecitationError.includes("استنفدت") ||
+                      activeRecitationError.includes("الترقية") ||
+                      activeRecitationError.includes("الباقة")) && (
+                      <button
+                        type="button"
+                        onClick={() => showUpgradeModal("جلسات التسميع اليومية")}
+                        className="px-4 py-2 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer shrink-0 self-end sm:self-auto"
+                      >
+                        ترقية الآن
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -517,10 +622,11 @@ export default function Study() {
 
                     {/* ── MOBILE ONLY (< lg): Expanding Hint Arrows Drawer Pill on the RIGHT of Eye Button ── */}
                     <div
-                      className={`lg:hidden flex items-center transition-all duration-300 ease-out overflow-hidden ${isHidden
-                          ? "max-w-[130px] opacity-100 scale-100"
+                      className={`lg:hidden flex items-center transition-all duration-300 ease-out ${
+                        isHidden
+                          ? "max-w-[160px] opacity-100 scale-100"
                           : "max-w-0 opacity-0 scale-90 pointer-events-none"
-                        }`}
+                      }`}
                     >
                       {renderHintPill()}
                     </div>

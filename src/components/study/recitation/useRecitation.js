@@ -300,6 +300,23 @@ export function useRecitation() {
     }
 
     // Specific user-friendly error messages
+    if (
+      s.includes("daily_limit_reached") ||
+      s.includes("limit_reached") ||
+      s.includes("limit_exceeded") ||
+      s.includes("daily recitation limit") ||
+      s.includes("recitation limit") ||
+      s.includes("quota")
+    ) {
+      return "لقد انتهت جلسات التسميع المتاحة اليوم لهذه الباقة. يرجى الترقية إلى الباقة القياسية للحصول على جلسات تسميع إضافية.";
+    }
+    if (
+      s.includes("hints are available on paid plans only") ||
+      s.includes("hint") ||
+      s.includes("paid_plans_only")
+    ) {
+      return "ميزة تلميحات الكلمات متاحة لمشتركي الباقة القياسية فقط.";
+    }
     if (s.includes("notallowederror") || s.includes("permission denied") || s.includes("permissiondenied")) {
       return "يرجى السماح للمتصفح بالوصول إلى المايكروفون لبدء التسميع.";
     }
@@ -613,7 +630,17 @@ export function useRecitation() {
       return await recitationService.requestHint(connection, sessionId, wordCount);
     } catch (error) {
       console.warn("RequestHint failed:", error);
-      setErrorMsg("تعذر إظهار التلميح الآن، يرجى المحاولة مرة أخرى.");
+      const errMsg = String(error?.message || "").toLowerCase();
+      if (
+        errMsg.includes("paid") ||
+        errMsg.includes("plan") ||
+        errMsg.includes("hint") ||
+        errMsg.includes("upgrade")
+      ) {
+        setErrorMsg("ميزة تلميحات الكلمات متاحة لمشتركي الباقة القياسية 🔒");
+      } else {
+        setErrorMsg("تعذر إظهار التلميح الآن، يرجى المحاولة مرة أخرى.");
+      }
       return null;
     }
   }, [isListening]);

@@ -173,7 +173,7 @@ export default function DashboardTasks({
                 </div>
                 <div>
                   <h4 className="font-bold text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
-                    أحسنت! أتممت جميع مراجعات اليوم 🎉
+                    أحسنت! أتممت جميع مراجعات اليوم
                   </h4>
                   <p className="text-[10px] sm:text-[11px] text-emerald-700/80 dark:text-emerald-400 mt-0.5">
                     تمت مراجعة {dueCompleted} أحاديث بنجاح

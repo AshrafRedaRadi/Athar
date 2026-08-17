@@ -53,7 +53,7 @@ export default function DueReviewsToday({ dueReviews, bookId = 1, onSelectHadith
               {completed >= target && target > 0 ? (
                 <>
                   <HiOutlineCheckCircle className="text-3xl text-emerald-500 mx-auto mb-2 opacity-80" />
-                  <p className="text-xs font-bold text-base-content">أحسنت! أتممت مراجعات اليوم كاملة 🎉</p>
+                  <p className="text-xs font-bold text-base-content">أحسنت! أتممت مراجعات اليوم كاملة</p>
                   <p className="text-[11px] text-base-content/60 mt-1">يمكنك الاستمرار في المراجعة الإضافية من قائمة آخر ما تمت مراجعته</p>
                 </>
               ) : (

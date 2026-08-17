@@ -1,6 +1,6 @@
 import React from "react";
 import { IoGridOutline } from "react-icons/io5";
-import { HiOutlineUsers, HiOutlineDocumentText, HiOutlineSparkles } from "react-icons/hi";
+import { HiOutlineUsers, HiOutlineDocumentText, HiOutlineSparkles, HiOutlineCreditCard } from "react-icons/hi";
 
 /**
  * Shared Admin Navigation Items configuration.
@@ -11,5 +11,6 @@ export const ADMIN_NAV_ITEMS = [
   { id: "users",        label: "إدارة المستخدمين",     dockLabel: "المستخدمون", icon: <HiOutlineUsers className="text-xl" />,        href: "/admin/users" },
   { id: "content",      label: "إدارة المحتوى",         dockLabel: "المحتوى",     icon: <HiOutlineDocumentText className="text-xl" />, href: "/admin/content" },
   { id: "ai-assistant", label: "إدارة المساعد الذكي", dockLabel: "المساعد",    icon: <HiOutlineSparkles className="text-xl" />,     href: "/admin/ai-assistant" },
-  { id: "plans",        label: "إدارة الباقات",             dockLabel: "الباقات",     icon: <HiOutlineSparkles className="text-xl" />,     href: "#" },
+  { id: "plans",        label: "إدارة الباقات",         dockLabel: "الباقات",     icon: <HiOutlineCreditCard className="text-xl" />,   href: "/admin/plans" },
 ];
+

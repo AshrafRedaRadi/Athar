@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { HiOutlineMenuAlt3, HiOutlineHome, HiOutlineCog } from "react-icons/hi";
 import Avatar from "./Avatar";
 import HeaderActions from "./HeaderActions";
@@ -26,9 +26,13 @@ export default function Navbar({
   onOpenSettings,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
-  const isSettingsPage = activePage === "settings" || location.pathname === "/settings";
+  const isSettingsPage =
+    activePage === "settings" ||
+    location.pathname === "/settings" ||
+    location.pathname === "/admin/settings";
 
   const userName = user?.fullName || user?.name || user?.userName || "المستخدم";
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
@@ -43,13 +47,13 @@ export default function Navbar({
       if (window.history?.length > 1) {
         navigate(-1);
       } else {
-        navigate('/');
+        navigate(isAdmin ? '/admin/controlpanel' : '/home');
       }
     } else {
       if (typeof onOpenSettings === 'function') {
         onOpenSettings();
       }
-      navigate('/settings');
+      navigate(isAdmin ? '/admin/settings' : '/settings');
     }
   };
 

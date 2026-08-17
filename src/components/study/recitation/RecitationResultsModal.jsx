@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { IoClose } from "react-icons/io5";
-import { FiCheckCircle, FiAlertTriangle, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiAlertTriangle, FiXCircle, FiLock } from "react-icons/fi";
+import { useSubscription } from "../../../context/SubscriptionContext";
 
 /**
  * RecitationResultsModal — Displays recitation performance results:
@@ -11,6 +12,7 @@ import { FiCheckCircle, FiAlertTriangle, FiXCircle } from "react-icons/fi";
  * - Smooth entrance and exit animations (animate-modalIn / animate-modalOut)
  */
 export default function RecitationResultsModal({ isOpen, onClose, summary, extras = [] }) {
+  const { isAdvancedStatsLocked, showUpgradeModal } = useSubscription();
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
 
@@ -176,167 +178,214 @@ export default function RecitationResultsModal({ isOpen, onClose, summary, extra
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-          {/* Accuracy Circle */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative w-36 h-36">
-              <svg
-                className="w-full h-full -rotate-90"
-                viewBox="0 0 120 120"
+        {isAdvancedStatsLocked ? (
+          <div className="p-6 text-center space-y-4">
+            {/* Lock Icon */}
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/30 text-amber-500 flex items-center justify-center text-3xl mx-auto shadow-sm">
+              <FiLock />
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="font-1 font-bold text-base sm:text-lg text-base-content">
+                إحصائيات التسميع المتقدمة 🔒
+              </h4>
+              <p className="font-2 text-xs sm:text-sm text-base-content/70 leading-relaxed">
+                تقارير دقة التسميع، ونسبة تغطية الحديث، والتحليل المفصل للأخطاء والكلمات الزائدة متاحة حصرياً لمشتركي <strong className="text-cyan-700 dark:text-cyan-400 font-bold">الباقة القياسية</strong>.
+              </p>
+            </div>
+
+            {/* Blurred Teaser Preview */}
+            <div className="relative rounded-2xl p-4 bg-base-200/50 dark:bg-slate-800/50 border border-base-300 dark:border-slate-700 overflow-hidden">
+              <div className="filter blur-[3px] opacity-35 select-none pointer-events-none space-y-2.5">
+                <div className="w-16 h-16 rounded-full border-4 border-cyan-500 mx-auto flex items-center justify-center">
+                  <span className="text-sm font-bold">100%</span>
+                </div>
+                <div className="h-2 bg-base-300 rounded-full w-3/4 mx-auto" />
+                <div className="text-[11px] text-base-content/60">تحليل الأخطاء والكلمات الزائدة</div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="px-3 py-1 rounded-full bg-slate-900/90 text-amber-300 text-xs font-bold shadow-md border border-amber-400/40">
+                  ميزة مقفلة
+                </span>
+              </div>
+            </div>
+
+            {/* Upgrade CTA Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose();
+                  showUpgradeModal("إحصائيات التسميع المتقدمة");
+                }}
+                className="w-full py-3 rounded-2xl bg-gradient-to-l from-cyan-700 via-cyan-600 to-cyan-700 hover:from-cyan-800 hover:to-cyan-700 text-white text-sm font-bold shadow-md shadow-cyan-900/20 transition active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
               >
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  fill="none"
-                  stroke="currentColor"
-                  className="text-base-300 dark:text-base-700"
-                  strokeWidth="7"
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  fill="none"
-                  stroke="currentColor"
-                  className={grade.color}
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={offset}
-                  style={{ transition: "stroke-dashoffset 1s ease-out" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span
-                  className={`font-1 text-2xl font-bold tracking-tight ${grade.color} leading-none mb-1`}
+                <span>ترقية الآن</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+            {/* Accuracy Circle */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative w-36 h-36">
+                <svg
+                  className="w-full h-full -rotate-90"
+                  viewBox="0 0 120 120"
                 >
-                  {Math.round(accuracy)}%
-                </span>
-                <span className="font-2 text-xs text-base-content/60 leading-none">
-                  الدقة
-                </span>
-              </div>
-            </div>
-            <span className={`font-2 text-sm font-semibold ${grade.color}`}>
-              {grade.label}
-            </span>
-          </div>
-
-          {/* Coverage Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="font-2 text-xs sm:text-sm text-base-content/80 font-medium">
-                التغطية <span className="text-[11px] text-base-content/50 font-normal">(ما تم تسميعه من الحديث)</span>
-              </span>
-              <span className="font-2 text-sm font-semibold text-base-content">
-                {Math.round(coverage)}%
-              </span>
-            </div>
-            <div className="w-full bg-base-300 rounded-full h-2.5 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${grade.bg} transition-all duration-1000 ease-out`}
-                style={{ width: `${Math.min(100, Math.max(0, coverage))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Main Recitation Errors List (Side-by-side: الخطأ ➔ الصحيح) */}
-          {filteredIssues.length > 0 ? (
-            <div className="space-y-2">
-              <span className="font-2 text-sm text-base-content/70 block font-semibold">
-                ملاحظات وأخطاء التسميع ({filteredIssues.length}):
-              </span>
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                {filteredIssues.map((rawItem, i) => {
-                  const { expected, actual, message } = parseIssue(rawItem);
-                  const type = String(rawItem?.type || rawItem?.Type || "").toLowerCase();
-                  const isMissing = type.includes("miss") || type.includes("skip");
-
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 bg-base-200/70 rounded-xl px-3 py-2 border border-base-300/40"
-                    >
-                      {isMissing ? (
-                        <FiXCircle className="text-red-500 shrink-0 text-sm" />
-                      ) : (
-                        <FiAlertTriangle className="text-amber-500 shrink-0 text-sm" />
-                      )}
-                      <div className="font-2 text-xs leading-relaxed flex items-center flex-wrap gap-2 w-full">
-                        {actual ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-base-content/60">المنطوق:</span>
-                            <strong className="text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/50 px-1.5 py-0.5 rounded border border-red-200/60 dark:border-red-900/60">
-                              {actual}
-                            </strong>
-                            <span className="text-base-content/40 font-bold">←</span>
-                            <span className="text-base-content/60">الصحيح:</span>
-                            <strong className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-900/60">
-                              {expected}
-                            </strong>
-                          </div>
-                        ) : expected ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-base-content/60">
-                              {isMissing ? "الصحيح (كلمة متروكة):" : "الصحيح:"}
-                            </span>
-                            <strong className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-900/60">
-                              {expected}
-                            </strong>
-                          </div>
-                        ) : (
-                          <span className="text-base-content font-medium">{message}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200/60 dark:border-cyan-900/60 rounded-xl px-4 py-3">
-              <FiCheckCircle className="text-cyan-600 dark:text-cyan-400 text-lg" />
-              <span className="font-2 text-sm text-cyan-700 dark:text-cyan-300 font-medium">
-                لا توجد أخطاء تسميع — أداء ممتاز!
-              </span>
-            </div>
-          )}
-
-          {/* Extra / Out of Context Words Section */}
-          {combinedExtras.length > 0 && (
-            <div className="space-y-2 pt-3 border-t border-base-200 dark:border-base-800">
-              <span className="font-2 text-xs text-red-600 dark:text-red-400 block font-semibold">
-                الكلمات الزائدة / الخارجة عن السياق ({combinedExtras.length}):
-              </span>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                {combinedExtras.map((word, i) => (
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    fill="none"
+                    stroke="currentColor"
+                    className="text-base-300 dark:text-base-700"
+                    strokeWidth="7"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    fill="none"
+                    stroke="currentColor"
+                    className={grade.color}
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    style={{ transition: "stroke-dashoffset 1s ease-out" }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <span
-                    key={i}
-                    className="inline-block bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-4 text-xs px-2.5 py-0.5 rounded-lg border border-red-200 dark:border-red-800/60"
+                    className={`font-1 text-2xl font-bold tracking-tight ${grade.color} leading-none mb-1`}
                   >
-                    {word}
+                    {Math.round(accuracy)}%
                   </span>
-                ))}
+                  <span className="font-2 text-xs text-base-content/60 leading-none">
+                    الدقة
+                  </span>
+                </div>
+              </div>
+              <span className={`font-2 text-sm font-semibold ${grade.color}`}>
+                {grade.label}
+              </span>
+            </div>
+
+            {/* Coverage Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-2 text-xs sm:text-sm text-base-content/80 font-medium">
+                  التغطية <span className="text-[11px] text-base-content/50 font-normal">(ما تم تسميعه من الحديث)</span>
+                </span>
+                <span className="font-2 text-sm font-semibold text-base-content">
+                  {Math.round(coverage)}%
+                </span>
+              </div>
+              <div className="w-full bg-base-300 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${grade.bg} transition-all duration-1000 ease-out`}
+                  style={{ width: `${Math.min(100, Math.max(0, coverage))}%` }}
+                />
               </div>
             </div>
-          )}
 
-          {/* Saved Status */}
-          <div className="flex items-center justify-center gap-2 pt-1">
-            {saved ? (
-              <span className="font-2 text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-1 font-medium">
-                <FiCheckCircle className="text-sm" />
-                تم حفظ المحاولة
-              </span>
+            {/* Main Recitation Errors List (Side-by-side: الخطأ ➔ الصحيح) */}
+            {filteredIssues.length > 0 ? (
+              <div className="space-y-2">
+                <span className="font-2 text-sm text-base-content/70 block font-semibold">
+                  ملاحظات وأخطاء التسميع ({filteredIssues.length}):
+                </span>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                  {filteredIssues.map((rawItem, i) => {
+                    const { expected, actual, message } = parseIssue(rawItem);
+                    const type = String(rawItem?.type || rawItem?.Type || "").toLowerCase();
+                    const isMissing = type.includes("miss") || type.includes("skip");
+
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 bg-base-200/70 rounded-xl px-3 py-2 border border-base-300/40"
+                      >
+                        {isMissing ? (
+                          <FiXCircle className="text-red-500 shrink-0 text-sm" />
+                        ) : (
+                          <FiAlertTriangle className="text-amber-500 shrink-0 text-sm" />
+                        )}
+                        <div className="font-2 text-xs leading-relaxed flex items-center flex-wrap gap-2 w-full">
+                          {actual ? (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-base-content/60">المنطوق:</span>
+                              <strong className="text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/50 px-1.5 py-0.5 rounded border border-red-200/60 dark:border-red-900/60">
+                                {actual}
+                              </strong>
+                              <span className="text-base-content/40 font-bold">←</span>
+                              <span className="text-base-content/60">الصحيح:</span>
+                              <strong className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-900/60">
+                                {expected}
+                              </strong>
+                            </div>
+                          ) : expected ? (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-base-content/60">
+                                {isMissing ? "الصحيح (كلمة متروكة):" : "الصحيح:"}
+                              </span>
+                              <strong className="text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-900/60">
+                                {expected}
+                              </strong>
+                            </div>
+                          ) : (
+                            <span className="text-base-content font-medium">{message}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
-              <span className="font-2 text-xs text-base-content/40">
-                لم يتم حفظ هذه المحاولة
-              </span>
+              <div className="flex items-center gap-2 bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200/60 dark:border-cyan-900/60 rounded-xl px-4 py-3">
+                <FiCheckCircle className="text-cyan-600 dark:text-cyan-400 text-lg" />
+                <span className="font-2 text-sm text-cyan-700 dark:text-cyan-300 font-medium">
+                  لا توجد أخطاء تسميع — أداء ممتاز!
+                </span>
+              </div>
             )}
-          </div>
 
-        </div>
+            {/* Extra / Out of Context Words Section */}
+            {combinedExtras.length > 0 && (
+              <div className="space-y-2 pt-3 border-t border-base-200 dark:border-base-800">
+                <span className="font-2 text-xs text-red-600 dark:text-red-400 block font-semibold">
+                  الكلمات الزائدة / الخارجة عن السياق ({combinedExtras.length}):
+                </span>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {combinedExtras.map((word, i) => (
+                    <span
+                      key={i}
+                      className="inline-block bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-4 text-xs px-2.5 py-0.5 rounded-lg border border-red-200 dark:border-red-800/60"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Saved Status */}
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {saved ? (
+                <span className="font-2 text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-1 font-medium">
+                  <FiCheckCircle className="text-sm" />
+                  تم حفظ المحاولة
+                </span>
+              ) : (
+                <span className="font-2 text-xs text-base-content/40">
+                  لم يتم حفظ هذه المحاولة
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

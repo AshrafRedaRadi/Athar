@@ -66,6 +66,33 @@ export function translateServerError(rawMsg) {
   if (s.includes("chat model is temporarily unavailable") || s.includes("temporarily unavailable")) {
     return "نموذج المحادثة الذكي غير متاح مؤقتاً في السيرفر، يرجى المحاولة بعد قليل أو الضغط على إعادة المحاولة.";
   }
+  if (s.includes("payments are not configured yet")) {
+    return "بوابة الدفع غير مهيأة حالياً في النظام.";
+  }
+  if (s.includes("verified email address is required")) {
+    return "يلزم وجود بريد إلكتروني مؤكد لإتمام عملية الدفع.";
+  }
+  if (s.includes("phone number is required")) {
+    return "يلزم إدخال رقم الهاتف لإتمام عملية الدفع.";
+  }
+  if (s.includes("subscription price is not available")) {
+    return "سعر الاشتراك المحدد غير متوفر للشراء حالياً.";
+  }
+  if (s.includes("already have an active paid subscription")) {
+    return "لديك بالفعل اشتراك مدفوع نشط حالياً.";
+  }
+  if (s.includes("payment checkout is already pending")) {
+    return "توجد عملية دفع قيد الانتظار بالفعل، يرجى إتمامها أو الانتظار حتى تنتهي صلاحيتها.";
+  }
+  if (s.includes("payment checkout could not be created")) {
+    return "تعذَّر إنشاء جلسة الدفع حالياً، يرجى المحاولة لاحقاً.";
+  }
+  if (s.includes("premium_feature_required")) {
+    return "هذه الميزة تتطلب اشتراكاً مدفوعاً.";
+  }
+  if (s.includes("daily_recitation_limit_reached")) {
+    return "لقد استنفدت حصتك اليومية من جلسات التسميع. يمكنك ترقية باقتك للحصول على جلسات أكثر.";
+  }
   if (s === "bad request") {
     return "بيانات الطلب غير صحيحة، يرجى مراجعة المدخلات والمحاولة مجدداً.";
   }

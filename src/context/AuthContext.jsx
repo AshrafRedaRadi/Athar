@@ -176,9 +176,19 @@ export function AuthProvider({ children }) {
       await apiFetch('/api/Auth/logout', {
         method: 'POST',
       });
-    } catch {}
-    updateToken(null);
-    setUser(null);
+    } catch (err) {
+      console.warn("Logout request completed with notice:", err?.message);
+    } finally {
+      updateToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('athar_auth_token');
+      localStorage.removeItem('lastAdminRoute');
+      localStorage.removeItem('recitation_session_id');
+      localStorage.removeItem('athar_last_checkin');
+      sessionStorage.clear();
+    }
   };
 
   // تسجيل الخروج من كل الأجهزة
@@ -191,9 +201,19 @@ export function AuthProvider({ children }) {
           'X-CSRF-Token': 'athar-spa-v1',
         },
       });
-    } catch {}
-    updateToken(null);
-    setUser(null);
+    } catch (err) {
+      console.warn("Logout-all request completed with notice:", err?.message);
+    } finally {
+      updateToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('athar_auth_token');
+      localStorage.removeItem('lastAdminRoute');
+      localStorage.removeItem('recitation_session_id');
+      localStorage.removeItem('athar_last_checkin');
+      sessionStorage.clear();
+    }
   };
 
   const updateUser = (newData) => {

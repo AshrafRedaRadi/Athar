@@ -6,6 +6,7 @@ import ChangeImage from "./ChangeImage";
 import ThemeSwitcher from "./ThemeSwitcher";
 import HadithFontSwitcher from "./HadithFontSwitcher";
 import DeleteAccountSection from "./DeleteAccountSection";
+import SubscriptionSection from "./SubscriptionSection";
 import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
 function SettingsContent({ setShowAvatars }) {
@@ -109,16 +110,27 @@ function SettingsContent({ setShowAvatars }) {
     if (window.history?.length > 1) {
       navigate(-1);
     } else {
-      navigate("/home");
+      navigate(user?.isAdmin ? "/admin/controlpanel" : "/home");
     }
   };
 
   return (
     <div className="settingPage font-2" dir="rtl">
       <header className="text-start space-y-1 mb-6">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
-          إعدادات الملف الشخصي
-        </h1>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
+            title="الرجوع للصفحة السابقة"
+            aria-label="الرجوع للصفحة السابقة"
+          >
+            <HiChevronRight className="text-xl" />
+          </button>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
+            إعدادات الملف الشخصي
+          </h1>
+        </div>
         <p className="text-sm md:text-base text-base-content/60 font-normal mt-2">
           قم بتحديث معلوماتك الشخصية وكيفية ظهورك في المنصة
         </p>
@@ -243,6 +255,9 @@ function SettingsContent({ setShowAvatars }) {
           </div>
         </div>
       </div>
+
+      {/* Subscription & Plan Section */}
+      <SubscriptionSection />
 
       {/* Account & Security Zone (Compact Delete Account + Logout Side-by-Side) */}
       <DeleteAccountSection />
