@@ -109,20 +109,6 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const performDailyCheckIn = async (activeToken) => {
-    try {
-      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
-      const lastCheckIn = localStorage.getItem('athar_last_checkin');
-      if (lastCheckIn === today) return;
-
-      await apiFetch('/api/activity/check-in', { 
-        method: 'POST',
-        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : {}
-      });
-      localStorage.setItem('athar_last_checkin', today);
-    } catch {}
-  };
-
   // تسجيل الدخول العادي
   const login = async (email, password, rememberMe = true) => {
     const responseData = await apiFetch('/api/Auth/login', {
