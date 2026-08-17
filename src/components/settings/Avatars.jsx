@@ -1,7 +1,7 @@
 import { GrClose } from "react-icons/gr";
 import styles from "../../modules/avatars.module.css";
 import useAxiosGet from "../../hooks/useAxiosGet";
-import axios from "axios";
+import { apiFetch, API_BASE_URL } from "../../api/client";
 import { useState } from "react";
 
 const Avatars = ({ setShowAvatars }) => {
@@ -14,20 +14,11 @@ const Avatars = ({ setShowAvatars }) => {
     }, 200);
   };
   const handleAvatarChange = async (avatarId) => {
-    const token = localStorage.getItem("token");
-
     try {
-      await axios.put(
-        "https://atharai.runasp.net/api/Account/avatar",
-        {
-          avatarId: avatarId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await apiFetch("/api/Account/avatar", {
+        method: "PUT",
+        body: JSON.stringify({ avatarId }),
+      });
 
       setShowAvatars(false);
     } catch (error) {
@@ -37,6 +28,8 @@ const Avatars = ({ setShowAvatars }) => {
     }
   };
   const { data } = useAxiosGet("/api/Avatars");
+  const avatarsList = Array.isArray(data) ? data : data?.data || [];
+
   return (
     <div className={`${styles.avatars}`}>
       <div
@@ -49,13 +42,13 @@ const Avatars = ({ setShowAvatars }) => {
           <GrClose />
         </button>
         <div>
-          {data.data?.map((avatar) => (
+          {avatarsList.map((avatar) => (
             <img
               key={avatar.id}
-              src={`https://atharai.runasp.net${avatar.imageUrl}`}
+              src={avatar.imageUrl?.startsWith("http") ? avatar.imageUrl : `${API_BASE_URL}${avatar.imageUrl}`}
               alt={avatar.name}
               onClick={() => handleAvatarChange(avatar.id)}
-              className="h-16 w-16 rounded-full border-2 border-cyan-700 dark:border-cyan-500 object-cover shadow-md"
+              className="h-16 w-16 rounded-full border-2 border-cyan-700 dark:border-cyan-500 object-cover shadow-md cursor-pointer hover:scale-105 transition-transform"
             />
           ))}
         </div>
