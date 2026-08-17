@@ -35,13 +35,13 @@ export default function DueReviewsToday({ dueReviews, bookId = 1, onSelectHadith
       <div>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-base-200/70 dark:border-slate-800">
-          <div className="flex items-center gap-2.5 text-base-content font-bold font-1 text-base sm:text-lg">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-xs">
+          <div className="flex items-center gap-2.5 text-base-content font-bold font-1 text-base sm:text-lg min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-xs shrink-0">
               <HiOutlineCalendarDays className="w-5 h-5 shrink-0" />
             </div>
-            <span>ما يجب مراجعته اليوم</span>
+            <span className="truncate">ما يجب مراجعته اليوم</span>
           </div>
-          <span className="badge badge-sm bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold border border-amber-200/60 dark:border-amber-800/60 px-2 py-0.5 text-[11px]">
+          <span className="badge badge-sm bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold border border-amber-200/60 dark:border-amber-800/60 px-2.5 py-1 text-[11px] whitespace-nowrap shrink-0 inline-flex items-center gap-1">
             {remaining === 0 ? "اكتمل الورد اليومي" : `متبقي ${remaining}`}
           </span>
         </div>

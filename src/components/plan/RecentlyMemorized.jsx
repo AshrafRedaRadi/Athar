@@ -30,14 +30,15 @@ export default function RecentlyMemorized({ items = [], bookId = 1, onSelectHadi
       <div>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-base-200/70 dark:border-slate-800">
-          <div className="flex items-center gap-2.5 text-base-content font-bold font-1 text-base sm:text-lg">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs">
+          <div className="flex items-center gap-2.5 text-base-content font-bold font-1 text-base sm:text-lg min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs shrink-0">
               <HiOutlineBookmark className="w-5 h-5 shrink-0" />
             </div>
-            <span>ما تم حفظه (بانتظار المراجعة)</span>
+            <span className="truncate">ما تم حفظه (بانتظار المراجعة)</span>
           </div>
-          <span className="badge badge-sm bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 text-[11px]">
-            {hadiths.length} حديث
+          <span className="badge badge-sm bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/60 dark:border-emerald-800/60 px-2.5 py-1 text-[11px] whitespace-nowrap shrink-0 inline-flex items-center gap-1">
+            <span>{hadiths.length}</span>
+            <span>حديث</span>
           </span>
         </div>
 
