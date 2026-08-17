@@ -111,6 +111,7 @@ export const hadithsService = {
       title: hadithData.title || "",
       text: hadithData.matnText || hadithData.text || "",
       order: Number(hadithData.order) || 1,
+      hadithNumber: hadithData.hadithNumber?.toString().trim() || null,
       hadithBookId: Number(hadithData.hadithBookId),
       hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
       narrator: hadithData.narrator?.trim() || "غير محدد",
@@ -135,12 +136,14 @@ export const hadithsService = {
     const rawVideo = hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "";
     const ytId = extractYouTubeId(rawVideo);
 
+    // hadithBookId is deliberately absent: the update contract does not accept it, so
+    // sending it only implied that a hadith could be moved between books.
     const payload = {
       id: Number(id) || id,
       title: hadithData.title || "",
       text: hadithData.matnText || hadithData.text || "",
       order: Number(hadithData.order) || 1,
-      hadithBookId: Number(hadithData.hadithBookId),
+      hadithNumber: hadithData.hadithNumber?.toString().trim() || null,
       hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
       narrator: hadithData.narrator?.trim() || "غير محدد",
       takhrij: hadithData.takhrij?.trim() || "",
@@ -249,10 +252,7 @@ export const hadithsService = {
   async getHadithExplanations(hadithId) {
     if (!hadithId) return null;
     try {
-      const [explanations, expBooks] = await Promise.all([
-        apiFetch(`/api/Hadiths/${hadithId}/explanations`),
-        this.getExplanationBooks().catch(() => []),
-      ]);
+      const explanations = await apiFetch(`/api/Hadiths/${hadithId}/explanations`);
 
       const list = Array.isArray(explanations)
         ? explanations
@@ -262,17 +262,14 @@ export const hadithsService = {
         ? [explanations]
         : [];
 
-      return list.map((item) => {
-        const book = Array.isArray(expBooks)
-          ? expBooks.find((b) => Number(b.id) === Number(item.explanationBookId))
-          : null;
-
-        return {
-          ...item,
-          author: book?.author || "",
-          bookTitle: item.explanationBookName || "",
-        };
-      });
+      // The response already carries the book name and author, so there is no second
+      // request to make. Fetching the whole ExplanationBooks list just to read the author
+      // also meant a failed lookup silently blanked the شيخ's name.
+      return list.map((item) => ({
+        ...item,
+        author: item.explanationBookAuthor || "",
+        bookTitle: item.explanationBookName || "",
+      }));
     } catch (err) {
       console.warn("Error fetching hadith explanations:", err.message);
       return null;
@@ -312,8 +309,10 @@ export const hadithsService = {
         }
       }
 
+      // The API contract is { name, author }, both required. Sending "title" meant every
+      // create failed validation, which is what pushed callers onto the silent fallbacks.
       const payload = {
-        title: title,
+        name: title,
         author: author,
       };
       const res = await apiFetch("/api/ExplanationBooks", {
@@ -324,9 +323,30 @@ export const hadithsService = {
       this._cachedExpBooks = null;
       return res;
     } catch (err) {
-      console.warn("Could not create explanation book:", err.message);
-      return null;
+      console.error("Could not create explanation book:", err.message);
+      throw err;
     }
+  },
+
+  /**
+   * Resolve which explanation book a شرح belongs to, from either an explicit id or a
+   * scholar/book name. Throws rather than guessing: an explanation filed under the wrong
+   * شيخ is worse than a save that fails and says why.
+   * @param {{ scholarOrBook?: string, explanationBookId?: number }} payload
+   * @returns {Promise<number>}
+   */
+  async resolveExplanationBookId(payload) {
+    const scholar = typeof payload.scholarOrBook === "string" ? payload.scholarOrBook.trim() : "";
+    if (scholar) {
+      return await this.getOrCreateExplanationBookId(scholar);
+    }
+
+    const explicitId = Number(payload.explanationBookId);
+    if (Number.isInteger(explicitId) && explicitId > 0) {
+      return explicitId;
+    }
+
+    throw new Error("يجب تحديد الشيخ أو كتاب الشرح قبل حفظ الشرح.");
   },
 
   /**
@@ -334,35 +354,32 @@ export const hadithsService = {
    */
   async getOrCreateExplanationBookId(scholarOrBookName) {
     if (!scholarOrBookName || !scholarOrBookName.trim()) {
-      return 1;
+      throw new Error("يجب تحديد الشيخ أو كتاب الشرح قبل حفظ الشرح.");
     }
-    try {
-      const s = scholarOrBookName.trim().toLowerCase();
-      const books = await this.getExplanationBooks();
-      if (Array.isArray(books) && books.length > 0) {
-        const match = books.find((b) =>
-          (b.title && b.title.toLowerCase().includes(s)) ||
-          (b.author && b.author.toLowerCase().includes(s)) ||
-          (b.title && s.includes(b.title.toLowerCase())) ||
-          (b.author && s.includes(b.author.toLowerCase()))
-        );
-        if (match) return match.id;
-      }
 
-      // Try to create a new ExplanationBook entry for this scholar/book on the backend
-      const created = await this.createExplanationBook(scholarOrBookName.trim());
-      if (created?.id) {
-        return created.id;
-      }
+    const s = scholarOrBookName.trim().toLowerCase();
+    const books = await this.getExplanationBooks();
 
-      // Fallback
-      if (Array.isArray(books) && books.length > 0) {
-        return books[0].id;
-      }
-    } catch {
-      // ignore
+    // The API returns `name`, not `title`, so matching on `title` never hit and an
+    // existing شيخ was treated as new on every save.
+    if (Array.isArray(books) && books.length > 0) {
+      const match = books.find((b) =>
+        (b.name && b.name.toLowerCase().includes(s)) ||
+        (b.author && b.author.toLowerCase().includes(s)) ||
+        (b.name && s.includes(b.name.toLowerCase())) ||
+        (b.author && s.includes(b.author.toLowerCase()))
+      );
+      if (match) return match.id;
     }
-    return 1;
+
+    const created = await this.createExplanationBook(scholarOrBookName.trim());
+    if (created?.id) {
+      return created.id;
+    }
+
+    // Never guess. Falling back to whichever book happened to be first files the شرح
+    // under the wrong شيخ while looking like it succeeded.
+    throw new Error("تعذّر إنشاء كتاب الشرح، يرجى المحاولة مرة أخرى.");
   },
 
   /**
@@ -370,17 +387,11 @@ export const hadithsService = {
    * @param {Object} payload { hadithId, text, scholarOrBook, explanationBookId }
    */
   async createExplanation(payload) {
-    let expBookId = null;
-    if (payload.scholarOrBook && typeof payload.scholarOrBook === "string" && payload.scholarOrBook.trim()) {
-      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook);
-    }
-    if (!expBookId) {
-      expBookId = payload.explanationBookId || 1;
-    }
+    const expBookId = await this.resolveExplanationBookId(payload);
     const body = {
       hadithId: Number(payload.hadithId),
       text: payload.text || "",
-      explanationBookId: Number(expBookId) || 1,
+      explanationBookId: expBookId,
     };
     return await apiFetch("/api/Explanations", {
       method: "POST",
@@ -392,18 +403,12 @@ export const hadithsService = {
    * Update an existing explanation via PUT /api/Explanations/{id}
    */
   async updateExplanation(id, payload) {
-    let expBookId = null;
-    if (payload.scholarOrBook && typeof payload.scholarOrBook === "string" && payload.scholarOrBook.trim()) {
-      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook);
-    }
-    if (!expBookId) {
-      expBookId = payload.explanationBookId || 1;
-    }
+    const expBookId = await this.resolveExplanationBookId(payload);
     const body = {
       id: Number(id),
       hadithId: Number(payload.hadithId),
       text: payload.text || "",
-      explanationBookId: Number(expBookId) || 1,
+      explanationBookId: expBookId,
     };
     return await apiFetch(`/api/Explanations/${id}`, {
       method: "PUT",

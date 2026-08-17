@@ -237,6 +237,7 @@ export default function ContentManagement() {
                   _localId: h.id || Date.now() + Math.random(),
                   id: h.id,
                   title: h.title || "",
+                  hadithNumber: h.hadithNumber || "",
                   matnText: h.text || "",
                   explanations: formatExplanationsForHadith(h.id),
                   keyTerms: formatKeyTermsForHadith(h.id),
@@ -305,7 +306,10 @@ export default function ContentManagement() {
           directSections = realHadiths.map((h, idx) => ({
             id: h.id || idx + 1,
             _localId: h.id || idx + 1,
-            title: h.title || (h.hadithNumber ? h.hadithNumber : ""),
+            // The number now has its own field, so the title no longer has to stand in
+            // for it — keeping that fallback would copy the number into the title on save.
+            title: h.title || "",
+            hadithNumber: h.hadithNumber || "",
             matnText: h.text || "",
             explanations: formatExplanationsForHadith(h.id),
             keyTerms: formatKeyTermsForHadith(h.id),
@@ -466,6 +470,7 @@ function extractEntityId(res) {
               if (sec.matnText && sec.matnText.trim()) {
                 const hadithPayload = {
                   title: sec.title || "",
+                  hadithNumber: sec.hadithNumber || "",
                   matnText: sec.matnText,
                   narrator: sec.narrator?.trim() || "غير محدد",
                   order: i + 1,
@@ -598,6 +603,7 @@ function extractEntityId(res) {
                       if (h.matnText && h.matnText.trim()) {
                         const hadithPayload = {
                           title: h.title || "",
+                          hadithNumber: h.hadithNumber || "",
                           matnText: h.matnText,
                           narrator: h.narrator?.trim() || "غير محدد",
                           order: hIdx + 1,

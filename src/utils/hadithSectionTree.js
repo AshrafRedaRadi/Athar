@@ -151,6 +151,7 @@ export function createEmptyFormHadith(order = 1) {
   return {
     _localId: Date.now() + Math.random(),
     title: "",
+    hadithNumber: "",
     matnText: "",
     explanations: [
       {
