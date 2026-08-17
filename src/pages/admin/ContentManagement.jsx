@@ -10,6 +10,7 @@ import ContentFormModal from "../../components/content-management/ContentFormMod
 import DeleteConfirmModal from "../../components/content-management/DeleteConfirmModal";
 import { booksService, setBookVisibilityStatus } from "../../services/booksService";
 import { hadithsService } from "../../services/hadithsService";
+import { buildTree } from "../../utils/hadithSectionTree";
 
 // Helper function to normalize category strings for bulletproof matching
 function normalizeCategory(cat) {
@@ -68,6 +69,9 @@ export default function ContentManagement() {
 
   // Modal States
   const [isFormOpen, setIsFormOpen] = useState(false);
+  // Fetched alongside the book so the explanation editor can offer the existing شيوخ
+  // instead of matching whatever the admin types against them.
+  const [explanationBooks, setExplanationBooks] = useState([]);
   const [editingBook, setEditingBook] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingBook, setDeletingBook] = useState(null);
@@ -159,6 +163,7 @@ export default function ContentManagement() {
         hadithsService.getHadithKeyTerms().catch(() => []),
         hadithsService.getExplanationBooks().catch(() => []),
       ]);
+      setExplanationBooks(Array.isArray(expBooks) ? expBooks : []);
 
       // Fetch explanations specifically for each hadith belonging to this book
       const explanationsByHadithId = {};
@@ -185,7 +190,10 @@ export default function ContentManagement() {
           return hExplanations.map((e) => ({
             _localId: e.id || Date.now() + Math.random(),
             id: e.id,
-            scholarOrBook: e.author || "",
+            // The picker keys off explanationBookId; name and author come along so the
+            // "new" fields are prefilled if the admin switches away from the saved book.
+            scholarOrBook: e.explanationBookName || e.bookTitle || "",
+            newBookAuthor: e.explanationBookAuthor || e.author || "",
             text: e.text || e.explanationText || e.content || "",
             explanationBookId: e.explanationBookId || null,
           }));
@@ -201,163 +209,57 @@ export default function ContentManagement() {
           : [];
       };
 
-      // ── Detect Structure Mode from Sections ──
-      const hasSections = Array.isArray(sections) && sections.length > 0;
-      let detectedMode = "direct";
+      // One shape for every book: hadiths that hang off the book itself, plus a section
+      // tree of whatever depth was saved. No mode is detected because none is stored —
+      // the arrangement is simply whatever the sections say it is.
+      const bookScopedHadiths = (Array.isArray(realHadiths) ? realHadiths : []).filter(
+        (h) => !h.hadithBookId || Number(h.hadithBookId) === Number(book.id)
+      );
 
-      if (hasSections) {
-        const hasKitab = sections.some((s) => Number(s.type) === 1);
-        const hasFasl = sections.some((s) => Number(s.type) === 3);
-
-        if (hasKitab) {
-          detectedMode = "kitab_bab";
-        } else if (hasFasl || sections.some((s) => Number(s.type) === 4 && !s.parentSectionId)) {
-          detectedMode = "bab_fasl";
-        }
+      const { roots, unsectionedHadiths, orphanedSections } = buildTree(
+        sections,
+        bookScopedHadiths
+      );
+      if (orphanedSections.length > 0) {
+        console.warn(
+          "⚠️ [Sections whose parent is missing]:",
+          orphanedSections.map((s) => `${s.id}:${s.name}`)
+        );
       }
 
-      if (detectedMode === "kitab_bab" || detectedMode === "bab_fasl") {
-        // Build 2-level hierarchy for editing
-        const rootSections = sections
-          .filter((s) => !s.parentSectionId)
-          .sort((a, b) => (a.order || 0) - (b.order || 0));
+      const toFormHadith = (h) => ({
+        _localId: `hadith-${h.id}`,
+        id: h.id,
+        title: h.title || "",
+        hadithNumber: h.hadithNumber || "",
+        matnText: h.text || "",
+        explanations: formatExplanationsForHadith(h.id),
+        keyTerms: formatKeyTermsForHadith(h.id),
+        videoUrl: h.videoExplanation || "",
+        audioFile: null,
+        audioFileName: h.audioUrl || "",
+      });
 
-        const hierarchySections = rootSections.map((root) => {
-          const children = sections
-            .filter((s) => Number(s.parentSectionId) === Number(root.id))
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map((child) => {
-              const childHadiths = (Array.isArray(realHadiths) ? realHadiths : [])
-                .filter((h) => {
-                  if (h.hadithBookId && Number(h.hadithBookId) !== Number(book.id)) return false;
-                  return Number(h.hadithSectionId) === Number(child.id);
-                })
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map((h) => ({
-                  _localId: h.id || Date.now() + Math.random(),
-                  id: h.id,
-                  title: h.title || "",
-                  hadithNumber: h.hadithNumber || "",
-                  matnText: h.text || "",
-                  explanations: formatExplanationsForHadith(h.id),
-                  keyTerms: formatKeyTermsForHadith(h.id),
-                  videoUrl: h.videoExplanation || "",
-                  audioFile: null,
-                  audioFileName: h.audioUrl || "",
-                }));
+      const toFormNode = (node) => ({
+        _localId: `section-${node.id}`,
+        id: node.id,
+        name: node.name || node.title || "",
+        type: node.type,
+        order: node.order || 1,
+        hadiths: (node.hadiths || []).map(toFormHadith),
+        children: (node.children || []).map(toFormNode),
+      });
 
-              const hadithsToUse =
-                childHadiths.length > 0
-                  ? childHadiths
-                  : [
-                      {
-                        _localId: Date.now() + Math.random(),
-                        title: "",
-                        matnText: "",
-                        explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
-                        keyTerms: [],
-                        videoUrl: "",
-                        audioFile: null,
-                        audioFileName: "",
-                      },
-                    ];
-
-              return {
-                _localId: child.id || Date.now() + Math.random(),
-                id: child.id,
-                name: child.name || child.title || "",
-                type: child.type,
-                order: child.order || 1,
-                hadiths: hadithsToUse,
-              };
-            });
-
-          return {
-            _localId: root.id || Date.now() + Math.random(),
-            id: root.id,
-            name: root.name || root.title || "",
-            type: root.type,
-            order: root.order || 1,
-            children,
-          };
-        });
-
-        setEditingBook({
-          ...book,
-          structureMode: detectedMode,
-          hierarchySections,
-          sections: [
-            {
-              id: Date.now(),
-              title: "",
-              matnText: "",
-              explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
-              keyTerms: [],
-              videoUrl: "",
-              audioFile: null,
-              audioFileName: "",
-            },
-          ],
-        });
-      } else {
-        // Direct Mode: flat hadiths list
-        let directSections = [];
-        if (Array.isArray(realHadiths) && realHadiths.length > 0) {
-          directSections = realHadiths.map((h, idx) => ({
-            id: h.id || idx + 1,
-            _localId: h.id || idx + 1,
-            // The number now has its own field, so the title no longer has to stand in
-            // for it — keeping that fallback would copy the number into the title on save.
-            title: h.title || "",
-            hadithNumber: h.hadithNumber || "",
-            matnText: h.text || "",
-            explanations: formatExplanationsForHadith(h.id),
-            keyTerms: formatKeyTermsForHadith(h.id),
-            videoUrl: h.videoExplanation || "",
-            audioFile: null,
-            audioFileName: h.audioUrl || "",
-          }));
-        } else {
-          directSections = [
-            {
-              id: Date.now(),
-              _localId: Date.now(),
-              title: "",
-              matnText: book.matnText || "",
-              explanations: [{ _localId: Date.now(), scholarOrBook: "", text: "" }],
-              keyTerms: [],
-              videoUrl: "",
-              audioFile: null,
-              audioFileName: "",
-            },
-          ];
-        }
-
-        setEditingBook({
-          ...book,
-          structureMode: "direct",
-          sections: directSections,
-          hierarchySections: [],
-        });
-      }
+      setEditingBook({
+        ...book,
+        bookHadiths: unsectionedHadiths.map(toFormHadith),
+        hierarchySections: roots.map(toFormNode),
+      });
     } catch (err) {
       console.warn("Using fallback book state for edit modal:", err.message);
       setEditingBook({
         ...book,
-        structureMode: "direct",
-        sections: [
-          {
-            id: Date.now(),
-            _localId: Date.now(),
-            title: "",
-            matnText: book.matnText || "",
-            explanations: [{ id: 1, scholarOrBook: "", text: "" }],
-            keyTerms: [],
-            videoUrl: "",
-            audioFile: null,
-            audioFileName: "",
-          },
-        ],
+        bookHadiths: [],
         hierarchySections: [],
       });
     } finally {
@@ -436,21 +338,42 @@ function extractEntityId(res) {
         bookId = editingBook.id;
       }
       
-      // Delete any items that the user removed in the modal
-      if (Array.isArray(formData.deletedExplanationIds) && formData.deletedExplanationIds.length > 0) {
-        for (const delId of formData.deletedExplanationIds) {
-          await hadithsService.deleteExplanation(delId).catch(() => null);
+      // Delete what the user removed in the modal. Order matters: the API refuses to
+      // delete a hadith that still has explanations, or a section that still has hadiths
+      // or child sections — and deletedSectionIds arrives deepest-first for that reason.
+      //
+      // Failures are reported rather than swallowed, but they do not abort the save: the
+      // deletes run before the tree is written, so throwing here would discard the user's
+      // edits too. Proper reconciliation belongs with the transactional endpoint.
+      const deletionFailures = [];
+      const runDeletions = async (ids, remove, label) => {
+        for (const delId of ids || []) {
+          try {
+            await remove(delId);
+          } catch (err) {
+            deletionFailures.push(`${label} #${delId}: ${err.message || err}`);
+          }
         }
-      }
-      if (Array.isArray(formData.deletedHadithIds) && formData.deletedHadithIds.length > 0) {
-        for (const delId of formData.deletedHadithIds) {
-          await hadithsService.deleteHadith(delId).catch(() => null);
-        }
-      }
-      if (Array.isArray(formData.deletedSectionIds) && formData.deletedSectionIds.length > 0) {
-        for (const delId of formData.deletedSectionIds) {
-          await booksService.deleteSection(delId).catch(() => null);
-        }
+      };
+
+      await runDeletions(
+        formData.deletedExplanationIds,
+        (id) => hadithsService.deleteExplanation(id),
+        "شرح"
+      );
+      await runDeletions(
+        formData.deletedHadithIds,
+        (id) => hadithsService.deleteHadith(id),
+        "حديث"
+      );
+      await runDeletions(
+        formData.deletedSectionIds,
+        (id) => booksService.deleteSection(id),
+        "قسم"
+      );
+
+      if (deletionFailures.length > 0) {
+        console.warn("⚠️ [Deletions that did not apply]:", deletionFailures);
       }
 
       console.log("📚 [Active Book ID]:", bookId);
@@ -462,225 +385,129 @@ function extractEntityId(res) {
 
       // If we have a valid bookId, save sections and hadiths to backend
       if (bookId) {
-        if (formData.structureMode === "direct" || !formData.structureMode) {
-          // Direct Mode: Flat hadiths
-          if (Array.isArray(formData.sections)) {
-            for (let i = 0; i < formData.sections.length; i++) {
-              const sec = formData.sections[i];
-              if (sec.matnText && sec.matnText.trim()) {
-                const hadithPayload = {
-                  title: sec.title || "",
-                  hadithNumber: sec.hadithNumber || "",
-                  matnText: sec.matnText,
-                  narrator: sec.narrator?.trim() || "غير محدد",
-                  order: i + 1,
-                  hadithBookId: Number(bookId),
-                  hadithSectionId: null,
-                  videoUrl: sec.videoUrl || "",
-                  audioUrl: sec.audioFileName || "",
-                };
-                let createdHadith = null;
-                if (sec.id && Number(sec.id) < 1e10) {
-                  createdHadith = await hadithsService.updateHadith(sec.id, hadithPayload).catch((err) => {
-                    console.warn("Could not update direct hadith:", err);
-                    return null;
-                  });
-                } else {
-                  createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
-                    console.warn("Could not save direct hadith:", err);
-                    return null;
-                  });
-                }
-                const hadithId = extractEntityId(createdHadith) || sec.id;
+        // One save path for every book. Sections and hadiths are matched by the id the
+        // API gave them — never by name or order, which used to let a reordered باب adopt
+        // an unrelated section's identity and quietly rename it.
+        {
+          const isPersistedId = (id) => Number.isInteger(id) && id > 0 && id < 1e9;
 
-                // Save key terms if provided
-                if (hadithId && Array.isArray(sec.keyTerms) && sec.keyTerms.length > 0) {
-                  for (const kt of sec.keyTerms) {
-                    if (kt.text) {
-                      await hadithsService.createHadithKeyTerm({
-                        hadithId: Number(hadithId),
-                        text: kt.text,
-                        normalizedText: kt.normalizedText,
-                        order: kt.order || 1,
-                      }).catch(() => null);
-                    }
-                  }
-                }
-
-                // Save explanations if provided
-                if (hadithId && Array.isArray(sec.explanations) && sec.explanations.length > 0) {
-                  for (const exp of sec.explanations) {
-                    if (exp.text && exp.text.trim()) {
-                      let savedExp = null;
-                      const isRealServerId = exp.id && typeof exp.id === "number" && exp.id > 0 && exp.id < 1e9;
-                      if (isRealServerId) {
-                        savedExp = await hadithsService.updateExplanation(exp.id, {
-                          hadithId: Number(hadithId),
-                          text: exp.text,
-                          scholarOrBook: exp.scholarOrBook,
-                          explanationBookId: exp.explanationBookId,
-                        }).catch(() => null);
-                      }
-                      if (!savedExp) {
-                        await hadithsService.createExplanation({
-                          hadithId: Number(hadithId),
-                          text: exp.text,
-                          scholarOrBook: exp.scholarOrBook,
-                          explanationBookId: exp.explanationBookId,
-                        }).catch((err) => {
-                          console.warn("Could not save direct explanation:", err);
-                          return null;
-                        });
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else if (
-          formData.structureMode === "kitab_bab" ||
-          formData.structureMode === "bab_fasl"
-        ) {
-          // Hierarchy Modes: Kitab -> Bab or Bab -> Fasl
-          if (Array.isArray(formData.hierarchySections)) {
-            const existingSections = await booksService.getBookSections(bookId).catch(() => []);
-
-            const getOrCreateSection = async ({ name, type, order, hadithBookId, parentSectionId }) => {
-              const existing = (existingSections || []).find((s) =>
-                (s.parentSectionId === parentSectionId || (parentSectionId == null && s.parentSectionId == null)) &&
-                (Number(s.order) === Number(order) || (s.name && s.name.trim() === (name || "").trim()))
-              );
-              if (existing) {
-                console.log("♻️ [Reusing Existing Section]:", existing.id, existing.name);
-                return existing;
-              }
-              return await booksService.createSection({
-                name,
-                type,
-                order,
-                hadithBookId,
-                parentSectionId,
-              });
+            // Nothing here swallows failures. A partially written book is harder to repair
+            // than a save that stops and says which node it stopped on.
+            const failOn = (node, action) => (err) => {
+              throw new Error(`${action} "${node || "?"}": ${err.message || err}`);
             };
 
-            for (let rIdx = 0; rIdx < formData.hierarchySections.length; rIdx++) {
-              const root = formData.hierarchySections[rIdx];
-              const createdRoot = await getOrCreateSection({
-                name: root.name || `قسم ${rIdx + 1}`,
-                type: root.type,
-                order: rIdx + 1,
+            const saveHadith = async (h, sectionId, order) => {
+              if (!h.matnText || !h.matnText.trim()) return;
+
+              const label = h.title || h.hadithNumber || `حديث ${order}`;
+              const hadithPayload = {
+                title: h.title || "",
+                hadithNumber: h.hadithNumber || "",
+                matnText: h.matnText,
+                narrator: h.narrator?.trim() || "غير محدد",
+                order,
                 hadithBookId: Number(bookId),
-                parentSectionId: null,
-              }).catch((err) => {
-                console.warn("Could not create root section:", err);
-                return null;
-              });
+                hadithSectionId: sectionId ? Number(sectionId) : null,
+                videoUrl: h.videoUrl || "",
+                audioUrl: h.audioFileName || "",
+              };
 
-              const rootId = extractEntityId(createdRoot);
-              console.log("📂 [Created/Reused Root Section ID]:", rootId);
+              const saved = isPersistedId(h.id)
+                ? await hadithsService
+                    .updateHadith(h.id, hadithPayload)
+                    .catch(failOn(label, "تعذّر تحديث الحديث"))
+                : await hadithsService
+                    .createHadith(hadithPayload)
+                    .catch(failOn(label, "تعذّر إنشاء الحديث"));
 
-              if (Array.isArray(root.children)) {
-                for (let cIdx = 0; cIdx < root.children.length; cIdx++) {
-                  const child = root.children[cIdx];
-                  const createdChild = await getOrCreateSection({
-                    name: child.name || `فرع ${cIdx + 1}`,
-                    type: child.type,
-                    order: cIdx + 1,
-                    hadithBookId: Number(bookId),
-                    parentSectionId: rootId ? Number(rootId) : null,
-                  }).catch((err) => {
-                    console.warn("Could not create child section:", err);
-                    return null;
-                  });
+              const hadithId = extractEntityId(saved) || h.id;
+              if (!hadithId) return;
 
-                  const childId = extractEntityId(createdChild);
-                  console.log("📁 [Created/Reused Child Section ID]:", childId);
+              for (const kt of h.keyTerms || []) {
+                if (!kt.text) continue;
+                await hadithsService
+                  .createHadithKeyTerm({
+                    hadithId: Number(hadithId),
+                    text: kt.text,
+                    normalizedText: kt.normalizedText,
+                    order: kt.order || 1,
+                  })
+                  .catch(failOn(kt.text, "تعذّر حفظ الكلمة الحساسة"));
+              }
 
-                  if (Array.isArray(child.hadiths)) {
-                    for (let hIdx = 0; hIdx < child.hadiths.length; hIdx++) {
-                      const h = child.hadiths[hIdx];
-                      if (h.matnText && h.matnText.trim()) {
-                        const hadithPayload = {
-                          title: h.title || "",
-                          hadithNumber: h.hadithNumber || "",
-                          matnText: h.matnText,
-                          narrator: h.narrator?.trim() || "غير محدد",
-                          order: hIdx + 1,
-                          hadithBookId: Number(bookId),
-                          hadithSectionId: childId ? Number(childId) : null,
-                          videoUrl: h.videoUrl || "",
-                          audioUrl: h.audioFileName || "",
-                        };
-                        let createdHadith = null;
-                        if (h.id && Number(h.id) < 1e10) {
-                          createdHadith = await hadithsService.updateHadith(h.id, hadithPayload).catch((err) => {
-                            console.warn("Could not update hierarchy hadith:", err);
-                            return null;
-                          });
-                        } else {
-                          createdHadith = await hadithsService.createHadith(hadithPayload).catch((err) => {
-                            console.warn("Could not create hierarchy hadith:", err);
-                            return null;
-                          });
-                        }
-
-                        const hadithId = extractEntityId(createdHadith) || h.id;
-
-                        if (hadithId && Array.isArray(h.keyTerms) && h.keyTerms.length > 0) {
-                          for (const kt of h.keyTerms) {
-                            if (kt.text) {
-                              await hadithsService.createHadithKeyTerm({
-                                hadithId: Number(hadithId),
-                                text: kt.text,
-                                normalizedText: kt.normalizedText,
-                                order: kt.order || 1,
-                              }).catch(() => null);
-                            }
-                          }
-                        }
-
-                        // Save explanations if provided
-                        if (hadithId && Array.isArray(h.explanations) && h.explanations.length > 0) {
-                          for (const exp of h.explanations) {
-                            if (exp.text && exp.text.trim()) {
-                              let savedExp = null;
-                              const isRealServerId = exp.id && typeof exp.id === "number" && exp.id > 0 && exp.id < 1e9;
-                              if (isRealServerId) {
-                                savedExp = await hadithsService.updateExplanation(exp.id, {
-                                  hadithId: Number(hadithId),
-                                  text: exp.text,
-                                  scholarOrBook: exp.scholarOrBook,
-                                  explanationBookId: exp.explanationBookId,
-                                }).catch(() => null);
-                              }
-                              if (!savedExp) {
-                                await hadithsService.createExplanation({
-                                  hadithId: Number(hadithId),
-                                  text: exp.text,
-                                  scholarOrBook: exp.scholarOrBook,
-                                  explanationBookId: exp.explanationBookId,
-                                }).catch((err) => {
-                                  console.warn("Could not save hierarchy explanation:", err);
-                                  return null;
-                                });
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+              for (const exp of h.explanations || []) {
+                if (!exp.text || !exp.text.trim()) continue;
+                const payload = {
+                  hadithId: Number(hadithId),
+                  text: exp.text,
+                  scholarOrBook: exp.scholarOrBook,
+                  newBookAuthor: exp.newBookAuthor,
+                  explanationBookId: exp.explanationBookId,
+                };
+                if (isPersistedId(exp.id)) {
+                  await hadithsService
+                    .updateExplanation(exp.id, payload)
+                    .catch(failOn(exp.scholarOrBook || label, "تعذّر تحديث الشرح"));
+                } else {
+                  await hadithsService
+                    .createExplanation(payload)
+                    .catch(failOn(exp.scholarOrBook || label, "تعذّر حفظ الشرح"));
                 }
               }
+            };
+
+            // Hadiths are saved at every level, so a كتاب may hold its أحاديث directly
+            // instead of being forced to invent a باب for them.
+            const saveNode = async (node, parentSectionId, order) => {
+              const label = node.name || `قسم ${order}`;
+              const payload = {
+                name: node.name || label,
+                type: node.type,
+                order,
+                hadithBookId: Number(bookId),
+                parentSectionId: parentSectionId ? Number(parentSectionId) : null,
+              };
+
+              const saved = isPersistedId(node.id)
+                ? await booksService
+                    .updateSection(node.id, payload)
+                    .catch(failOn(label, "تعذّر تحديث القسم"))
+                : await booksService
+                    .createSection(payload)
+                    .catch(failOn(label, "تعذّر إنشاء القسم"));
+
+              const sectionId = extractEntityId(saved) || node.id;
+
+              for (const [hIdx, h] of (node.hadiths || []).entries()) {
+                await saveHadith(h, sectionId, hIdx + 1);
+              }
+
+              for (const [cIdx, child] of (node.children || []).entries()) {
+                await saveNode(child, sectionId, cIdx + 1);
+              }
+            };
+
+            // Hadiths that belong to the book rather than to any section.
+            for (const [hIdx, h] of (formData.bookHadiths || []).entries()) {
+              await saveHadith(h, null, hIdx + 1);
             }
-          }
+
+            for (const [rIdx, root] of (formData.hierarchySections || []).entries()) {
+              await saveNode(root, null, rIdx + 1);
+            }
         }
       }
 
       await loadBackendBooks();
       setIsFormOpen(false);
       setEditingBook(null);
+
+      if (deletionFailures.length > 0) {
+        alert(
+          "تم حفظ الكتاب، لكن تعذّر حذف بعض العناصر:\n" + deletionFailures.join("\n")
+        );
+      }
     } catch (err) {
       console.error("Error saving book:", err);
       alert("حدث خطأ أثناء حفظ الكتاب في السيرفر: " + (err.message || "يرجى التحقق من المدخلات"));
@@ -837,6 +664,7 @@ function extractEntityId(res) {
         onSubmit={handleSaveForm}
         initialData={editingBook}
         isSaving={isSubmitting}
+        explanationBooks={explanationBooks}
       />
 
       {/* Delete Confirmation Modal */}
