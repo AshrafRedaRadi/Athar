@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ChangeImage from "./ChangeImage";
-import DeleteAccountSection from "./DeleteAccountSection";
 import ThemeSwitcher from "./ThemeSwitcher";
 import HadithFontSwitcher from "./HadithFontSwitcher";
 import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
-function SettingsContent() {
+function SettingsContent({setShowAvatars}) {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
 
@@ -21,37 +21,67 @@ function SettingsContent() {
   const [toastMessage, setToastMessage] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
-  // Keep state synced with user context updates
-  useEffect(() => {
-    if (user) {
-      setFullName(user?.fullName || user?.name || user?.userName || "");
-      setEmail(user?.email || "");
-    }
-  }, [user]);
+
 
   const originalName = user?.fullName || user?.name || user?.userName || "";
   const isNameChanged = fullName.trim() !== originalName.trim() && fullName.trim().length > 0;
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
-    if (!fullName.trim()) return;
+
+    const trimmedName = fullName.trim();
+    if (!trimmedName) return;
+
     setIsSaving(true);
 
-    setTimeout(() => {
-      // Update global AuthContext user
-      updateUser({
-        fullName: fullName.trim(),
-        name: fullName.trim(),
-        userName: fullName.trim(),
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setToastMessage("انتهت الجلسة، يرجى تسجيل الدخول من جديد.");
+      setIsSaving(false);
+      return;
+    }
+
+    const payload = {
+      fullName: trimmedName,
+    };
+
+    if (user?.address && String(user.address).trim()) {
+      payload.address = String(user.address).trim();
+    }
+
+    if (user?.phoneNumber && String(user.phoneNumber).trim()) {
+      payload.phoneNumber = String(user.phoneNumber).trim();
+    }
+
+    try {
+      const response = await axios.put("https://atharai.runasp.net/api/Account/profile", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      setIsSaving(false);
-      setToastMessage("تم تحديث اسم المستخدم بنجاح! 🎉");
+      const updatedUser = response?.data?.data || response?.data || {};
 
+      updateUser({
+        fullName: updatedUser.fullName || trimmedName,
+        name: updatedUser.name || trimmedName,
+        userName: updatedUser.userName || trimmedName,
+        address: updatedUser.address || user?.address || "",
+        phoneNumber: updatedUser.phoneNumber || user?.phoneNumber || "",
+      });
+
+      setToastMessage("تم تحديث اسم المستخدم بنجاح! 🎉");
+    } catch (error) {
+      console.error("Error updating profile:", error?.response?.data || error);
+      const serverMessage = error?.response?.data?.message || error?.response?.data?.msg || "تعذّر تحديث الاسم، يرجى المحاولة مرة أخرى.";
+      setToastMessage(serverMessage);
+    } finally {
+      setIsSaving(false);
       setTimeout(() => {
         setToastMessage("");
       }, 3500);
-    }, 400);
+    }
   };
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -74,10 +104,6 @@ function SettingsContent() {
         setToastMessage("");
       }, 4500);
     }, 700);
-  };
-
-  const handleCancel = () => {
-    setFullName(user?.fullName || user?.name || user?.userName || "");
   };
 
   const handleGoBack = () => {
@@ -114,7 +140,7 @@ function SettingsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
         {/* Profile Picture Card (5 cols on desktop) */}
         <div className="col-span-1 lg:col-span-5 h-full">
-          <ChangeImage />
+          <ChangeImage setShowAvatars={setShowAvatars} />
         </div>
 
         {/* Name, Email, and Theme Form Card (7 cols on desktop) */}
@@ -233,7 +259,6 @@ function SettingsContent() {
       </div>
 
       {/* Account & Security Zone (Compact Delete Account + Logout Side-by-Side) */}
-      <DeleteAccountSection />
 
       {/* Centered Help Center (مركز المساعدة) Button at the Bottom */}
       <div className="flex justify-center mt-8 sm:mt-10 mb-6">

@@ -29,6 +29,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Daily check-in helper — fire-and-forget, never blocks login
+  // ---------------------------------------------------------------------------
+  const performDailyCheckIn = async (authToken) => {
+    try {
+      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(); // "YYYY-MM-DD"
+      const lastCheckIn = localStorage.getItem('athar_last_checkin');
+      if (lastCheckIn === today) return; // already checked in today
+
+      await apiFetch('/api/activity/check-in', {
+        method: 'POST',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
+      localStorage.setItem('athar_last_checkin', today);
+    } catch {
+      // Silently ignore — check-in failure must never block the user
+    }
+  };
+
   useEffect(() => {
     onTokenChange((newToken) => {
       setTokenState(newToken);
