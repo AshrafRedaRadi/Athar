@@ -185,15 +185,7 @@ export default function ContentManagement() {
           return hExplanations.map((e) => ({
             _localId: e.id || Date.now() + Math.random(),
             id: e.id,
-            scholarOrBook:
-              e.scholarOrBook ||
-              e.title ||
-              e.explanationBookName ||
-              e.explanationBookAuthor ||
-              e.bookTitle ||
-              e.author ||
-              hadithsService.resolveExplanationTitleSync(e, expBooks) ||
-              "",
+            scholarOrBook: e.author || "",
             text: e.text || e.explanationText || e.content || "",
             explanationBookId: e.explanationBookId || null,
           }));
@@ -236,7 +228,10 @@ export default function ContentManagement() {
             .sort((a, b) => (a.order || 0) - (b.order || 0))
             .map((child) => {
               const childHadiths = (Array.isArray(realHadiths) ? realHadiths : [])
-                .filter((h) => Number(h.hadithSectionId) === Number(child.id))
+                .filter((h) => {
+                  if (h.hadithBookId && Number(h.hadithBookId) !== Number(book.id)) return false;
+                  return Number(h.hadithSectionId) === Number(child.id);
+                })
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((h) => ({
                   _localId: h.id || Date.now() + Math.random(),

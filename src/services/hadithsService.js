@@ -32,6 +32,30 @@ export function formatHadith(item, fallbackIndex = 0) {
 }
 
 /**
+ * Helper to extract YouTube Video ID from standard YouTube URL or ID string
+ * Ensures the output string is EXACTLY 11 characters (or null) as required by backend validation.
+ */
+export function extractYouTubeId(urlOrId) {
+  if (!urlOrId || typeof urlOrId !== "string") return null;
+  const str = urlOrId.trim();
+  if (!str) return null;
+
+  // 1. Check if it's already an exact 11-char YouTube ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(str)) {
+    return str;
+  }
+
+  // 2. Extract from standard YouTube URLs (watch?v=..., youtu.be/..., embed/..., shorts/...)
+  const regExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = str.match(regExp);
+  if (match && match[1] && /^[a-zA-Z0-9_-]{11}$/.test(match[1])) {
+    return match[1];
+  }
+
+  return null;
+}
+
+/**
  * Dynamic Service for fetching Hadith content from backend API.
  */
 export const hadithsService = {
@@ -49,13 +73,13 @@ export const hadithsService = {
 
     // Filter strictly by bookId (and optional sectionId) to prevent leaking hadiths from other books
     const filtered = data.filter((item) => {
-      const bId = item.hadithBookId || item.HadithBookId || item.bookId || item.BookId;
-      if (bId && Number(bId) !== Number(bookId)) {
+      const bId = item.hadithBookId ?? item.HadithBookId ?? item.bookId ?? item.BookId ?? item.hadithBook?.id;
+      if (bId != null && Number(bId) !== Number(bookId)) {
         return false;
       }
       if (sectionId) {
-        const sId = item.hadithSectionId || item.HadithSectionId || item.sectionId || item.SectionId;
-        if (sId && Number(sId) !== Number(sectionId)) {
+        const sId = item.hadithSectionId ?? item.HadithSectionId ?? item.sectionId ?? item.SectionId ?? item.hadithSection?.id;
+        if (sId != null && Number(sId) !== Number(sectionId)) {
           return false;
         }
       }
@@ -80,6 +104,9 @@ export const hadithsService = {
    * @returns {Promise<Object>}
    */
   async createHadith(hadithData) {
+    const rawVideo = hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "";
+    const ytId = extractYouTubeId(rawVideo);
+
     const payload = {
       title: hadithData.title || "",
       text: hadithData.matnText || hadithData.text || "",
@@ -89,8 +116,8 @@ export const hadithsService = {
       narrator: hadithData.narrator?.trim() || "غير محدد",
       takhrij: hadithData.takhrij?.trim() || "",
       grade: Number(hadithData.grade) || 1,
-      audioUrl: hadithData.audioUrl || "",
-      videoExplanationYouTubeId: hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "",
+      audioUrl: hadithData.audioUrl || null,
+      videoExplanationYouTubeId: ytId || null,
     };
     return await apiFetch("/api/Hadiths", {
       method: "POST",
@@ -105,6 +132,9 @@ export const hadithsService = {
    * @returns {Promise<Object>}
    */
   async updateHadith(id, hadithData) {
+    const rawVideo = hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "";
+    const ytId = extractYouTubeId(rawVideo);
+
     const payload = {
       id: Number(id) || id,
       title: hadithData.title || "",
@@ -115,8 +145,8 @@ export const hadithsService = {
       narrator: hadithData.narrator?.trim() || "غير محدد",
       takhrij: hadithData.takhrij?.trim() || "",
       grade: Number(hadithData.grade) || 1,
-      audioUrl: hadithData.audioUrl || "",
-      videoExplanationYouTubeId: hadithData.videoUrl || hadithData.videoExplanationYouTubeId || "",
+      audioUrl: hadithData.audioUrl || null,
+      videoExplanationYouTubeId: ytId || null,
     };
     return await apiFetch(`/api/Hadiths/${id}`, {
       method: "PUT",
@@ -263,27 +293,76 @@ export const hadithsService = {
   },
 
   /**
-   * Helper to resolve or find a valid explanation book ID
+   * Create a new Explanation Book entry on the backend API (/api/ExplanationBooks)
+   */
+  async createExplanationBook(titleOrScholar) {
+    try {
+      let title = titleOrScholar || "شرح";
+      let author = titleOrScholar || "غير محدد";
+
+      if (titleOrScholar && titleOrScholar.includes(" - ")) {
+        const parts = titleOrScholar.split(" - ");
+        title = parts[0].trim();
+        author = parts[1].trim();
+      } else if (titleOrScholar && (titleOrScholar.includes("للشيخ") || titleOrScholar.includes("لـ"))) {
+        title = titleOrScholar;
+        const match = titleOrScholar.match(/(?:للشيخ|لـ|للإمام)\s+(.+)/);
+        if (match && match[1]) {
+          author = match[1].trim();
+        }
+      }
+
+      const payload = {
+        title: title,
+        author: author,
+      };
+      const res = await apiFetch("/api/ExplanationBooks", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      // Invalidate cache
+      this._cachedExpBooks = null;
+      return res;
+    } catch (err) {
+      console.warn("Could not create explanation book:", err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Helper to resolve or find/create a valid explanation book ID
    */
   async getOrCreateExplanationBookId(scholarOrBookName) {
+    if (!scholarOrBookName || !scholarOrBookName.trim()) {
+      return 1;
+    }
     try {
+      const s = scholarOrBookName.trim().toLowerCase();
       const books = await this.getExplanationBooks();
       if (Array.isArray(books) && books.length > 0) {
-        if (scholarOrBookName && typeof scholarOrBookName === "string" && scholarOrBookName.trim()) {
-          const s = scholarOrBookName.trim().toLowerCase();
-          const match = books.find((b) =>
-            (b.title && b.title.toLowerCase().includes(s)) ||
-            (b.author && b.author.toLowerCase().includes(s)) ||
-            (s.includes(b.title?.toLowerCase() || ""))
-          );
-          if (match) return match.id;
-        }
+        const match = books.find((b) =>
+          (b.title && b.title.toLowerCase().includes(s)) ||
+          (b.author && b.author.toLowerCase().includes(s)) ||
+          (b.title && s.includes(b.title.toLowerCase())) ||
+          (b.author && s.includes(b.author.toLowerCase()))
+        );
+        if (match) return match.id;
+      }
+
+      // Try to create a new ExplanationBook entry for this scholar/book on the backend
+      const created = await this.createExplanationBook(scholarOrBookName.trim());
+      if (created?.id) {
+        return created.id;
+      }
+
+      // Fallback
+      if (Array.isArray(books) && books.length > 0) {
         return books[0].id;
       }
     } catch {
       // ignore
     }
-    return null;
+    return 1;
   },
 
   /**
@@ -291,9 +370,12 @@ export const hadithsService = {
    * @param {Object} payload { hadithId, text, scholarOrBook, explanationBookId }
    */
   async createExplanation(payload) {
-    let expBookId = payload.explanationBookId;
+    let expBookId = null;
+    if (payload.scholarOrBook && typeof payload.scholarOrBook === "string" && payload.scholarOrBook.trim()) {
+      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook);
+    }
     if (!expBookId) {
-      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook || payload.title);
+      expBookId = payload.explanationBookId || 1;
     }
     const body = {
       hadithId: Number(payload.hadithId),
@@ -310,9 +392,12 @@ export const hadithsService = {
    * Update an existing explanation via PUT /api/Explanations/{id}
    */
   async updateExplanation(id, payload) {
-    let expBookId = payload.explanationBookId;
+    let expBookId = null;
+    if (payload.scholarOrBook && typeof payload.scholarOrBook === "string" && payload.scholarOrBook.trim()) {
+      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook);
+    }
     if (!expBookId) {
-      expBookId = await this.getOrCreateExplanationBookId(payload.scholarOrBook || payload.title);
+      expBookId = payload.explanationBookId || 1;
     }
     const body = {
       id: Number(id),
