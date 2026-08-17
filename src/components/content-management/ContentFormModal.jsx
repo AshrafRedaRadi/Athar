@@ -30,6 +30,7 @@ import {
 const createEmptySection = (index = 1) => ({
   id: Date.now() + Math.random(),
   title: "",
+  hadithNumber: "",
   matnText: "",
   explanations: [
     {
@@ -710,6 +711,25 @@ export default function ContentFormModal({
             else if (sec._localId) handleHadithFieldChangeGeneric(sec._localId, "title", val);
           }}
           placeholder="مثال: الحديث الأول: إنما الأعمال بالنيات (اختياري)"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-base-300 bg-base-100 text-sm font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
+        />
+      </div>
+
+      {/* Hadith Number — free text, since books number as "٣" or "١٢ مكرر" */}
+      <div>
+        <label className="block text-xs font-semibold text-base-content/80 mb-1.5 flex items-center gap-1.5">
+          <HiOutlineBookOpen className="text-base text-cyan-700" />
+          <span>رقم الحديث <span className="text-base-content/50 font-normal">(اختياري)</span></span>
+        </label>
+        <input
+          type="text"
+          value={sec.hadithNumber || ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (sec.id) handleSectionChange(sec.id, "hadithNumber", val);
+            else if (sec._localId) handleHadithFieldChangeGeneric(sec._localId, "hadithNumber", val);
+          }}
+          placeholder="مثال: ١ أو 12 مكرر"
           className="w-full px-3.5 py-2.5 rounded-xl border border-base-300 bg-base-100 text-sm font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
         />
       </div>
