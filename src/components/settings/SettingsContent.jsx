@@ -10,7 +10,7 @@ import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevron
 
 function SettingsContent({setShowAvatars}) {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, forgotPassword } = useAuth();
 
   // Name and Email from auth context / backend user data
   const [fullName, setFullName] = useState(
@@ -35,13 +35,8 @@ function SettingsContent({setShowAvatars}) {
 
     setIsSaving(true);
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setToastMessage("انتهت الجلسة، يرجى تسجيل الدخول من جديد.");
-      setIsSaving(false);
-      return;
-    }
-
+    // لا نتحقق من التوكن هنا: apiFetch يرفق التوكن المحفوظ في الذاكرة تلقائياً
+    // ويجدّده عبر كوكي الـ refresh عند انتهاء الجلسة.
     const payload = {
       fullName: trimmedName,
     };
@@ -89,20 +84,32 @@ function SettingsContent({setShowAvatars}) {
     setIsResetModalOpen(true);
   };
 
-  const confirmResetPassword = () => {
+  const confirmResetPassword = async () => {
+    const targetEmail = String(user?.email || email || "").trim();
+    if (!targetEmail) {
+      setIsResetModalOpen(false);
+      setToastMessage("لا يوجد بريد إلكتروني مرتبط بهذا الحساب لإرسال الرابط إليه.");
+      setTimeout(() => setToastMessage(""), 4500);
+      return;
+    }
+
     setIsResettingPassword(true);
 
-    setTimeout(() => {
+    try {
+      await forgotPassword(targetEmail);
+      setToastMessage(
+        `تم إرسال رابط إعادة ضبط كلمة المرور إلى البريد الإلكتروني (${targetEmail}) بنجاح! 📧`
+      );
+    } catch (error) {
+      console.error("Error sending password reset link:", error);
+      setToastMessage(
+        error?.message || "تعذّر إرسال رابط إعادة ضبط كلمة المرور، يرجى المحاولة لاحقاً."
+      );
+    } finally {
       setIsResettingPassword(false);
       setIsResetModalOpen(false);
-      setToastMessage(
-        `تم إرسال رابط إعادة ضبط كلمة المرور إلى البريد الإلكتروني (${email || user?.email || "حسابك"}) بنجاح! 📧`
-      );
-
-      setTimeout(() => {
-        setToastMessage("");
-      }, 4500);
-    }, 700);
+      setTimeout(() => setToastMessage(""), 4500);
+    }
   };
 
   const handleGoBack = () => {

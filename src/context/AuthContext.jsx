@@ -140,6 +140,14 @@ export function AuthProvider({ children }) {
     });
   };
 
+  // إرسال رابط إعادة ضبط كلمة المرور إلى البريد الإلكتروني
+  const forgotPassword = async (emailAddress) => {
+    return await apiFetch('/api/Auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: emailAddress }),
+    });
+  };
+
   const confirmEmail = async (userId, tokenParam) => {
     const query = `userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(tokenParam)}`;
     return await apiFetch(`/api/Auth/confirm-email?${query}`, {
@@ -208,6 +216,7 @@ export function AuthProvider({ children }) {
     isLoading,
     login,
     register,
+    forgotPassword,
     confirmEmail,
     loginGoogle,
     logout,
