@@ -62,6 +62,26 @@ export const hadithsService = {
   /**
    * Fetch list of hadiths for a given book (and optional section)
    */
+  /**
+   * One page of hadiths for a book or section.
+   * @returns {Promise<{items: Array, pageNumber: number, totalPages: number, totalCount: number}>}
+   */
+  async getHadithsPaged(bookId, sectionId = null, pageNumber = 1, pageSize = 50) {
+    const empty = { items: [], pageNumber: 1, pageSize, totalCount: 0, totalPages: 0 };
+    if (!bookId) return empty;
+
+    const params = new URLSearchParams({
+      bookId: String(bookId),
+      pageNumber: String(pageNumber),
+      pageSize: String(pageSize),
+    });
+    if (sectionId) params.set("sectionId", String(sectionId));
+
+    const data = await apiFetch(`/api/Hadiths/paged?${params.toString()}`);
+    if (!data || !Array.isArray(data.items)) return empty;
+    return data;
+  },
+
   async getHadithsByBook(bookId, sectionId = null) {
     if (!bookId) return [];
     let endpoint = `/api/Hadiths?HadithBookId=${bookId}&bookId=${bookId}`;
@@ -294,6 +314,20 @@ export const hadithsService = {
    */
   async createExplanationBook(titleOrScholar) {
     try {
+      // The picker supplies both fields explicitly; the string form is the older path that
+      // has to infer them, and is kept for callers that only know a single name.
+      if (titleOrScholar && typeof titleOrScholar === "object") {
+        const res = await apiFetch("/api/ExplanationBooks", {
+          method: "POST",
+          body: JSON.stringify({
+            name: (titleOrScholar.name || "").trim() || "شرح",
+            author: (titleOrScholar.author || "").trim() || "غير محدد",
+          }),
+        });
+        this._cachedExpBooks = null;
+        return res;
+      }
+
       let title = titleOrScholar || "شرح";
       let author = titleOrScholar || "غير محدد";
 
@@ -336,17 +370,26 @@ export const hadithsService = {
    * @returns {Promise<number>}
    */
   async resolveExplanationBookId(payload) {
-    const scholar = typeof payload.scholarOrBook === "string" ? payload.scholarOrBook.trim() : "";
-    if (scholar) {
-      return await this.getOrCreateExplanationBookId(scholar);
-    }
-
+    // An id chosen from the list is exact, so it always beats matching on a name.
     const explicitId = Number(payload.explanationBookId);
     if (Number.isInteger(explicitId) && explicitId > 0) {
       return explicitId;
     }
 
-    throw new Error("يجب تحديد الشيخ أو كتاب الشرح قبل حفظ الشرح.");
+    const scholar = typeof payload.scholarOrBook === "string" ? payload.scholarOrBook.trim() : "";
+    if (!scholar) {
+      throw new Error("يجب تحديد الشيخ أو كتاب الشرح قبل حفظ الشرح.");
+    }
+
+    // An explicit author means the picker asked for both fields, so nothing needs guessing.
+    const author = typeof payload.newBookAuthor === "string" ? payload.newBookAuthor.trim() : "";
+    if (author) {
+      const created = await this.createExplanationBook({ name: scholar, author });
+      if (created?.id) return created.id;
+      throw new Error("تعذّر إنشاء كتاب الشرح، يرجى المحاولة مرة أخرى.");
+    }
+
+    return await this.getOrCreateExplanationBookId(scholar);
   },
 
   /**

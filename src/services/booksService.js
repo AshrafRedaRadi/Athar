@@ -69,13 +69,41 @@ export const booksService = {
   },
 
   /**
-   * Fetch sections for a specific book
+   * One level of a book's section tree.
+   * @param {number|string} bookId
+   * @param {{ parentSectionId?: number|string|null, onlyRoots?: boolean }} [options]
+   *   `onlyRoots` fetches the outermost sections; `parentSectionId` fetches one section's
+   *   children. Passing neither returns every section — what the admin editor needs to build
+   *   the whole tree, and what the reader should avoid on a large book.
+   * @returns {Promise<Array>} Sections, each carrying childSectionCount and hadithCount
+   */
+  async getSectionLevel(bookId, { parentSectionId = null, onlyRoots = false } = {}) {
+    if (!bookId) return [];
+    const params = new URLSearchParams({ bookId: String(bookId) });
+    if (onlyRoots) params.set("onlyRoots", "true");
+    else if (parentSectionId != null) params.set("parentSectionId", String(parentSectionId));
+
+    const data = await apiFetch(`/api/HadithSections?${params.toString()}`);
+    return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Fetch every section for a book, at every depth.
    * @param {number|string} bookId
    * @returns {Promise<Array>} List of sections
    */
   async getBookSections(bookId) {
     if (!bookId) return [];
     return await apiFetch(`/api/HadithSections?bookId=${bookId}`);
+  },
+
+  /**
+   * A single section, used to resolve breadcrumbs without loading the whole tree.
+   * @param {number|string} sectionId
+   */
+  async getSection(sectionId) {
+    if (!sectionId) return null;
+    return await apiFetch(`/api/HadithSections/${sectionId}`);
   },
 
   /**

@@ -64,6 +64,7 @@ function App() {
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/library" element={<Library />} />
               <Route path="/library/:bookId/sections" element={<ListSection />} />
+              <Route path="/library/:bookId/sections/:sectionId" element={<ListSection />} />
               <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />
               <Route path="/library/:bookId/:sectionId/:hadithId" element={<Study />} />
             </Route>

@@ -26,6 +26,9 @@ import user from "../assets/user.png";
 // ─────────────────────────────────────────────
 
 /** Possible memorization statuses from API */
+// Large enough that ordinary متون arrive in one page, small enough that a big book does not.
+const HADITHS_PER_PAGE = 50;
+
 const STATUS = {
   NOT_STARTED: 0, // لم يبدأ الحفظ
   IN_PROGRESS: 1, // قيد الحفظ
@@ -149,6 +152,19 @@ export default function ListHadith() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Paged, so opening a section in a large book never transfers the whole book.
+  const [pageNumber, setPageNumber] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Moving to a different section starts over at the first page. Adjusted during render
+  // rather than in an effect, so the fetch below never runs once against a stale page.
+  const [pagedSection, setPagedSection] = useState(sectionId);
+  if (pagedSection !== sectionId) {
+    setPagedSection(sectionId);
+    setPageNumber(1);
+  }
+
   const [progressMap, setProgressMap] = useState({});
 
   // View Mode state: 'cards' by default on mobile size (<640px) or 'table' on desktop, persisted in localStorage
@@ -189,15 +205,17 @@ export default function ListHadith() {
       try {
         setIsLoading(true);
         setError(null);
-        const [hadithsData, booksData, progressData] = await Promise.all([
-          hadithsService.getHadithsByBook(bookId, effectiveSectionId),
+        const [page, booksData, progressData] = await Promise.all([
+          hadithsService.getHadithsPaged(bookId, effectiveSectionId, pageNumber, HADITHS_PER_PAGE),
           booksService.getBooks().catch(() => []),
           hadithsService.getHadithProgress(bookId).catch(() => []),
         ]);
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
         setBookTitle(book?.title || "");
-        setHadiths(Array.isArray(hadithsData) ? hadithsData : []);
+        setHadiths(page.items);
+        setTotalPages(page.totalPages || 0);
+        setTotalCount(page.totalCount || 0);
 
         const pMap = {};
         if (Array.isArray(progressData)) {
@@ -218,7 +236,7 @@ export default function ListHadith() {
       }
     }
     load();
-  }, [bookId, sectionId]);
+  }, [bookId, sectionId, pageNumber]);
 
   /** Navigate to the Study page for a specific hadith and update status to 1 (InProgress) if 0 (NotStarted) */
   const handleAction = async (hadith) => {
@@ -500,6 +518,32 @@ export default function ListHadith() {
                     );
                   })
                 )}
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-8 font-2" dir="rtl">
+                <button
+                  type="button"
+                  onClick={() => setPageNumber((n) => Math.max(1, n - 1))}
+                  disabled={pageNumber <= 1}
+                  className="btn btn-sm rounded-xl disabled:opacity-40"
+                >
+                  السابق
+                </button>
+
+                <span className="text-sm text-base-content/60">
+                  صفحة {pageNumber} من {totalPages} · {totalCount} حديث
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setPageNumber((n) => Math.min(totalPages, n + 1))}
+                  disabled={pageNumber >= totalPages}
+                  className="btn btn-sm rounded-xl disabled:opacity-40"
+                >
+                  التالي
+                </button>
               </div>
             )}
           </>
