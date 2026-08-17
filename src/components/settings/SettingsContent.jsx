@@ -8,7 +8,7 @@ import HadithFontSwitcher from "./HadithFontSwitcher";
 import DeleteAccountSection from "./DeleteAccountSection";
 import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
-function SettingsContent({setShowAvatars}) {
+function SettingsContent({ setShowAvatars }) {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
 

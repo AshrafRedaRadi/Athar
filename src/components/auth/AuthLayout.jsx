@@ -11,29 +11,6 @@ export default function AuthLayout({ children }) {
           'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05) 0%, transparent 40%)',
       }}
     >
-      {/* ── زر العودة للصفحة الرئيسية (أعلى اليسار) ── */}
-      <Link
-        to="/"
-        className="absolute top-4 left-4 text-white/80 hover:text-white transition-all hover:scale-110 p-2.5 rounded-full hover:bg-white/10 flex items-center justify-center cursor-pointer z-50 backdrop-blur-xs"
-        title="الرجوع إلى الصفحة الرئيسية"
-        aria-label="الرجوع إلى الصفحة الرئيسية"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2.2}
-          stroke="currentColor"
-          className="w-5 h-5"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
-          />
-        </svg>
-      </Link>
-
       <div className="w-full max-w-[1050px] h-auto min-h-0 md:h-full md:max-h-[94vh] flex flex-col items-center justify-start md:justify-center">
         
         {/* ── 1. القبة للموبايل (باللون الذهبي) ── */}
