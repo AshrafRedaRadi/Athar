@@ -1,17 +1,24 @@
 import { GrEdit } from "react-icons/gr";
-import useAxiosGet from "../../hooks/useAxiosGet";
+import { useAuth } from "../../context/AuthContext";
+import defaultAvatar from "../../assets/user.png";
+import { API_BASE_URL } from "../../api/client";
 
 function ProfileImage({ setShowAvatars }) {
-  const { data } = useAxiosGet("/api/Account/profile");
+  const { user } = useAuth();
+
+  const avatarImgPath = user?.avatar?.imageUrl || user?.avatarUrl;
+  const resolvedAvatar = avatarImgPath
+    ? (avatarImgPath.startsWith("http") ? avatarImgPath : `${API_BASE_URL}${avatarImgPath.startsWith("/") ? "" : "/"}${avatarImgPath}`)
+    : defaultAvatar;
 
   return (
     <div className="flex w-full h-full flex-col items-center justify-center text-center rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-200 dark:border-slate-800 p-6 shadow-xs font-2">
       {/* Profile Image Avatar */}
       <div className="relative mb-4">
         <img
-          src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`}
+          src={resolvedAvatar}
           alt="الصورة الشخصية"
-          className="h-28 w-28 rounded-full border-4 border-cyan-700 dark:border-cyan-500 object-cover shadow-md"
+          className="h-28 w-28 rounded-full border-4 border-cyan-700 dark:border-cyan-500 object-cover shadow-md transition-all duration-300"
         />
       </div>
 

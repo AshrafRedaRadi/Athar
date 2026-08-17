@@ -4,21 +4,24 @@ import { useAuth } from "../../context/AuthContext";
 import { MAIN_NAV_ITEMS } from "./mainNavConfig";
 import defaultAvatar from "../../assets/user.png";
 import logoImg from "../../assets/logo.png";
-import useAxiosGet from "../../hooks/useAxiosGet";
+import { API_BASE_URL } from "../../api/client";
 
 /**
  * Sidebar component with pure Tailwind CSS slide transition from the right.
  * Dynamically displays authenticated user profile from AuthContext / Backend API.
  */
 function Sidebar({ activePage = "home", userName: customName, userAvatar: customAvatar, drawerId = "sidebar-drawer", onOpenSettings }) {
-    const {data} = useAxiosGet("/api/Account/profile");
-  
   const navigate = useNavigate();
   const { user } = useAuth();
   const drawerRef = useRef(null);
 
   const userName = customName || user?.fullName || user?.name || user?.userName || "المستخدم";
   const userAvatar = customAvatar || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
+  const avatarImgPath = user?.avatar?.imageUrl || user?.avatarUrl;
+  const resolvedAvatar = avatarImgPath
+    ? (avatarImgPath.startsWith("http") ? avatarImgPath : `${API_BASE_URL}${avatarImgPath.startsWith("/") ? "" : "/"}${avatarImgPath}`)
+    : (userAvatar || defaultAvatar);
 
   const closeDrawer = () => {
     if (drawerRef.current) {
@@ -38,8 +41,7 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
     const mediaQuery = window.matchMedia("(max-width: 1023px)");
 
     const handleMediaChange = (e) => {
-      // Close sidebar immediately when transitioning from large screen to small screen
-      if (e.matches && drawerRef.current?.checked) {
+      if (!e.matches && drawerRef.current) {
         drawerRef.current.checked = false;
       }
     };
@@ -60,21 +62,20 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
   }, []);
 
   return (
-    <div>
-      {/* Hidden checkbox toggle for sidebar */}
+    <div className="drawer drawer-end z-50">
+      {/* Hidden checkbox controlling drawer state purely via CSS/peer */}
       <input
-        id={drawerId}
         ref={drawerRef}
+        id={drawerId}
         type="checkbox"
-        className="peer hidden"
+        className="drawer-toggle peer"
+        aria-label="القائمة الجانبية للتنقل"
       />
 
-      {/* Overlay — pure Tailwind fade transition */}
-      <label
-        htmlFor={drawerId}
-        className="fixed inset-0 bg-black/40 z-50
-                   transition-opacity duration-500 ease-in-out
-                   opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto"
+      {/* Backdrop overlay */}
+      <div
+        className="drawer-overlay fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300 opacity-0 pointer-events-none peer-checked:opacity-100 peer-checked:pointer-events-auto"
+        onClick={closeDrawer}
       />
 
       {/* Sidebar panel — pure Tailwind slide transition from the right */}
@@ -95,7 +96,7 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
             {/* User Avatar (Right in RTL) */}
             <div className="avatar shrink-0">
               <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 group-hover:ring-cyan-600 ring-offset-2 overflow-hidden transition-all">
-                <img src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} alt={userName} />
+                <img src={resolvedAvatar} alt={userName} />
               </div>
             </div>
             {/* Welcome Text + Username */}

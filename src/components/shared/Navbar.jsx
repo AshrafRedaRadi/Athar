@@ -8,7 +8,7 @@ import AdminSidebar from "../admin/AdminSidebar";
 import AdminDock from "../admin/AdminDock";
 import { useAuth } from "../../context/AuthContext";
 import defaultAvatar from "../../assets/user.png";
-import useAxiosGet from "../../hooks/useAxiosGet";
+import { API_BASE_URL } from "../../api/client";
 
 /**
  * Unified Navbar component for Athar platform.
@@ -25,7 +25,6 @@ export default function Navbar({
   isAdmin = false,
   onOpenSettings,
 }) {
-    const {data} = useAxiosGet("/api/Account/profile");
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -33,6 +32,11 @@ export default function Navbar({
 
   const userName = user?.fullName || user?.name || user?.userName || "المستخدم";
   const userAvatar = user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
+  const avatarImgPath = user?.avatar?.imageUrl || user?.avatarUrl;
+  const resolvedAvatar = avatarImgPath
+    ? (avatarImgPath.startsWith("http") ? avatarImgPath : `${API_BASE_URL}${avatarImgPath.startsWith("/") ? "" : "/"}${avatarImgPath}`)
+    : (userAvatar || defaultAvatar);
 
   const handleAvatarClick = () => {
     if (isSettingsPage) {
@@ -124,7 +128,7 @@ export default function Navbar({
             className="shrink-0 hidden lg:block cursor-pointer transition-transform hover:scale-105"
             title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
-            <Avatar src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} size="w-10" />
+            <Avatar src={resolvedAvatar} size="w-10" />
           </div>
 
           {/* Mobile / Tablet Profile avatar (<lg) */}
@@ -133,7 +137,7 @@ export default function Navbar({
             className="shrink-0 block lg:hidden cursor-pointer transition-transform hover:scale-105"
             title={isSettingsPage ? "الصفحة الرئيسية" : "الإعدادات"}
           >
-            <Avatar src={`https://atharai.runasp.net${data.data?.avatar.imageUrl}`} size="w-10" />
+            <Avatar src={resolvedAvatar} size="w-10" />
           </div>
         </div>
       </header>

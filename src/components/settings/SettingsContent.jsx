@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import ChangeImage from "./ChangeImage";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -53,11 +54,9 @@ function SettingsContent({setShowAvatars}) {
     }
 
     try {
-      const response = await axios.put("https://atharai.runasp.net/api/Account/profile", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const response = await apiFetch("/api/Account/profile", {
+        method: "PUT",
+        body: JSON.stringify(payload),
       });
 
       const updatedUser = response?.data?.data || response?.data || {};
