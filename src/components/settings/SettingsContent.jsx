@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import ChangeImage from "./ChangeImage";
 import ThemeSwitcher from "./ThemeSwitcher";
 import HadithFontSwitcher from "./HadithFontSwitcher";
+import DeleteAccountSection from "./DeleteAccountSection";
 import { HiCheckBadge, HiOutlineKey, HiOutlineEnvelope, HiOutlineUser, HiChevronRight } from "react-icons/hi2";
 
 function SettingsContent({setShowAvatars}) {
@@ -257,6 +258,7 @@ function SettingsContent({setShowAvatars}) {
       </div>
 
       {/* Account & Security Zone (Compact Delete Account + Logout Side-by-Side) */}
+      <DeleteAccountSection />
 
       {/* Centered Help Center (مركز المساعدة) Button at the Bottom */}
       <div className="flex justify-center mt-8 sm:mt-10 mb-6">
