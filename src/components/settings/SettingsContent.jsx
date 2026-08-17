@@ -116,38 +116,22 @@ function SettingsContent({ setShowAvatars }) {
   return (
     <div className="settingPage font-2" dir="rtl">
       <header className="text-start space-y-1 mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleGoBack}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-base-100 dark:bg-slate-900 border border-base-300 dark:border-slate-800 flex items-center justify-center text-base-content hover:text-cyan-600 hover:border-cyan-600/50 transition-all cursor-pointer shadow-xs shrink-0"
-            title="الرجوع للخلف"
-            aria-label="الرجوع للخلف"
-          >
-            <HiChevronRight className="text-xl" />
-          </button>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
-            إعدادات الملف الشخصي
-          </h1>
-        </div>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-1 text-base-content">
+          إعدادات الملف الشخصي
+        </h1>
         <p className="text-sm md:text-base text-base-content/60 font-normal mt-2">
           قم بتحديث معلوماتك الشخصية وكيفية ظهورك في المنصة
         </p>
       </header>
 
-      {/* Side-by-side grid layout for Profile Picture Card & Name/Email Form Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
-        {/* Profile Picture Card (5 cols on desktop) */}
-        <div className="col-span-1 lg:col-span-5 h-full">
-          <ChangeImage setShowAvatars={setShowAvatars} />
-        </div>
-
-        {/* Name, Email, and Theme Form Card (7 cols on desktop) */}
-        <div className="col-span-1 lg:col-span-7 h-full bg-base-100 dark:bg-slate-900 border border-base-200 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs flex flex-col justify-between">
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="space-y-4">
-              {/* Name & Email Fields Side-by-Side in 2-column Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+      {/* 2-Column Grid Layout: Right Column (Profile Picture + Personal Info) & Left Column (Appearance & Typography) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+        
+        {/* Right Column (lg:col-span-5): Profile Picture + Name & Email (stacked vertically) */}
+        <div className="col-span-1 lg:col-span-5">
+          <ChangeImage setShowAvatars={setShowAvatars}>
+            <form onSubmit={handleSaveProfile} className="w-full">
+              <div className="flex flex-col gap-3.5">
                 {/* User Name Field (Editable with inline Save Button) */}
                 <div className="w-full">
                   <div className="flex items-center justify-between mb-1.5 gap-1">
@@ -194,7 +178,7 @@ function SettingsContent({ setShowAvatars }) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="اكتب اسم المستخدم"
-                    className="input h-11 w-full rounded-xl border-base-300 bg-base-100 text-right text-base-content placeholder:text-base-content/40 focus:border-cyan-600 focus:outline-none shadow-xs text-sm font-medium"
+                    className="input h-11 w-full rounded-xl border-base-300 bg-base-100 dark:bg-slate-800 text-right text-base-content placeholder:text-base-content/40 focus:border-cyan-600 focus:outline-none shadow-xs text-sm font-medium"
                   />
                 </div>
 
@@ -232,28 +216,31 @@ function SettingsContent({ setShowAvatars }) {
                     value={email}
                     readOnly
                     placeholder="البريد الإلكتروني المسجل"
-                    className="input h-11 w-full rounded-xl border-base-300 bg-base-200/50 text-right text-base-content/80 shadow-2xs text-sm font-medium cursor-not-allowed"
+                    className="input h-11 w-full rounded-xl border-base-300 bg-base-200/50 dark:bg-slate-800/60 text-right text-base-content/80 shadow-2xs text-sm font-medium cursor-not-allowed"
                   />
                 </div>
               </div>
+            </form>
+          </ChangeImage>
+        </div>
 
-              {/* Website Theme Switcher */}
-              <div className="w-full pt-1">
-                <label className="mb-1.5 block text-sm font-semibold text-base-content">
-                  مظهر الموقع
-                </label>
-                <ThemeSwitcher />
-              </div>
+        {/* Left Column (lg:col-span-7): Appearance & Preferences */}
+        <div className="col-span-1 lg:col-span-7 bg-base-100 dark:bg-slate-900 border border-base-200 dark:border-slate-800 p-5 sm:p-6 rounded-2xl shadow-xs flex flex-col gap-6">
+          {/* Website Theme Switcher */}
+          <div className="w-full">
+            <label className="mb-2 block text-sm font-semibold text-base-content">
+              مظهر الموقع
+            </label>
+            <ThemeSwitcher />
+          </div>
 
-              {/* Hadith Typography / Font Switcher */}
-              <div className="w-full pt-2">
-                <label className="mb-2 block text-sm font-semibold text-base-content">
-                  نوع خط نصوص الأحاديث الشريفة
-                </label>
-                <HadithFontSwitcher />
-              </div>
-            </div>
-          </form>
+          {/* Hadith Typography / Font Switcher */}
+          <div className="w-full pt-4 border-t border-base-200 dark:border-slate-800">
+            <label className="mb-2 block text-sm font-semibold text-base-content">
+              نوع خط نصوص الأحاديث الشريفة
+            </label>
+            <HadithFontSwitcher />
+          </div>
         </div>
       </div>
 
