@@ -149,7 +149,6 @@ export default function UserFormModal({
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="select select-bordered w-full rounded-xl text-sm font-2 font-bold"
               >
-                <option value="معلم">معلم</option>
                 <option value="طالب">طالب</option>
                 <option value="أدمن">مشرف (أدمن)</option>
               </select>

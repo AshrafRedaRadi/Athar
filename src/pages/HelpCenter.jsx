@@ -276,11 +276,11 @@ export default function HelpCenter() {
         </div>
       </main>
 
-      {/* ── Floating Contact Support Button (Elevated on mobile above Dock) ── */}
+      {/* ── Floating Contact Support Button (Elevated on mobile/tablet above Dock) ── */}
       <button
         type="button"
         onClick={() => setIsContactModalOpen(true)}
-        className="fixed bottom-24 sm:bottom-8 left-5 sm:left-8 z-40 w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center shadow-2xl shadow-cyan-600/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="fixed bottom-24 lg:bottom-8 left-5 sm:left-8 z-40 w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center shadow-2xl shadow-cyan-600/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
         title="تواصل مع فريق أثر"
         aria-label="تواصل مع الدعم"
       >
@@ -317,7 +317,7 @@ export default function HelpCenter() {
                     <HiOutlineChatBubbleLeftRight />
                   </div>
                   <h3 className="font-1 font-bold text-lg text-base-content">
-                    تواصل مع الدعم الفني لمأثر
+                    تواصل مع الدعم الفني لمنصة أثر
                   </h3>
                 </div>
                 <button

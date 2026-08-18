@@ -67,7 +67,7 @@ function getInitialTheme() {
     // localStorage can be unavailable in restricted browser modes.
   }
 
-  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'luxury';
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
   return 'light';
 }
 
@@ -85,7 +85,7 @@ export const ThemeContext = createContext({
   isDark: false,
   themes: DAISYUI_THEMES,
   defaultLightTheme: 'light',
-  defaultDarkTheme: 'luxury',
+  defaultDarkTheme: 'dark',
   setTheme: () => { },
   setDefaultLightTheme: () => { },
   setDefaultDarkTheme: () => { },
@@ -112,7 +112,7 @@ export function ThemeProvider({ children }) {
       const saved = localStorage.getItem('default_dark_theme');
       if (saved && DAISYUI_THEMES.includes(saved)) return saved;
     } catch {}
-    return 'luxury';
+    return 'dark';
   });
 
   useEffect(() => {
