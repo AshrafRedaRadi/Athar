@@ -7,18 +7,37 @@ export const HADITH_GRADE_MAP = {
 };
 
 /**
+ * Strips the "الحديث" label off a stored hadith number.
+ *
+ * The column holds a bare number such as "١٢ مكرر"; the word was only ever a display
+ * label. Rows saved while the label was being written back carry one copy of it per save
+ * they went through, so every leading repetition is removed, not just the first.
+ *
+ * Only used when reading now: the number is the hadith's position in its book and the
+ * server assigns it during a structure save, so nothing here writes one back.
+ */
+export function normalizeHadithNumber(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/^(?:\s*الحديث\s+)+/, "").trim();
+}
+
+/**
  * Helper to format raw hadith API response object to UI object.
  */
 export function formatHadith(item, fallbackIndex = 0) {
   if (!item) return null;
+  // The bare number round-trips back to the API untouched; the decorated form is kept
+  // apart in hadithLabel so an edit form never saves the label as the value.
+  const bareNumber = normalizeHadithNumber(item.hadithNumber);
   return {
     id: item.id,
     title: item.title || "",
     text: item.text,
     normalizedText: item.normalizedText,
     order: item.order || fallbackIndex + 1,
-    hadithNumber: item.hadithNumber
-      ? `الحديث ${item.hadithNumber}`
+    hadithNumber: bareNumber,
+    hadithLabel: bareNumber
+      ? `الحديث ${bareNumber}`
       : `الحديث ${fallbackIndex + 1}`,
     narrator: item.narrator || "",
     takhrij: item.takhrij || "",
@@ -131,7 +150,6 @@ export const hadithsService = {
       title: hadithData.title || "",
       text: hadithData.matnText || hadithData.text || "",
       order: Number(hadithData.order) || 1,
-      hadithNumber: hadithData.hadithNumber?.toString().trim() || null,
       hadithBookId: Number(hadithData.hadithBookId),
       hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
       narrator: hadithData.narrator?.trim() || "غير محدد",
@@ -163,7 +181,6 @@ export const hadithsService = {
       title: hadithData.title || "",
       text: hadithData.matnText || hadithData.text || "",
       order: Number(hadithData.order) || 1,
-      hadithNumber: hadithData.hadithNumber?.toString().trim() || null,
       hadithSectionId: hadithData.hadithSectionId ? Number(hadithData.hadithSectionId) : null,
       narrator: hadithData.narrator?.trim() || "غير محدد",
       takhrij: hadithData.takhrij?.trim() || "",

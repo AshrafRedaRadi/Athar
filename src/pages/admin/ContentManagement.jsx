@@ -9,7 +9,7 @@ import CategoryFilters from "../../components/shared/CategoryFilters";
 import ContentFormModal from "../../components/content-management/ContentFormModal";
 import DeleteConfirmModal from "../../components/content-management/DeleteConfirmModal";
 import { booksService, setBookVisibilityStatus } from "../../services/booksService";
-import { hadithsService } from "../../services/hadithsService";
+import { hadithsService, extractYouTubeId } from "../../services/hadithsService";
 import { buildTree } from "../../utils/hadithSectionTree";
 
 // Helper function to normalize category strings for bulletproof matching
@@ -338,176 +338,91 @@ function extractEntityId(res) {
         bookId = editingBook.id;
       }
       
-      // Delete what the user removed in the modal. Order matters: the API refuses to
-      // delete a hadith that still has explanations, or a section that still has hadiths
-      // or child sections — and deletedSectionIds arrives deepest-first for that reason.
-      //
-      // Failures are reported rather than swallowed, but they do not abort the save: the
-      // deletes run before the tree is written, so throwing here would discard the user's
-      // edits too. Proper reconciliation belongs with the transactional endpoint.
-      const deletionFailures = [];
-      const runDeletions = async (ids, remove, label) => {
-        for (const delId of ids || []) {
-          try {
-            await remove(delId);
-          } catch (err) {
-            deletionFailures.push(`${label} #${delId}: ${err.message || err}`);
-          }
-        }
-      };
-
-      await runDeletions(
-        formData.deletedExplanationIds,
-        (id) => hadithsService.deleteExplanation(id),
-        "شرح"
-      );
-      await runDeletions(
-        formData.deletedHadithIds,
-        (id) => hadithsService.deleteHadith(id),
-        "حديث"
-      );
-      await runDeletions(
-        formData.deletedSectionIds,
-        (id) => booksService.deleteSection(id),
-        "قسم"
-      );
-
-      if (deletionFailures.length > 0) {
-        console.warn("⚠️ [Deletions that did not apply]:", deletionFailures);
-      }
-
       console.log("📚 [Active Book ID]:", bookId);
 
-      // Persist book visibility preference
       if (bookId) {
+        // Persist book visibility preference
         setBookVisibilityStatus(bookId, formData.status || "معروض");
-      }
 
-      // If we have a valid bookId, save sections and hadiths to backend
-      if (bookId) {
-        // One save path for every book. Sections and hadiths are matched by the id the
-        // API gave them — never by name or order, which used to let a reordered باب adopt
-        // an unrelated section's identity and quietly rename it.
-        {
-          const isPersistedId = (id) => Number.isInteger(id) && id > 0 && id < 1e9;
+        // The whole book goes to the server in one request that either lands entirely or
+        // not at all. This replaces a walk that issued a request per باب, حديث, شرح and
+        // كلمة حساسة: that was slow in proportion to the size of the book, and a failure
+        // part way through left it half written with no record of where it stopped.
+        const isPersistedId = (id) => Number.isInteger(id) && id > 0 && id < 1e9;
 
-            // Nothing here swallows failures. A partially written book is harder to repair
-            // than a save that stops and says which node it stopped on.
-            const failOn = (node, action) => (err) => {
-              throw new Error(`${action} "${node || "?"}": ${err.message || err}`);
-            };
+        // Every شرح travels with the id of the كتاب شرح it belongs to, and the picker may
+        // have supplied a new name instead of an id. Those are resolved once each — the
+        // promise is cached rather than the id, so شروح resolved side by side still ask
+        // about a given كتاب only once.
+        const explanationBooks = new Map();
+        const resolveExplanationBook = (explanation) => {
+          const key = explanation.explanationBookId || explanation.scholarOrBook || "";
+          if (!explanationBooks.has(key)) {
+            explanationBooks.set(key, hadithsService.resolveExplanationBookId(explanation));
+          }
+          return explanationBooks.get(key);
+        };
 
-            const saveHadith = async (h, sectionId, order) => {
-              if (!h.matnText || !h.matnText.trim()) return;
+        const toPayloadHadith = async (h) => {
+          const explanations = [];
+          for (const explanation of h.explanations || []) {
+            if (!explanation.text || !explanation.text.trim()) continue;
+            explanations.push({
+              id: isPersistedId(explanation.id) ? explanation.id : null,
+              text: explanation.text,
+              explanationBookId: await resolveExplanationBook(explanation),
+            });
+          }
 
-              const label = h.title || h.hadithNumber || `حديث ${order}`;
-              const hadithPayload = {
-                title: h.title || "",
-                hadithNumber: h.hadithNumber || "",
-                matnText: h.matnText,
-                narrator: h.narrator?.trim() || "غير محدد",
-                order,
-                hadithBookId: Number(bookId),
-                hadithSectionId: sectionId ? Number(sectionId) : null,
-                videoUrl: h.videoUrl || "",
-                audioUrl: h.audioFileName || "",
-              };
+          return {
+            id: isPersistedId(h.id) ? h.id : null,
+            title: h.title || "",
+            text: h.matnText || "",
+            narrator: h.narrator?.trim() || "غير محدد",
+            takhrij: h.takhrij?.trim() || null,
+            grade: Number(h.grade) || 1,
+            audioUrl: h.audioFileName || null,
+            videoExplanationYouTubeId: extractYouTubeId(h.videoUrl) || null,
+            explanations,
+            keyTerms: (h.keyTerms || [])
+              .filter((kt) => kt.text && kt.text.trim())
+              .map((kt) => ({ id: isPersistedId(kt.id) ? kt.id : null, text: kt.text })),
+          };
+        };
 
-              const saved = isPersistedId(h.id)
-                ? await hadithsService
-                    .updateHadith(h.id, hadithPayload)
-                    .catch(failOn(label, "تعذّر تحديث الحديث"))
-                : await hadithsService
-                    .createHadith(hadithPayload)
-                    .catch(failOn(label, "تعذّر إنشاء الحديث"));
+        const withText = (list) => (list || []).filter((h) => h.matnText && h.matnText.trim());
 
-              const hadithId = extractEntityId(saved) || h.id;
-              if (!hadithId) return;
+        const toPayloadSection = async (node) => ({
+          id: isPersistedId(node.id) ? node.id : null,
+          name: node.name || "",
+          type: node.type ?? null,
+          hadiths: await Promise.all(withText(node.hadiths).map(toPayloadHadith)),
+          children: await Promise.all((node.children || []).map(toPayloadSection)),
+        });
 
-              for (const kt of h.keyTerms || []) {
-                if (!kt.text) continue;
-                await hadithsService
-                  .createHadithKeyTerm({
-                    hadithId: Number(hadithId),
-                    text: kt.text,
-                    normalizedText: kt.normalizedText,
-                    order: kt.order || 1,
-                  })
-                  .catch(failOn(kt.text, "تعذّر حفظ الكلمة الحساسة"));
-              }
+        const structure = {
+          hadiths: await Promise.all(withText(formData.bookHadiths).map(toPayloadHadith)),
+          sections: await Promise.all(
+            (formData.hierarchySections || []).map(toPayloadSection)
+          ),
+          // Removal is explicit: nothing is deleted merely by being left out of the
+          // payload, so one bad render here cannot empty a book. Deleting a باب takes its
+          // descendants with it on the server, so only the top of a branch is listed.
+          deletedSectionIds: (formData.deletedSectionIds || []).filter(isPersistedId),
+          deletedHadithIds: (formData.deletedHadithIds || []).filter(isPersistedId),
+          deletedExplanationIds: (formData.deletedExplanationIds || []).filter(isPersistedId),
+          deletedKeyTermIds: (formData.deletedKeyTermIds || []).filter(isPersistedId),
+        };
 
-              for (const exp of h.explanations || []) {
-                if (!exp.text || !exp.text.trim()) continue;
-                const payload = {
-                  hadithId: Number(hadithId),
-                  text: exp.text,
-                  scholarOrBook: exp.scholarOrBook,
-                  newBookAuthor: exp.newBookAuthor,
-                  explanationBookId: exp.explanationBookId,
-                };
-                if (isPersistedId(exp.id)) {
-                  await hadithsService
-                    .updateExplanation(exp.id, payload)
-                    .catch(failOn(exp.scholarOrBook || label, "تعذّر تحديث الشرح"));
-                } else {
-                  await hadithsService
-                    .createExplanation(payload)
-                    .catch(failOn(exp.scholarOrBook || label, "تعذّر حفظ الشرح"));
-                }
-              }
-            };
-
-            // Hadiths are saved at every level, so a كتاب may hold its أحاديث directly
-            // instead of being forced to invent a باب for them.
-            const saveNode = async (node, parentSectionId, order) => {
-              const label = node.name || `قسم ${order}`;
-              const payload = {
-                name: node.name || label,
-                type: node.type,
-                order,
-                hadithBookId: Number(bookId),
-                parentSectionId: parentSectionId ? Number(parentSectionId) : null,
-              };
-
-              const saved = isPersistedId(node.id)
-                ? await booksService
-                    .updateSection(node.id, payload)
-                    .catch(failOn(label, "تعذّر تحديث القسم"))
-                : await booksService
-                    .createSection(payload)
-                    .catch(failOn(label, "تعذّر إنشاء القسم"));
-
-              const sectionId = extractEntityId(saved) || node.id;
-
-              for (const [hIdx, h] of (node.hadiths || []).entries()) {
-                await saveHadith(h, sectionId, hIdx + 1);
-              }
-
-              for (const [cIdx, child] of (node.children || []).entries()) {
-                await saveNode(child, sectionId, cIdx + 1);
-              }
-            };
-
-            // Hadiths that belong to the book rather than to any section.
-            for (const [hIdx, h] of (formData.bookHadiths || []).entries()) {
-              await saveHadith(h, null, hIdx + 1);
-            }
-
-            for (const [rIdx, root] of (formData.hierarchySections || []).entries()) {
-              await saveNode(root, null, rIdx + 1);
-            }
-        }
+        // رقم الحديث is deliberately absent from every hadith above: it is the hadith's
+        // position in the book, counted straight through from 1, and the server assigns it
+        // as part of this same save. A number sent from here could only disagree with it.
+        await booksService.saveBookStructure(bookId, structure);
       }
 
       await loadBackendBooks();
       setIsFormOpen(false);
       setEditingBook(null);
-
-      if (deletionFailures.length > 0) {
-        alert(
-          "تم حفظ الكتاب، لكن تعذّر حذف بعض العناصر:\n" + deletionFailures.join("\n")
-        );
-      }
     } catch (err) {
       console.error("Error saving book:", err);
       alert("حدث خطأ أثناء حفظ الكتاب في السيرفر: " + (err.message || "يرجى التحقق من المدخلات"));

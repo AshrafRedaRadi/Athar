@@ -461,23 +461,6 @@ export default function ContentFormModal({
                                   />
                                 </div>
 
-                                {/* Hadith Number — free text, since books number as "٣" or "١٢ مكرر" */}
-                                <div>
-                                  <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">
-                                    <HiOutlineBookOpen className="text-sm text-cyan-700" />
-                                    <span>رقم الحديث <span className="text-base-content/40 font-normal">(اختياري)</span></span>
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={h.hadithNumber || ""}
-                                    onChange={(e) =>
-                                      handleHierarchyHadithChange(sectionLocalId, h._localId, "hadithNumber", e.target.value)
-                                    }
-                                    placeholder="مثال: ١ أو 12 مكرر"
-                                    className="w-full px-3 py-2 rounded-lg border border-base-300 bg-base-100 text-xs font-2 text-base-content focus:outline-hidden focus:border-cyan-600 shadow-xs"
-                                  />
-                                </div>
-
                                 {/* Matn Text */}
                                 <div>
                                   <label className="block text-[11px] font-semibold text-base-content/70 mb-1 flex items-center gap-1">

@@ -149,7 +149,8 @@ export default function UserFormModal({
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="select select-bordered w-full rounded-xl text-sm font-2 font-bold"
               >
-                <option value="معلم">معلم</option>
+                {/* The backend defines only Admin and Student, so a معلم option would
+                    silently save the user as a student. */}
                 <option value="طالب">طالب</option>
                 <option value="أدمن">مشرف (أدمن)</option>
               </select>
