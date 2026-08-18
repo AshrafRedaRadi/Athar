@@ -532,7 +532,7 @@ export default function Study() {
                   onNextHadith={goToNext}
                   hasPrev={currentHadithIndex > 0}
                   hasNext={currentHadithIndex < hadithsList.length - 1}
-                  hadithLabel={currentHadith.hadithNumber}
+                  hadithLabel={currentHadith.hadithLabel}
                 />
 
                 {/* Recitation Error / Limit Banner */}
@@ -564,7 +564,7 @@ export default function Study() {
                 <div className="flex-1 flex flex-col justify-center mt-1 sm:mt-1 mb-4">
                   <HadithCard
                     bookTitle={currentHadith.bookTitle || "الأربعون النووية"}
-                    hadithLabel={currentHadith.hadithNumber}
+                    hadithLabel={currentHadith.hadithLabel}
                     title={currentHadith.title}
                     text={currentHadith.text}
                     source={currentHadith.source}
@@ -728,7 +728,7 @@ export default function Study() {
         {/* Audio Player — Always visible on Desktop, or when Listening Mode is activated on Mobile */}
         <AudioPlayer
           hadith={currentHadith}
-          hadithLabel={currentHadith?.hadithNumber || ""}
+          hadithLabel={currentHadith?.hadithLabel || ""}
           reader={currentHadith?.reader}
           onClose={() => setIsAudioListeningMode(false)}
           onPlaybackChange={(playing) => setIsAudioPlaying(playing)}

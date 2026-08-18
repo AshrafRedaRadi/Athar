@@ -106,7 +106,7 @@ function HadithMobileCard({ hadith, status, isSingleColumn = false, onAction }) 
       {/* Header: number + badge */}
       <div className="flex items-center justify-between gap-1 flex-wrap">
         <span className={`font-2 text-base-content/60 font-semibold truncate ${isSingleColumn ? "text-xs" : "text-[11px]"}`}>
-          {hadith.hadithNumber}
+          {hadith.hadithLabel}
         </span>
         <span className={`badge font-2 ${cfg.badgeClass} ${isSingleColumn ? "badge-sm" : "badge-xs"}`}>
           {cfg.icon} {cfg.label}
@@ -115,7 +115,7 @@ function HadithMobileCard({ hadith, status, isSingleColumn = false, onAction }) 
 
       {/* Title */}
       <p className={`font-1 font-bold text-base-content leading-snug my-auto ${isSingleColumn ? "text-sm" : "text-xs line-clamp-2"}`}>
-        {hadith.title || hadith.hadithNumber}
+        {hadith.title || hadith.hadithLabel}
       </p>
 
       {/* Narrator */}
@@ -468,7 +468,7 @@ export default function ListHadith() {
                             {/* Hadith number */}
                             <td className="whitespace-nowrap">
                               <span className="font-2 font-semibold text-xs sm:text-sm text-cyan-700">
-                                {hadith.hadithNumber}
+                                {hadith.hadithLabel}
                               </span>
                             </td>
 

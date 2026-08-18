@@ -2,7 +2,7 @@ import { apiFetch, getImageUrl } from '../api/client';
 
 /**
  * Format role string to standard Arabic display.
- * Backend roles are: "User" (Regular/Student) and "Admin" (Administrator).
+ * The backend defines exactly two roles, "Admin" and "Student" (Athar.Domain.Constants.Roles).
  */
 export function normalizeRole(rawRole, userObj = null) {
   const email = (userObj?.email || (typeof rawRole === "object" ? rawRole?.email : "") || "").toLowerCase();
@@ -81,7 +81,10 @@ export const usersService = {
    * Update user details (Role, Status) via PUT /api/Admin/users/{userId}
    */
   async updateUser(userId, userData) {
-    const backendRole = userData.role === "أدمن" ? "Admin" : userData.role === "معلم" ? "Teacher" : "User";
+    // The API accepts only "Admin" or "Student" and rejects anything else outright. This
+    // used to send "User", which the backend has never recognised, so demoting an admin
+    // always failed with "Role must be either 'Admin' or 'Student'."
+    const backendRole = userData.role === "أدمن" ? "Admin" : "Student";
     const isActivated = userData.status === "نشط" || userData.isActivated === true;
 
     const payload = {

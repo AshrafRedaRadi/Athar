@@ -238,6 +238,36 @@ export const booksService = {
    * @param {Object} bookData
    * @returns {Promise<Object>} Created book data
    */
+  /**
+   * The book's whole arrangement — أبواب, أحاديث, شروح and كلمات حساسة — in one request.
+   * @param {number|string} bookId
+   */
+  async getBookStructure(bookId) {
+    if (!bookId) return null;
+    return await apiFetch(`/api/HadithBooks/${bookId}/structure`);
+  },
+
+  /**
+   * Saves the book's whole arrangement in one transaction: it either lands entirely or not
+   * at all. This replaces saving by issuing a request per باب, حديث, شرح and كلمة حساسة,
+   * which was slow in proportion to the book and could stop half way through and leave it
+   * partly written.
+   *
+   * Removal is explicit — nothing disappears merely by being absent from the payload — and
+   * رقم الحديث is not sent at all, because the server numbers the book straight through
+   * from 1 as part of the same save.
+   *
+   * @param {number|string} bookId
+   * @param {Object} structure
+   * @returns {Promise<Object>} the saved book, with the ids the server assigned
+   */
+  async saveBookStructure(bookId, structure) {
+    return await apiFetch(`/api/HadithBooks/${bookId}/structure`, {
+      method: "PUT",
+      body: JSON.stringify(structure),
+    });
+  },
+
   async createBook(bookData) {
     const formData = new FormData();
     formData.append("Title", bookData.title || "");
