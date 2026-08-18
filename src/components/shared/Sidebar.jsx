@@ -96,7 +96,13 @@ function Sidebar({ activePage = "home", userName: customName, userAvatar: custom
             {/* User Avatar (Right in RTL) */}
             <div className="avatar shrink-0">
               <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 group-hover:ring-cyan-600 ring-offset-2 overflow-hidden transition-all">
-                <img src={resolvedAvatar} alt={userName} />
+                <img
+                  src={resolvedAvatar}
+                  alt={userName}
+                  onError={(e) => {
+                    e.currentTarget.src = defaultAvatar;
+                  }}
+                />
               </div>
             </div>
             {/* Welcome Text + Username */}

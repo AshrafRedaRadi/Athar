@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ADMIN_NAV_ITEMS } from "./adminNavConfig.jsx";
+import { API_BASE_URL } from "../../api/client";
 import defaultAvatar from "../../assets/user.png";
 import logoImg from "../../assets/logo.png";
 
@@ -21,6 +22,16 @@ function AdminSidebar({
 
   const userName = customName || user?.fullName || user?.name || user?.userName || "مدير النظام";
   const userAvatar = customAvatar || user?.avatarUrl || user?.avatar || user?.picture || defaultAvatar;
+
+  const avatarImgPath =
+    (typeof customAvatar === "string" ? customAvatar : null) ||
+    (typeof user?.avatar === "string" ? user.avatar : user?.avatar?.imageUrl) ||
+    user?.avatarUrl ||
+    user?.picture;
+
+  const resolvedAvatar = avatarImgPath
+    ? (avatarImgPath.startsWith("http") ? avatarImgPath : `${API_BASE_URL}${avatarImgPath.startsWith("/") ? "" : "/"}${avatarImgPath}`)
+    : (typeof userAvatar === "string" ? userAvatar : defaultAvatar);
 
   const closeDrawer = () => {
     if (drawerRef.current) {
@@ -88,7 +99,13 @@ function AdminSidebar({
             <div className="flex items-center gap-3">
               <div className="avatar shrink-0">
                 <div className="w-12 h-12 rounded-full ring ring-cyan-600/30 group-hover:ring-cyan-600 ring-offset-2 overflow-hidden transition-all">
-                  <img src={userAvatar} alt={userName} />
+                  <img
+                    src={resolvedAvatar}
+                    alt={userName}
+                    onError={(e) => {
+                      e.currentTarget.src = defaultAvatar;
+                    }}
+                  />
                 </div>
               </div>
               <div className="flex flex-col text-start">
