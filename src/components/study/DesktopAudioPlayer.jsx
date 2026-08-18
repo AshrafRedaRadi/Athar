@@ -41,9 +41,11 @@ export default function DesktopAudioPlayer({
           <p className="font-3 font-bold text-xs text-base-content leading-tight truncate">
             {hadithLabel || "الحديث الشريف"}
           </p>
-          <p className="font-2 text-[10.5px] font-semibold text-cyan-700 dark:text-cyan-400 truncate mt-0.5">
-            {reader}
-          </p>
+          {reader && (
+            <p className="font-2 text-[10.5px] font-semibold text-cyan-700 dark:text-cyan-400 truncate mt-0.5">
+              {reader}
+            </p>
+          )}
         </div>
       </div>
 

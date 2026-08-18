@@ -729,7 +729,7 @@ export default function Study() {
         <AudioPlayer
           hadith={currentHadith}
           hadithLabel={currentHadith?.hadithNumber || ""}
-          reader={currentHadith?.reader || "القارئ: أحمد النفيس"}
+          reader={currentHadith?.reader}
           onClose={() => setIsAudioListeningMode(false)}
           onPlaybackChange={(playing) => setIsAudioPlaying(playing)}
           audioControlRef={audioControlRef}

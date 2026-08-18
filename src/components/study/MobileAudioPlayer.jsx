@@ -89,15 +89,19 @@ export default function MobileAudioPlayer({
                        rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.22)] px-1.5 py-1.5 flex flex-col gap-0.5"
             dir="rtl"
           >
-            {/* Card Header: Reciter Name Centered & Close Down Arrow */}
-            <div className="relative flex items-center justify-center border-b border-base-200 dark:border-slate-800 pb-0.5 px-1.5">
-              <p className="font-2 text-[10.5px] font-bold text-cyan-700 dark:text-cyan-400 truncate text-center">
-                {reader}
-              </p>
+            {/* Card Header: Close Down Arrow & Optional Reciter Name */}
+            <div className="relative flex items-center justify-between border-b border-base-200 dark:border-slate-800 pb-0.5 px-1.5 min-h-[22px]">
+              {reader ? (
+                <p className="font-2 text-[10.5px] font-bold text-cyan-700 dark:text-cyan-400 truncate text-center flex-1">
+                  {reader}
+                </p>
+              ) : (
+                <div className="flex-1" />
+              )}
               <button
                 type="button"
                 onClick={() => setIsMobileExpanded(false)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-xs text-base-content/60 hover:text-cyan-700"
+                className="btn btn-ghost btn-circle btn-xs text-base-content/60 hover:text-cyan-700 shrink-0"
                 title="إغلاق النافذة"
                 aria-label="إغلاق النافذة"
               >
