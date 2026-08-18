@@ -152,6 +152,10 @@ export default function ListHadith() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // The path down to this section, so opening its hadiths does not collapse the trail
+  // back to the book name.
+  const [trail, setTrail] = useState([]);
+
   // Paged, so opening a section in a large book never transfers the whole book.
   const [pageNumber, setPageNumber] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -205,14 +209,18 @@ export default function ListHadith() {
       try {
         setIsLoading(true);
         setError(null);
-        const [page, booksData, progressData] = await Promise.all([
+        const [page, booksData, progressData, sectionTrail] = await Promise.all([
           hadithsService.getHadithsPaged(bookId, effectiveSectionId, pageNumber, HADITHS_PER_PAGE),
           booksService.getBooks().catch(() => []),
           hadithsService.getHadithProgress(bookId).catch(() => []),
+          effectiveSectionId
+            ? booksService.getSectionTrail(effectiveSectionId).catch(() => [])
+            : Promise.resolve([]),
         ]);
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
         setBookTitle(book?.title || "");
+        setTrail(sectionTrail);
         setHadiths(page.items);
         setTotalPages(page.totalPages || 0);
         setTotalCount(page.totalCount || 0);
@@ -270,22 +278,42 @@ export default function ListHadith() {
             <IoLibraryOutline className="text-base" />
             <span>المكتبة</span>
           </button>
-          {effectiveSectionId && (
-            <>
-              <IoChevronBack className="text-xs" />
-              <button
-                onClick={() => navigate(`/library/${bookId}/sections`)}
-                className="flex items-center gap-1 hover:text-cyan-700 transition-colors"
-              >
-                <IoLayersOutline className="text-base" />
-                <span>الأقسام</span>
-              </button>
-            </>
-          )}
           <IoChevronBack className="text-xs" />
-          <span className="text-base-content/90 font-medium">
-            {bookTitle || "فهرس الأحاديث"}
-          </span>
+          {trail.length > 0 ? (
+            <button
+              onClick={() => navigate(`/library/${bookId}/sections`)}
+              className="flex items-center gap-1 hover:text-cyan-700 transition-colors line-clamp-1"
+            >
+              <IoLayersOutline className="text-base" />
+              <span>{bookTitle || "الأقسام"}</span>
+            </button>
+          ) : (
+            <span className="text-base-content/90 font-medium">
+              {bookTitle || "فهرس الأحاديث"}
+            </span>
+          )}
+
+          {/* The path down to this section, so it does not collapse to the book name. */}
+          {trail.map((section, idx) => {
+            const isCurrent = idx === trail.length - 1;
+            return (
+              <span key={section.id} className="flex items-center gap-2">
+                <IoChevronBack className="text-xs" />
+                {isCurrent ? (
+                  <span className="text-base-content/90 font-medium line-clamp-1">
+                    {section.name}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => navigate(`/library/${bookId}/sections/${section.id}`)}
+                    className="hover:text-cyan-700 transition-colors line-clamp-1"
+                  >
+                    {section.name}
+                  </button>
+                )}
+              </span>
+            );
+          })}
         </div>
 
         {/* ── Page title ── */}
