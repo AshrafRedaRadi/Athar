@@ -273,3 +273,12 @@ html {
 .dark .streak-track-bg {
     background-color: #3d2417 !important;
 }
+
+/* Dynamic DaisyUI Theme Binding for Cards */
+.dark .dark\:bg-slate-900, [data-theme] .dark\:bg-slate-900 {
+    background-color: var(--color-base-200, var(--b2)) !important;
+}
+
+.dark .dark\:bg-slate-800, [data-theme] .dark\:bg-slate-800 {
+    background-color: var(--color-base-300, var(--b3)) !important;
+}

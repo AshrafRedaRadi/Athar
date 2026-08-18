@@ -23,7 +23,7 @@ const SAMPLE_FALLBACK_AUDIO = "https://server8.mp3quran.net/afs/001.mp3";
 export default function AudioPlayer({
   hadith,
   hadithLabel,
-  reader = "القارئ: أحمد النفيس",
+  reader = "",
   onClose,
   onPlaybackChange,
   audioControlRef,
