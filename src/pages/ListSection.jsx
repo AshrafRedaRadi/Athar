@@ -35,32 +35,25 @@ export default function ListSection() {
         setIsLoading(true);
         setError(null);
 
-        const [childSections, booksData, currentSection] = await Promise.all([
+        const [childSections, booksData, fullTrail] = await Promise.all([
           booksService.getSectionLevel(bookId, {
             onlyRoots: !sectionId,
             parentSectionId: sectionId ?? null,
           }),
           booksService.getBooks().catch(() => []),
-          sectionId ? booksService.getSection(sectionId).catch(() => null) : Promise.resolve(null),
+          sectionId ? booksService.getSectionTrail(sectionId) : Promise.resolve([]),
         ]);
 
         if (cancelled) return;
 
         const book = booksData.find((b) => String(b.id) === String(bookId));
+        const currentSection = fullTrail.length > 0 ? fullTrail[fullTrail.length - 1] : null;
+
         setBookTitle(book?.title || "");
         setCurrent(currentSection);
         setChildren(childSections);
-
-        // Walk up from the current section so the reader can see and undo the path taken.
-        const ancestors = [];
-        let cursor = currentSection?.parentSectionId ?? null;
-        while (cursor && ancestors.length < 10) {
-          const ancestor = await booksService.getSection(cursor).catch(() => null);
-          if (!ancestor) break;
-          ancestors.unshift(ancestor);
-          cursor = ancestor.parentSectionId ?? null;
-        }
-        if (!cancelled) setTrail(ancestors);
+        // Everything above the current section, so the reader can step back up.
+        setTrail(fullTrail.slice(0, -1));
 
         // Nothing nested here, so the reader wants the hadiths themselves — skip the empty
         // level rather than showing a page with no options on it.

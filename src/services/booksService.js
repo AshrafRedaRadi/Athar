@@ -107,6 +107,29 @@ export const booksService = {
   },
 
   /**
+   * The chain from the outermost section down to this one, outermost first.
+   *
+   * Shared by the section and hadith pages so a reader keeps the same path in view the
+   * whole way down — the trail should not collapse just because the last step lists
+   * hadiths instead of sections. Bounded so malformed data cannot spin.
+   * @param {number|string} sectionId
+   * @returns {Promise<Array>} sections, outermost first, ending with the one asked for
+   */
+  async getSectionTrail(sectionId) {
+    const trail = [];
+    let cursor = sectionId;
+
+    while (cursor && trail.length < 10) {
+      const section = await this.getSection(cursor).catch(() => null);
+      if (!section) break;
+      trail.unshift(section);
+      cursor = section.parentSectionId ?? null;
+    }
+
+    return trail;
+  },
+
+  /**
    * Fetch total Hadith books count via GET /api/HadithBooks
    */
   async getBooksCount() {
