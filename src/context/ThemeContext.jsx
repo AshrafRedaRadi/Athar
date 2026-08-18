@@ -10,7 +10,6 @@ const DAISYUI_THEMES = [
   'dracula',
   'cupcake',
   'aqua',
-  'emerald',
   'forest',
   'sunset',
   'valentine',
@@ -19,11 +18,8 @@ const DAISYUI_THEMES = [
   'coffee',
 
   // ── Medium Impact Themes ──
-  'bumblebee',
   'corporate',
   'garden',
-  'pastel',
-  'fantasy',
   'autumn',
   'business',
   'acid',
@@ -32,14 +28,12 @@ const DAISYUI_THEMES = [
   'abyss',
 
   // ── Minimalist & Background-only Subtle Themes (Bottom) ──
-  'lofi',
   'wireframe',
   'dim',
   'nord',
   'silk',
   'cmyk',
   'black',
-  'cyberpunk',
 ];
 
 const DARK_THEMES = new Set([
