@@ -1139,7 +1139,7 @@ export default function LandingPage() {
           style={{ background: 'linear-gradient(to right, transparent, rgba(201,149,58,0.5), transparent)' }} />
       </section>
 
-      {/* ─── LIVE SIMULATOR SECTION (#demo) ─── */}
+   {/* ─── LIVE SIMULATOR SECTION (#demo) ─── */}
       <section id="demo" className="relative py-16 px-5 overflow-hidden" style={{ background: '#0f2633' }}>
         <IslamicStarPattern opacity={0.03} color="#C9953A" size={70} />
 
@@ -1162,6 +1162,18 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-xl mx-auto">
           <Reveal delay={0.2}>
             <RecitationVideoSimulator />
+          </Reveal>
+
+          {/* زر ابدأ الآن بدون سهم */}
+          <Reveal delay={0.3} className="flex justify-center mt-8">
+            <Link
+              to="/login"
+              className="group relative px-8 py-3 rounded-full text-sm sm:text-base font-bold font-2 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden flex items-center justify-center shadow-[0_4px_20px_rgba(201,149,58,0.25)] hover:shadow-[0_4px_25px_rgba(201,149,58,0.4)]"
+              style={{ background: 'linear-gradient(to left, #C9953A, #e4b25e)', color: '#0f2633' }}
+            >
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+              <span className="relative z-10">ابدأ التسميع الآن</span>
+            </Link>
           </Reveal>
         </div>
       </section>
