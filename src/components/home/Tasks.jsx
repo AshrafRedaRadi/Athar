@@ -49,37 +49,53 @@ export default function DashboardTasks({
   const dueCompleted = dueReviews?.completed ?? 0;
   const dueRemaining = dueReviews?.remaining ?? Math.max(0, dueTarget - dueCompleted);
 
-  // Get active candidate
-  const firstCandidate = rawCandidates.length > 0 ? rawCandidates[0] : null;
-  const activeReviewBookTitle = firstCandidate?.bookTitle || bookTitle || "الأربعين النووية";
-  const activeReviewHadithCount = rawCandidates.length > 0 ? rawCandidates.length : dueRemaining;
+  // One row per book. The card used to label the whole count with the first candidate's
+  // book title, so when two books had reviews due it reported both as the first one.
+  const dueGroups = Array.from(
+    rawCandidates
+      .reduce((groups, candidate) => {
+        const key = candidate?.bookId ?? candidate?.bookTitle ?? "unknown";
+        const existing = groups.get(key);
+        if (existing) {
+          existing.hadiths.push(candidate);
+        } else {
+          groups.set(key, {
+            key,
+            bookTitle: candidate?.bookTitle || bookTitle,
+            hadiths: [candidate],
+          });
+        }
+        return groups;
+      }, new Map())
+      .values()
+  );
 
   // 2. Today's Tasks Targets & Progress
+  //
+  // Today's own row is the authority. The backend snapshots each day's targets precisely so
+  // that changing the daily amount later never rewrites a day already under way, and it is
+  // the only place the completed counts live — the fields read here previously
+  // (todayNewMemorizedCount, newCompleted) are not on the payload at all, so the memorization
+  // task reported a hardcoded zero however much was actually memorized.
+  const today = planOverview?.today || null;
+
   const newTarget = Number(
+    today?.newTarget ??
     planOverview?.settings?.newHadithsPerDay ??
     localGoals?.newHadithsPerDay ??
     localGoals?.newAhadith ??
     2
   );
   const revTarget = Number(
+    today?.reviewTarget ??
     planOverview?.settings?.reviewsPerDay ??
     localGoals?.reviewsPerDay ??
     localGoals?.revisionCount ??
     3
   );
 
-  // Completed counts for today
-  const newCompleted = Number(
-    planOverview?.todayNewMemorizedCount ??
-    planOverview?.newCompleted ??
-    0
-  );
-  const revCompleted = Number(
-    dueReviews?.completed ??
-    planOverview?.todayReviewsCount ??
-    planOverview?.reviewsCompleted ??
-    0
-  );
+  const newCompleted = Number(today?.newCompleted ?? 0);
+  const revCompleted = Number(today?.reviewCompleted ?? dueReviews?.completed ?? 0);
 
   const isNewDone = newTarget > 0 && newCompleted >= newTarget;
   const isRevDone = revTarget > 0 && revCompleted >= revTarget;
@@ -96,15 +112,19 @@ export default function DashboardTasks({
     }
   };
 
-  const handleStartReview = () => {
-    if (firstCandidate) {
-      const bId = firstCandidate.bookId || bookId || 1;
-      const sId = firstCandidate.sectionId || 0;
-      const hId = firstCandidate.hadithId || firstCandidate.id || 1;
-      navigate(`/library/${bId}/${sId}/${hId}`);
-    } else {
+  // The API now sends bookId and hadithSectionId with every plan entry. Before it did, both
+  // fell back and every review opened book 1 section 0, which was silently wrong for any
+  // hadith kept anywhere else.
+  const handleStartReview = (candidate) => {
+    if (!candidate) {
       navigate("/plan");
+      return;
     }
+
+    const bId = candidate.bookId || bookId || 1;
+    const sId = candidate.hadithSectionId || 0;
+    const hId = candidate.hadithId || 1;
+    navigate(`/library/${bId}/${sId}/${hId}`);
   };
 
   return (
@@ -142,29 +162,36 @@ export default function DashboardTasks({
 
           {/* Content */}
           <div className="mt-3">
-            {activeReviewHadithCount > 0 ? (
-              <div className="bg-base-200/60 dark:bg-slate-800/70 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3 border border-base-300/60 dark:border-slate-700 shadow-xs">
-                <div className="min-w-0 text-right">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <h3 className="font-bold text-xs sm:text-sm text-base-content truncate">
-                      {activeReviewBookTitle}
-                    </h3>
-                  </div>
-                  <p className="text-[11px] sm:text-xs text-base-content/60 mt-0.5 font-normal font-mono">
-                    {activeReviewHadithCount === 1
-                      ? "حديث واحد مستحق للمراجعة"
-                      : `${activeReviewHadithCount} أحاديث مستحقة للمراجعة اليوم`}
-                  </p>
-                </div>
+            {dueGroups.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {dueGroups.map((group) => (
+                  <div
+                    key={group.key}
+                    className="bg-base-200/60 dark:bg-slate-800/70 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3 border border-base-300/60 dark:border-slate-700 shadow-xs"
+                  >
+                    <div className="min-w-0 text-right">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        <h3 className="font-bold text-xs sm:text-sm text-base-content truncate">
+                          {group.bookTitle}
+                        </h3>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-base-content/60 mt-0.5 font-normal font-mono">
+                        {group.hadiths.length === 1
+                          ? "حديث واحد مستحق للمراجعة"
+                          : `${group.hadiths.length} أحاديث مستحقة للمراجعة اليوم`}
+                      </p>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={handleStartReview}
-                  className="btn btn-xs sm:btn-sm bg-cyan-700 hover:bg-cyan-800 text-white font-2 border-0 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
-                >
-                  ابدأ المراجعة
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartReview(group.hadiths[0])}
+                      className="btn btn-xs sm:btn-sm bg-cyan-700 hover:bg-cyan-800 text-white font-2 border-0 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
+                    >
+                      ابدأ المراجعة
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : dueCompleted > 0 ? (
               <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl p-3 sm:p-3.5 flex items-center gap-2.5 border border-emerald-200/60 dark:border-emerald-900/60">
