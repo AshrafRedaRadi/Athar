@@ -26,8 +26,10 @@ export function normalizeHadithNumber(value) {
  */
 export function formatHadith(item, fallbackIndex = 0) {
   if (!item) return null;
-  // The bare number round-trips back to the API untouched; the decorated form is kept
-  // apart in hadithLabel so an edit form never saves the label as the value.
+  // Whatever the HadithNumber column holds, and nothing else. The server assigns it when a
+  // book's structure is saved, so a hadith in a book that has not been through that yet has
+  // no number — reported as null rather than filled in from the row's position, which would
+  // read as a real number while only describing where the row happened to land.
   const bareNumber = normalizeHadithNumber(item.hadithNumber);
   return {
     id: item.id,
@@ -35,10 +37,8 @@ export function formatHadith(item, fallbackIndex = 0) {
     text: item.text,
     normalizedText: item.normalizedText,
     order: item.order || fallbackIndex + 1,
-    hadithNumber: bareNumber,
-    hadithLabel: bareNumber
-      ? `الحديث ${bareNumber}`
-      : `الحديث ${fallbackIndex + 1}`,
+    hadithNumber: bareNumber || null,
+    hadithLabel: bareNumber ? `الحديث ${bareNumber}` : "",
     narrator: item.narrator || "",
     takhrij: item.takhrij || "",
     source: item.takhrij || (item.narrator ? `عن ${item.narrator}` : ""),
@@ -98,7 +98,16 @@ export const hadithsService = {
 
     const data = await apiFetch(`/api/Hadiths/paged?${params.toString()}`);
     if (!data || !Array.isArray(data.items)) return empty;
-    return data;
+
+    // Mapped like the unpaged list, so both fetchers return one shape. The fallback index
+    // continues across pages rather than restarting, so it describes the hadith's place in
+    // the book and not its place on the screen.
+    const offset = (Number(data.pageNumber) || pageNumber || 1) - 1;
+    return {
+      ...data,
+      items: data.items.map((item, index) =>
+        formatHadith(item, offset * (Number(data.pageSize) || pageSize) + index)),
+    };
   },
 
   async getHadithsByBook(bookId, sectionId = null) {
