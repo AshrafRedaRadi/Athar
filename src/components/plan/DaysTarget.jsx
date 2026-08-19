@@ -4,16 +4,25 @@ import { IoSparklesOutline, IoFlameOutline } from "react-icons/io5";
 
 const STORAGE_KEY = "athar_daily_goals";
 
-// Arabic week structure starting Saturday (index 0) to Friday (index 6)
-const WEEK_DAYS_CONFIG = [
-  { dayIndex: 6, name: "السبت", number: 1 },
-  { dayIndex: 0, name: "الأحد", number: 2 },
-  { dayIndex: 1, name: "الإثنين", number: 3 },
-  { dayIndex: 2, name: "الثلاثاء", number: 4 },
-  { dayIndex: 3, name: "الأربعاء", number: 5 },
-  { dayIndex: 4, name: "الخميس", number: 6 },
-  { dayIndex: 5, name: "الجمعة", number: 7 },
-];
+// Indexed by Date#getDay(): 0 is Sunday, 6 is Saturday.
+const WEEKDAY_NAMES = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+// Shown while the week is still loading, so the row does not collapse to nothing.
+const PLACEHOLDER_WEEK = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+
+/**
+ * "2026-08-15" as a local Date.
+ *
+ * Split by hand rather than handed to `new Date(...)`, which reads a bare ISO date as UTC
+ * and so reports the previous weekday for anyone west of Greenwich — the exact kind of
+ * off-by-one this component is being fixed to stop making.
+ */
+function parsePlanDate(value) {
+  if (typeof value !== "string") return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
 
 export default function DaysTarget({ weekData = [], goals: propGoals }) {
   const [goals, setGoals] = useState(() => {
@@ -53,11 +62,6 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
     };
   }, []);
 
-  // Compute Current Day Index accurately based on local system date (Sat=0, Sun=1, ..., Fri=6)
-  const now = new Date();
-  const currentJsDay = now.getDay(); // 0 is Sun, 6 is Sat
-  const currentWeekIndex = (currentJsDay + 1) % 7; // Map 6(Sat)->0, 0(Sun)->1, 1(Mon)->2, 2(Tue)->3, 3(Wed)->4, 4(Thu)->5, 5(Fri)->6
-
   const currentNewCount = Number(
     propGoals?.newHadithsPerDay ??
     propGoals?.newAhadith ??
@@ -73,63 +77,61 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
     3
   );
 
-  // Construct weekly roadmap items
-  const weekDays = WEEK_DAYS_CONFIG.map((item, idx) => {
-    const backendDay = Array.isArray(weekData) && weekData.length > idx ? weekData[idx] : null;
+  // The server sends the week السبت → الجمعة, beginning again each Saturday, and marks which
+  // cell is today using the account's own time zone. Every cell is therefore read from its
+  // own date and status rather than from its position in the array and the browser clock:
+  // those two disagreed, and each day's figures were being drawn under another day's name.
+  const days = Array.isArray(weekData) ? weekData : [];
 
-    const isToday = idx === currentWeekIndex;
-    const isPast = idx < currentWeekIndex;
-    const isUpcoming = idx > currentWeekIndex;
+  const weekDays = days.length > 0
+    ? days.map((backendDay, idx) => {
+        const date = parsePlanDate(backendDay?.date);
+        const status = String(backendDay?.status || "").toLowerCase();
 
-    let status = "upcoming";
-    if (isToday) {
-      status = "current";
-    } else if (isPast) {
-      if (backendDay?.status) {
-        const raw = backendDay.status.toLowerCase();
-        if (raw === "completed") status = "completed";
-        else if (raw === "missed") status = "missed";
-        else if (raw === "rest") status = "rest";
-        else status = "completed";
-      } else {
-        status = "completed";
-      }
-    } else {
-      status = "upcoming";
-    }
+        const isToday = status === "current";
+        const isUpcoming = status === "upcoming";
+        const outsidePlan = status === "notapplicable";
 
-    // For today and future days, live targets react immediately to goal adjustments
-    const hTarget = isToday || isUpcoming
-      ? currentNewCount
-      : (backendDay?.newTarget && backendDay.newTarget > 0 ? backendDay.newTarget : currentNewCount);
+        // A day the plan has not reached carries no snapshot, so its targets come back as
+        // zero. The plan's own settings are the honest thing to show for it; a past day
+        // genuinely had the targets it reports.
+        const hTarget = backendDay?.newTarget > 0
+          ? backendDay.newTarget
+          : (isToday || isUpcoming ? currentNewCount : 0);
+        const rTarget = backendDay?.reviewTarget > 0
+          ? backendDay.reviewTarget
+          : (isToday || isUpcoming ? currentRevCount : 0);
 
-    const rTarget = isToday || isUpcoming
-      ? currentRevCount
-      : (backendDay?.reviewTarget && backendDay.reviewTarget > 0 ? backendDay.reviewTarget : currentRevCount);
+        let target;
+        if (outsidePlan) target = "قبل بدء الخطة";
+        else if (status === "rest") target = "يوم راحة 🌿";
+        else target = `حفظ ${hTarget} • مراجعة ${rTarget}`;
 
-    let target = "";
-    if (status === "rest") {
-      target = "يوم راحة 🌿";
-    } else if (idx === 6) {
-      target = `مراجعة وتثبيت (${hTarget + rTarget})`;
-    } else {
-      target = `حفظ ${hTarget} • مراجعة ${rTarget}`;
-    }
+        return {
+          key: backendDay?.date || `day-${idx}`,
+          day: date ? WEEKDAY_NAMES[date.getDay()] : "",
+          number: idx + 1,
+          isToday,
+          // A day before the plan began is neither achieved nor missed; it was never part
+          // of the plan, and showing it as a tick claimed credit that was never earned.
+          status: outsidePlan ? "notApplicable" : status,
+          target,
+        };
+      })
+    : PLACEHOLDER_WEEK.map((name, idx) => ({
+        key: `placeholder-${idx}`,
+        day: name,
+        number: idx + 1,
+        isToday: false,
+        status: "upcoming",
+        target: "",
+      }));
 
-    return {
-      day: item.name,
-      number: item.number,
-      isToday,
-      status,
-      target,
-      hTarget,
-      rTarget,
-    };
-  });
+  const currentWeekIndex = weekDays.findIndex((day) => day.isToday);
 
   const completedCount = weekDays.filter((d) => d.status === "completed").length;
   // Progress line length in percentage from right to current day index
-  const progressLinePercent = currentWeekIndex === 0 ? 0 : Math.min(86, (currentWeekIndex / 6) * 86);
+  const progressLinePercent = currentWeekIndex <= 0 ? 0 : Math.min(86, (currentWeekIndex / 6) * 86);
   const progressPercent = Math.round(((completedCount + (currentWeekIndex >= 0 ? 1 : 0)) / 7) * 100);
 
   return (
@@ -165,7 +167,7 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
         <div className="flex items-center gap-2 bg-cyan-50/80 dark:bg-cyan-950/50 border border-cyan-200/70 dark:border-cyan-800/60 px-4 py-2 rounded-2xl self-start sm:self-center shadow-xs">
           <IoSparklesOutline className="text-cyan-700 dark:text-cyan-400 text-lg shrink-0" />
           <span className="text-xs sm:text-sm font-bold text-cyan-900 dark:text-cyan-200 font-2">
-            اليوم: <span className="text-cyan-700 dark:text-cyan-300 underline font-bold">{weekDays[currentWeekIndex]?.day}</span>
+            اليوم: <span className="text-cyan-700 dark:text-cyan-300 underline font-bold">{currentWeekIndex >= 0 ? weekDays[currentWeekIndex].day : "—"}</span>
           </span>
         </div>
       </div>
@@ -189,11 +191,11 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
               const isToday = item.isToday;
               const isCompleted = item.status === "completed";
               const isMissed = item.status === "missed";
-              const isUpcoming = item.status === "upcoming";
+              const isOutsidePlan = item.status === "notApplicable";
 
               return (
                 <div
-                  key={item.number}
+                  key={item.key}
                   className={`flex flex-col items-center group transition-all duration-300 ${
                     isToday ? "scale-105" : ""
                   }`}
@@ -207,6 +209,8 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
                         ? "bg-cyan-700 text-white shadow-cyan-700/20 border-2 border-cyan-600"
                         : isMissed
                         ? "bg-amber-500 text-white border-2 border-amber-600 shadow-xs"
+                        : isOutsidePlan
+                        ? "bg-base-200/40 dark:bg-slate-800/40 text-base-content/30 border-2 border-dashed border-base-300/60 dark:border-slate-700/60"
                         : "bg-base-100 dark:bg-slate-800/90 text-base-content/70 border-2 border-base-300/80 dark:border-slate-700 group-hover:border-cyan-600/50 group-hover:scale-105"
                     }`}
                   >
@@ -232,6 +236,8 @@ export default function DaysTarget({ weekData = [], goals: propGoals }) {
                         ? "text-cyan-700 dark:text-cyan-400 font-extrabold"
                         : isCompleted
                         ? "text-base-content font-bold"
+                        : isOutsidePlan
+                        ? "text-base-content/40 font-medium"
                         : "text-base-content/80 font-medium"
                     }`}
                   >
