@@ -96,7 +96,6 @@ export default function ContentManagement() {
             author: b.author || "غير محدد",
             description: b.description || "",
             category: cat,
-            studentsCount: `${b.studentsCount || Math.floor(Math.random() * 500) + 150}`,
             status: b.status || "معروض",
             lastUpdated: formatArabicDate(b.updatedAt || b.createdAt),
             coverImage: b.coverImage,

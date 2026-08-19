@@ -64,7 +64,6 @@ export const booksService = {
       status: getBookVisibilityStatus(book.id),
       createdAt: book.createdAt || book.createdDate,
       updatedAt: book.updatedAt || book.updatedDate,
-      studentsCount: book.studentsCount ?? Math.floor(Math.random() * 100) + 50,
     }));
   },
 

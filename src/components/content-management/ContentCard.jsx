@@ -3,7 +3,6 @@ import { IoBookOutline } from "react-icons/io5";
 import {
   HiOutlinePencilAlt,
   HiOutlineTrash,
-  HiOutlineUsers,
   HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineClock,
@@ -12,14 +11,13 @@ import {
 /**
  * ContentCard – Admin content card matching the Library Card.jsx design.
  * Features visibility toggle button (ظاهر / مخفي في الموقع الرئيسي) in place of plain active badge,
- * plus cover image, category badge, edit/delete buttons, author & students count.
+ * plus cover image, category badge, edit/delete buttons & author.
  */
 export default function ContentCard({ book, onEdit, onDelete, onToggleVisibility }) {
   const {
     title,
     author,
     category = "الحديث",
-    studentsCount = "0",
     status = "ظاهر",
     lastUpdated = "قبل يومين",
     coverImage,
@@ -90,12 +88,6 @@ export default function ContentCard({ book, onEdit, onDelete, onToggleVisibility
               {author}
             </span>
           </div>
-        </div>
-
-        {/* Students Count */}
-        <div className="flex items-center gap-1 text-xs text-base-content/70">
-          <HiOutlineUsers className="text-sm text-cyan-600" />
-          <span>{studentsCount} طالب</span>
         </div>
 
         {/* Footer: Visibility Toggle + Last Updated */}
