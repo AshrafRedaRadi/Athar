@@ -5,7 +5,7 @@ import { HiOutlinePencilAlt, HiOutlineKey, HiOutlineCheckCircle, HiOutlineBan } 
  * UserCard - Mobile/Tablet card representation of a User item.
  */
 export default function UserCard({ user, onEdit, onToggleStatus, onSendPasswordReset }) {
-  const { name, email, role = "طالب", status = "نشط", details, avatar } = user;
+  const { name, email, role = "طالب", status = "نشط", details, avatar, joinedDate } = user;
   const isStatusActive = status === "نشط" || user.isActivated !== false;
 
   const roleBadgeClass =
@@ -42,6 +42,11 @@ export default function UserCard({ user, onEdit, onToggleStatus, onSendPasswordR
             <span className="font-2 text-xs text-base-content/60 truncate max-w-[180px]">
               {email}
             </span>
+            {joinedDate && (
+              <span className="font-2 text-[0.68rem] text-base-content/45 mt-0.5">
+                انضم في {joinedDate}
+              </span>
+            )}
           </div>
         </div>
 

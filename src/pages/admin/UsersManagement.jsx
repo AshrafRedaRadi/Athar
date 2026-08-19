@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { HiOutlinePencilAlt, HiOutlineKey, HiOutlineBan, HiOutlineCheckCircle } from "react-icons/hi";
+import {
+  HiOutlinePencilAlt,
+  HiOutlineKey,
+  HiOutlineBan,
+  HiOutlineCheckCircle,
+  HiOutlineChevronDown,
+  HiOutlineChevronUp,
+  HiOutlineSelector,
+} from "react-icons/hi";
 import { FiSearch } from "react-icons/fi";
 import { IoPeopleOutline } from "react-icons/io5";
 import Navbar from "../../components/shared/Navbar";
@@ -14,6 +22,8 @@ export default function UsersManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("الكل");
   const [selectedStatus, setSelectedStatus] = useState("الكل");
+  // "newest" | "oldest" order by join date; "name" restores the alphabetical order the API returns.
+  const [sortOrder, setSortOrder] = useState("newest");
 
   // Modal & Toast States
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -36,7 +46,7 @@ export default function UsersManagement() {
   // Reset to page 1 on filter/search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedRole, selectedStatus]);
+  }, [searchQuery, selectedRole, selectedStatus, sortOrder]);
 
   // Mobile Category Tabs list
   const ROLE_CATEGORIES = [
@@ -78,11 +88,33 @@ export default function UsersManagement() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Sorted Users List
+  // Sorting reads `createdAt`, the raw value the API returned: `joinedDate` is only its Arabic
+  // rendering ("١٢ مارس ٢٠٢٦") and would sort as text. Accounts the API gave no date for sink to
+  // the bottom in either direction instead of posing as the newest or the oldest.
+  const getJoinedTime = (userItem) => {
+    if (!userItem.createdAt) return null;
+    const time = new Date(userItem.createdAt).getTime();
+    return Number.isNaN(time) ? null : time;
+  };
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    if (sortOrder === "name") return (a.name || "").localeCompare(b.name || "", "ar");
+
+    const timeA = getJoinedTime(a);
+    const timeB = getJoinedTime(b);
+    if (timeA === null && timeB === null) return 0;
+    if (timeA === null) return 1;
+    if (timeB === null) return -1;
+
+    return sortOrder === "oldest" ? timeA - timeB : timeB - timeA;
+  });
+
   // Pagination Logic
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredUsers.length);
+  const paginatedUsers = sortedUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, sortedUsers.length);
 
   // Open Edit Role / Status Modal
   const handleOpenEditModal = (user) => {
@@ -246,6 +278,19 @@ export default function UsersManagement() {
             <option value="غير نشط">غير نشط</option>
           </select>
         </div>
+
+        {/* Sort Dropdown — kept outside the sm-only group above so the mobile card list,
+            which has no table header to sort from, can be reordered too. */}
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          aria-label="ترتيب المستخدمين"
+          className="select select-bordered rounded-xl text-sm font-2 w-full md:w-52 font-bold"
+        >
+          <option value="newest">تاريخ الانضمام: الأحدث أولاً</option>
+          <option value="oldest">تاريخ الانضمام: الأقدم أولاً</option>
+          <option value="name">الاسم (ترتيب أبجدي)</option>
+        </select>
       </section>
 
       {/* ── Main Users Display View ── */}
@@ -254,7 +299,7 @@ export default function UsersManagement() {
           <div className="w-10 h-10 border-4 border-cyan-600/20 border-t-cyan-600 rounded-full animate-spin" />
           <span className="text-sm text-base-content/60">جاري استحضار قائمة المستخدمين...</span>
         </div>
-      ) : filteredUsers.length > 0 ? (
+      ) : sortedUsers.length > 0 ? (
         <>
           {/* 1. Desktop & Tablet Table View (hidden on small screens) */}
           <div className="hidden md:block bg-base-100 border border-base-200 rounded-2xl shadow-sm overflow-hidden mb-6">
@@ -264,7 +309,25 @@ export default function UsersManagement() {
                   <tr>
                     <th className="py-4 px-6">المستخدم</th>
                     <th className="py-4 px-4 text-center">الدور (الصلاحية)</th>
-                    <th className="py-4 px-4 text-center">تاريخ الانضمام</th>
+                    <th className="py-4 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSortOrder((prev) => (prev === "oldest" ? "newest" : "oldest"))
+                        }
+                        title="ترتيب حسب تاريخ الانضمام"
+                        className="inline-flex items-center gap-1 mx-auto hover:text-cyan-700 transition-colors"
+                      >
+                        <span>تاريخ الانضمام</span>
+                        {sortOrder === "newest" ? (
+                          <HiOutlineChevronDown className="text-sm" />
+                        ) : sortOrder === "oldest" ? (
+                          <HiOutlineChevronUp className="text-sm" />
+                        ) : (
+                          <HiOutlineSelector className="text-sm opacity-40" />
+                        )}
+                      </button>
+                    </th>
                     <th className="py-4 px-4 text-center">الحالة</th>
                     <th className="py-4 px-6 text-center">الإجراءات</th>
                   </tr>
@@ -361,7 +424,7 @@ export default function UsersManagement() {
           {/* 3. Responsive Pagination & Count Footer (Visible on Mobile & Desktop) */}
           <div className="bg-base-100 border border-base-200 rounded-2xl p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 font-2 text-xs sm:text-sm text-base-content/70 mb-10 sm:mb-6">
             <span className="font-bold text-center sm:text-right">
-              عرض {filteredUsers.length > 0 ? startIndex + 1 : 0} إلى {endIndex} من أصل {filteredUsers.length} مستخدم
+              عرض {sortedUsers.length > 0 ? startIndex + 1 : 0} إلى {endIndex} من أصل {sortedUsers.length} مستخدم
             </span>
 
             {totalPages > 1 && (
