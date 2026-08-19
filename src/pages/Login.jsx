@@ -15,7 +15,7 @@ const labelClass = 'block text-[0.8rem] mb-0.5 text-white/90 font-2';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, forgotPassword } = useAuth();
   const { handleGoogleSuccess, handleGoogleError, googleLoading, googleError } = useGoogleAuth();
 
   const [email, setEmail] = useState('');
@@ -24,6 +24,42 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotNotice, setForgotNotice] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  const openForgotPassword = () => {
+    setForgotEmail(email);
+    setForgotNotice('');
+    setForgotError('');
+    setIsForgotOpen(true);
+  };
+
+  const sendResetLink = async () => {
+    const target = forgotEmail.trim();
+    if (!target) {
+      setForgotError('اكتب بريدك الإلكتروني أولاً.');
+      return;
+    }
+
+    setForgotError('');
+    setForgotNotice('');
+    setIsSendingReset(true);
+
+    try {
+      await forgotPassword(target);
+      // Worded here rather than taken from the response: the API answers identically whether
+      // or not an account exists, so that a stranger cannot use this form to discover which
+      // addresses are registered — and apiFetch returns only the payload, which is empty.
+      setForgotNotice('إن كان هناك حساب بهذا البريد، فسيصلك رابط إعادة ضبط كلمة المرور.');
+    } catch (err) {
+      setForgotError(err.message || 'تعذّر إرسال الرابط، يرجى المحاولة لاحقاً.');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -158,11 +194,60 @@ export default function Login() {
 
               <button
                 type="button"
+                onClick={openForgotPassword}
                 className="text-white/80 text-[0.75rem] no-underline hover:underline font-[Cairo,sans-serif] bg-transparent border-0 p-0 cursor-pointer"
               >
                 هل نسيت كلمة المرور؟
               </button>
             </div>
+
+            {/* Kept as plain elements rather than a nested <form>, which is invalid inside the
+                login form. Enter is handled on the field so it sends the link instead of
+                submitting the sign-in below it. */}
+            {isForgotOpen && (
+              <div className="flex flex-col gap-1.5 bg-black/20 border border-white/10 rounded-2xl p-2.5 mb-1">
+                <label className={labelClass}>البريد الإلكتروني لإعادة الضبط</label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendResetLink();
+                      }
+                    }}
+                    className={inputClass}
+                    placeholder="example@mail.com"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={sendResetLink}
+                    disabled={isSendingReset}
+                    className="shrink-0 h-9 px-3 rounded-full bg-[#4A90A4] hover:bg-[#3b7687] disabled:opacity-50 text-white text-[0.75rem] font-semibold font-2 transition-colors cursor-pointer"
+                  >
+                    {isSendingReset ? '...' : 'إرسال'}
+                  </button>
+                </div>
+
+                {forgotNotice && (
+                  <p className="text-emerald-200 text-[0.72rem] font-2 leading-relaxed">{forgotNotice}</p>
+                )}
+                {forgotError && (
+                  <p className="text-rose-200 text-[0.72rem] font-2 leading-relaxed">{forgotError}</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setIsForgotOpen(false)}
+                  className="text-white/60 hover:text-white/90 text-[0.7rem] font-2 self-start transition-colors cursor-pointer bg-transparent border-0 p-0"
+                >
+                  إغلاق
+                </button>
+              </div>
+            )}
 
             <button
               type="submit"

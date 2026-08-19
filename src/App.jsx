@@ -15,6 +15,7 @@ import Study from './pages/Study';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ConfirmEmail from './pages/ConfirmEmail';
+import ResetPassword from './pages/ResetPassword';
 import ListSection from './pages/ListSection';
 import ListHadith from './pages/ListHadith';
 import Onboarding from './pages/Onboarding';
@@ -68,6 +69,11 @@ function App() {
               <Route path="/library/:bookId/:sectionId" element={<ListHadith />} />
               <Route path="/library/:bookId/:sectionId/:hadithId" element={<Study />} />
             </Route>
+
+            {/* Password reset — deliberately unguarded. The link is proof of access to
+                the inbox, and it has to open whether or not a session is already
+                signed in on this browser. */}
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Onboarding routes */}
             <Route path="/onboarding" element={<Onboarding />} />

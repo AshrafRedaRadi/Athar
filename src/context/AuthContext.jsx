@@ -148,6 +148,20 @@ export function AuthProvider({ children }) {
     });
   };
 
+  // إتمام إعادة الضبط بالرمز الوارد في رابط البريد. الرابط يحمل البريد والرمز معاً، فلا
+  // يُطلب من المستخدم كتابة بريده مرة أخرى، والخادم وحده يحكم على قوة كلمة المرور.
+  const resetPassword = async ({ email: emailAddress, token: tokenParam, newPassword, confirmPassword }) => {
+    return await apiFetch('/api/Auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: emailAddress,
+        token: tokenParam,
+        newPassword,
+        confirmPassword,
+      }),
+    });
+  };
+
   const confirmEmail = async (userId, tokenParam) => {
     const query = `userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(tokenParam)}`;
     return await apiFetch(`/api/Auth/confirm-email?${query}`, {
@@ -237,6 +251,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     forgotPassword,
+    resetPassword,
     confirmEmail,
     loginGoogle,
     logout,
